@@ -1,0 +1,263 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { supabaseAdmin, formatPrice } from "../../lib/supabase";
+
+// SSR - Protected by AdminLayout
+export const prerender = false;
+
+// Fetch stats
+let stats = {
+    totalProducts: 0,
+    totalStock: 0,
+    lowStockProducts: 0,
+    totalValue: 0,
+};
+
+let recentProducts: any[] = [];
+
+try {
+    const { data: products } = await supabaseAdmin
+        .from("products")
+        .select("*")
+        .eq("active", true);
+
+    if (products) {
+        stats.totalProducts = products.length;
+        stats.totalStock = products.reduce((sum, p) => sum + p.stock, 0);
+        stats.lowStockProducts = products.filter(
+            (p) => p.stock <= 5 && p.stock > 0,
+        ).length;
+        stats.totalValue = products.reduce(
+            (sum, p) => sum + p.price * p.stock,
+            0,
+        );
+        recentProducts = products.slice(0, 5);
+    }
+} catch (e) {
+    console.error("Error fetching stats:", e);
+}
+---
+
+<AdminLayout title="Dashboard">
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-xl p-6 shadow-elegant">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-brand-charcoal-500">
+                        Productos Activos
+                    </p>
+                    <p class="text-3xl font-serif text-brand-navy-500 mt-2">
+                        {stats.totalProducts}
+                    </p>
+                </div>
+                <div
+                    class="w-12 h-12 rounded-full bg-brand-navy-100 flex items-center justify-center"
+                >
+                    <svg
+                        class="w-6 h-6 text-brand-navy-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="1.5"
+                            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                        ></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl p-6 shadow-elegant">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-brand-charcoal-500">
+                        Unidades en Stock
+                    </p>
+                    <p class="text-3xl font-serif text-brand-navy-500 mt-2">
+                        {stats.totalStock}
+                    </p>
+                </div>
+                <div
+                    class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center"
+                >
+                    <svg
+                        class="w-6 h-6 text-green-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="1.5"
+                            d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
+                        ></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl p-6 shadow-elegant">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-brand-charcoal-500">Stock Bajo</p>
+                    <p class="text-3xl font-serif text-amber-600 mt-2">
+                        {stats.lowStockProducts}
+                    </p>
+                </div>
+                <div
+                    class="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center"
+                >
+                    <svg
+                        class="w-6 h-6 text-amber-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="1.5"
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                        ></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl p-6 shadow-elegant">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-brand-charcoal-500">
+                        Valor del Inventario
+                    </p>
+                    <p class="text-3xl font-serif text-brand-navy-500 mt-2">
+                        {formatPrice(stats.totalValue)}
+                    </p>
+                </div>
+                <div
+                    class="w-12 h-12 rounded-full bg-accent-leather/20 flex items-center justify-center"
+                >
+                    <svg
+                        class="w-6 h-6 text-accent-leather"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="1.5"
+                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        ></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions & Recent Products -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Quick Actions -->
+        <div class="bg-white rounded-xl p-6 shadow-elegant">
+            <h2 class="font-serif text-lg text-brand-navy-500 mb-4">
+                Acciones Rápidas
+            </h2>
+            <div class="space-y-3">
+                <a
+                    href="/admin/productos/nuevo"
+                    class="flex items-center gap-3 p-3 rounded-lg bg-brand-navy-50 text-brand-navy-600 hover:bg-brand-navy-100 transition-colors"
+                >
+                    <svg
+                        class="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="1.5"
+                            d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    <span>Añadir Producto</span>
+                </a>
+                <a
+                    href="/admin/productos"
+                    class="flex items-center gap-3 p-3 rounded-lg bg-cream-100 text-brand-charcoal-600 hover:bg-cream-200 transition-colors"
+                >
+                    <svg
+                        class="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="1.5"
+                            d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                    </svg>
+                    <span>Ver Inventario</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Recent Products -->
+        <div class="lg:col-span-2 bg-white rounded-xl p-6 shadow-elegant">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="font-serif text-lg text-brand-navy-500">
+                    Productos Recientes
+                </h2>
+                <a
+                    href="/admin/productos"
+                    class="text-sm text-brand-navy-500 hover:underline"
+                    >Ver todos</a
+                >
+            </div>
+
+            {
+                recentProducts.length > 0 ? (
+                    <div class="space-y-3">
+                        {recentProducts.map((product) => (
+                            <a
+                                href={`/admin/productos/${product.id}`}
+                                class="flex items-center gap-4 p-3 rounded-lg hover:bg-cream-100 transition-colors"
+                            >
+                                <div class="w-12 h-14 bg-cream-200 rounded overflow-hidden flex-shrink-0">
+                                    <img
+                                        src={
+                                            product.images[0] ||
+                                            "https://placehold.co/48x56/1e3a5f/ffffff?text=P"
+                                        }
+                                        alt={product.name}
+                                        class="w-full h-full object-cover"
+                                    />
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="font-medium text-brand-charcoal-700 truncate">
+                                        {product.name}
+                                    </p>
+                                    <p class="text-sm text-brand-charcoal-400">
+                                        Stock: {product.stock}
+                                    </p>
+                                </div>
+                                <p class="font-serif text-brand-navy-500">
+                                    {formatPrice(product.price)}
+                                </p>
+                            </a>
+                        ))}
+                    </div>
+                ) : (
+                    <p class="text-brand-charcoal-400 text-center py-8">
+                        No hay productos registrados
+                    </p>
+                )
+            }
+        </div>
+    </div>
+</AdminLayout>

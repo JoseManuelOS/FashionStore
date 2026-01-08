@@ -1,0 +1,282 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { supabaseAdmin, formatPrice } from "../../../lib/supabase";
+
+// SSR - Protected by AdminLayout
+export const prerender = false;
+
+// Fetch all products with categories
+let products: any[] = [];
+
+try {
+    const { data } = await supabaseAdmin
+        .from("products")
+        .select(
+            `
+      *,
+      category:categories(name)
+    `,
+        )
+        .order("created_at", { ascending: false });
+
+    products = data || [];
+} catch (e) {
+    console.error("Error fetching products:", e);
+}
+---
+
+<AdminLayout title="Gestión de Productos">
+    <!-- Header -->
+    <div
+        class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6"
+    >
+        <div>
+            <p class="text-brand-charcoal-500">
+                {products.length} producto{products.length !== 1 ? "s" : ""} registrado{
+                    products.length !== 1 ? "s" : ""
+                }
+            </p>
+        </div>
+        <a
+            href="/admin/productos/nuevo"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-brand-navy-500 text-white rounded-lg hover:bg-brand-navy-600 transition-colors"
+        >
+            <svg
+                class="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+            >
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 4v16m8-8H4"></path>
+            </svg>
+            Nuevo Producto
+        </a>
+    </div>
+
+    <!-- Products Table -->
+    <div class="bg-white rounded-xl shadow-elegant overflow-hidden">
+        {
+            products.length > 0 ? (
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-cream-100 border-b border-brand-charcoal-100">
+                            <tr>
+                                <th class="text-left py-4 px-6 font-medium text-brand-charcoal-600">
+                                    Producto
+                                </th>
+                                <th class="text-left py-4 px-4 font-medium text-brand-charcoal-600">
+                                    Categoría
+                                </th>
+                                <th class="text-right py-4 px-4 font-medium text-brand-charcoal-600">
+                                    Precio
+                                </th>
+                                <th class="text-right py-4 px-4 font-medium text-brand-charcoal-600">
+                                    Stock
+                                </th>
+                                <th class="text-center py-4 px-4 font-medium text-brand-charcoal-600">
+                                    Estado
+                                </th>
+                                <th class="text-right py-4 px-6 font-medium text-brand-charcoal-600">
+                                    Acciones
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-brand-charcoal-50">
+                            {products.map((product) => (
+                                <tr class="hover:bg-cream-50 transition-colors">
+                                    <td class="py-4 px-6">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-12 h-14 bg-cream-200 rounded overflow-hidden flex-shrink-0">
+                                                <img
+                                                    src={
+                                                        product.images[0] ||
+                                                        "https://placehold.co/48x56/1e3a5f/ffffff?text=P"
+                                                    }
+                                                    alt={product.name}
+                                                    class="w-full h-full object-cover"
+                                                />
+                                            </div>
+                                            <div>
+                                                <p class="font-medium text-brand-charcoal-700">
+                                                    {product.name}
+                                                </p>
+                                                <p class="text-sm text-brand-charcoal-400 truncate max-w-[200px]">
+                                                    {product.slug}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-4 text-brand-charcoal-600">
+                                        {product.category?.name || "—"}
+                                    </td>
+                                    <td class="py-4 px-4 text-right font-serif text-brand-navy-500">
+                                        {formatPrice(product.price)}
+                                    </td>
+                                    <td class="py-4 px-4 text-right">
+                                        <span
+                                            class={`font-medium ${product.stock <= 5 ? "text-amber-600" : product.stock === 0 ? "text-red-600" : "text-brand-charcoal-600"}`}
+                                        >
+                                            {product.stock}
+                                        </span>
+                                    </td>
+                                    <td class="py-4 px-4 text-center">
+                                        {product.active ? (
+                                            <span class="inline-flex px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
+                                                Activo
+                                            </span>
+                                        ) : (
+                                            <span class="inline-flex px-2 py-1 text-xs font-medium bg-brand-charcoal-100 text-brand-charcoal-500 rounded-full">
+                                                Inactivo
+                                            </span>
+                                        )}
+                                    </td>
+                                    <td class="py-4 px-6 text-right">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <a
+                                                href={`/admin/productos/${product.id}`}
+                                                class="p-2 text-brand-charcoal-400 hover:text-brand-navy-500 transition-colors"
+                                                title="Editar"
+                                            >
+                                                <svg
+                                                    class="w-5 h-5"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="1.5"
+                                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                                    />
+                                                </svg>
+                                            </a>
+                                            <button
+                                                class="delete-btn p-2 text-brand-charcoal-400 hover:text-red-500 transition-colors"
+                                                data-id={product.id}
+                                                data-name={product.name}
+                                                title="Eliminar"
+                                            >
+                                                <svg
+                                                    class="w-5 h-5"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="1.5"
+                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                    />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            ) : (
+                <div class="text-center py-16">
+                    <svg
+                        class="w-16 h-16 mx-auto text-brand-charcoal-200 mb-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="1"
+                            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                        />
+                    </svg>
+                    <h3 class="text-xl font-medium text-brand-charcoal-600 mb-2">
+                        No hay productos
+                    </h3>
+                    <p class="text-brand-charcoal-400 mb-4">
+                        Comienza añadiendo tu primer producto
+                    </p>
+                    <a href="/admin/productos/nuevo" class="btn-primary">
+                        Añadir Producto
+                    </a>
+                </div>
+            )
+        }
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div
+        id="delete-modal"
+        class="hidden fixed inset-0 z-50 flex items-center justify-center"
+    >
+        <div class="absolute inset-0 bg-black/50" id="delete-overlay"></div>
+        <div
+            class="relative bg-white rounded-xl p-6 max-w-md mx-4 shadow-elegant-lg"
+        >
+            <h3 class="font-serif text-xl text-brand-navy-500 mb-2">
+                Eliminar Producto
+            </h3>
+            <p class="text-brand-charcoal-600 mb-6">
+                ¿Estás seguro de que quieres eliminar <strong
+                    id="delete-product-name"></strong>? Esta acción no se puede
+                deshacer.
+            </p>
+            <div class="flex gap-3 justify-end">
+                <button
+                    id="cancel-delete"
+                    class="px-4 py-2 border border-brand-charcoal-200 rounded-lg hover:bg-cream-100 transition-colors"
+                >
+                    Cancelar
+                </button>
+                <form
+                    id="delete-form"
+                    method="POST"
+                    action="/api/products/delete"
+                >
+                    <input type="hidden" name="id" id="delete-product-id" />
+                    <button
+                        type="submit"
+                        class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                    >
+                        Eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const modal = document.getElementById("delete-modal")!;
+        const overlay = document.getElementById("delete-overlay")!;
+        const cancelBtn = document.getElementById("cancel-delete")!;
+        const productNameEl = document.getElementById("delete-product-name")!;
+        const productIdInput = document.getElementById(
+            "delete-product-id",
+        ) as HTMLInputElement;
+
+        // Open modal
+        document.querySelectorAll(".delete-btn").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                const id = (btn as HTMLElement).dataset.id!;
+                const name = (btn as HTMLElement).dataset.name!;
+                productIdInput.value = id;
+                productNameEl.textContent = name;
+                modal.classList.remove("hidden");
+            });
+        });
+
+        // Close modal
+        [overlay, cancelBtn].forEach((el) => {
+            el.addEventListener("click", () => {
+                modal.classList.add("hidden");
+            });
+        });
+    </script>
+</AdminLayout>

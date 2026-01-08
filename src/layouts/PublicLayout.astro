@@ -1,0 +1,198 @@
+---
+import BaseLayout from "./BaseLayout.astro";
+import CartIcon from "../components/islands/CartIcon";
+import CartSlideOver from "../components/islands/CartSlideOver";
+import { getCategories } from "../lib/supabase";
+
+export interface Props {
+    title: string;
+    description?: string;
+}
+
+const { title, description } = Astro.props;
+
+// Fetch categories for navigation
+let categories: { name: string; slug: string }[] = [];
+try {
+    categories = await getCategories();
+} catch (e) {
+    console.error("Error fetching categories:", e);
+}
+---
+
+<BaseLayout title={title} description={description}>
+    <!-- Header -->
+    <header
+        class="sticky top-0 z-30 bg-cream-200/95 backdrop-blur-sm border-b border-brand-charcoal-100"
+    >
+        <div class="container-custom">
+            <div class="flex items-center justify-between h-16 md:h-20">
+                <!-- Logo -->
+                <a href="/" class="flex items-center gap-2">
+                    <span
+                        class="font-serif text-2xl md:text-3xl font-semibold text-brand-navy-500"
+                    >
+                        FashionMarket
+                    </span>
+                </a>
+
+                <!-- Desktop Navigation -->
+                <nav class="hidden md:flex items-center gap-8">
+                    <a href="/productos" class="link-hover font-medium">
+                        Todos los Productos
+                    </a>
+                    {
+                        categories.map((cat) => (
+                            <a
+                                href={`/categoria/${cat.slug}`}
+                                class="link-hover"
+                            >
+                                {cat.name}
+                            </a>
+                        ))
+                    }
+                </nav>
+
+                <!-- Actions -->
+                <div class="flex items-center gap-4">
+                    <!-- Cart Button -->
+                    <div id="cart-trigger">
+                        <CartIcon client:load />
+                    </div>
+
+                    <!-- Mobile Menu Button -->
+                    <button
+                        id="mobile-menu-btn"
+                        class="md:hidden p-2 text-brand-charcoal-600"
+                        aria-label="Abrir menú"
+                    >
+                        <svg
+                            class="w-6 h-6"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="1.5"
+                                d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Navigation -->
+        <nav
+            id="mobile-nav"
+            class="hidden md:hidden bg-white border-t border-brand-charcoal-100"
+        >
+            <div class="container-custom py-4 space-y-3">
+                <a
+                    href="/productos"
+                    class="block py-2 text-brand-charcoal-700 hover:text-brand-navy-500"
+                >
+                    Todos los Productos
+                </a>
+                {
+                    categories.map((cat) => (
+                        <a
+                            href={`/categoria/${cat.slug}`}
+                            class="block py-2 text-brand-charcoal-600 hover:text-brand-navy-500"
+                        >
+                            {cat.name}
+                        </a>
+                    ))
+                }
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1">
+        <slot />
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-brand-navy-500 text-white py-12 mt-auto">
+        <div class="container-custom">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <!-- Brand -->
+                <div class="md:col-span-2">
+                    <span class="font-serif text-2xl font-semibold"
+                        >FashionMarket</span
+                    >
+                    <p class="mt-4 text-brand-navy-200 max-w-md">
+                        Moda masculina premium. Elegancia y sofisticación para
+                        el hombre moderno.
+                    </p>
+                </div>
+
+                <!-- Links -->
+                <div>
+                    <h4 class="font-medium text-lg mb-4">Tienda</h4>
+                    <ul class="space-y-2 text-brand-navy-200">
+                        <li>
+                            <a href="/productos" class="hover:text-white"
+                                >Productos</a>
+                        </li>
+                        {
+                            categories.map((cat) => (
+                                <li>
+                                    <a
+                                        href={`/categoria/${cat.slug}`}
+                                        class="hover:text-white"
+                                    >
+                                        {cat.name}
+                                    </a>
+                                </li>
+                            ))
+                        }
+                    </ul>
+                </div>
+
+                <!-- Contact -->
+                <div>
+                    <h4 class="font-medium text-lg mb-4">Contacto</h4>
+                    <ul class="space-y-2 text-brand-navy-200">
+                        <li>info@fashionmarket.es</li>
+                        <li>+34 900 123 456</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div
+                class="border-t border-brand-navy-400 mt-8 pt-8 text-center text-brand-navy-300 text-sm"
+            >
+                © {new Date().getFullYear()} FashionMarket. Todos los derechos reservados.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Cart Slide Over (React Island) -->
+    <div id="cart-slideover">
+        <CartSlideOver client:load isOpen={false} onClose={() => {}} />
+    </div>
+
+    <!-- Scripts for Cart Toggle -->
+    <script>
+        // Cart toggle functionality
+        document.addEventListener("DOMContentLoaded", () => {
+            const cartTrigger = document.getElementById("cart-trigger");
+
+            // Listen for cart open events
+            cartTrigger?.addEventListener("click", () => {
+                window.dispatchEvent(new CustomEvent("toggle-cart"));
+            });
+
+            // Mobile menu toggle
+            const mobileBtn = document.getElementById("mobile-menu-btn");
+            const mobileNav = document.getElementById("mobile-nav");
+
+            mobileBtn?.addEventListener("click", () => {
+                mobileNav?.classList.toggle("hidden");
+            });
+        });
+    </script>
+</BaseLayout>

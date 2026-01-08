@@ -1,0 +1,276 @@
+---
+import PublicLayout from "../layouts/PublicLayout.astro";
+import { getProducts, getCategories, formatPrice } from "../lib/supabase";
+
+// SSG - Generate at build time
+export const prerender = true;
+
+// Fetch featured products and categories
+let products: any[] = [];
+let categories: any[] = [];
+
+try {
+	products = await getProducts({ featured: true, limit: 6 });
+	categories = await getCategories();
+} catch (e) {
+	console.error("Error fetching data:", e);
+}
+---
+
+<PublicLayout
+	title="Moda Masculina Premium"
+	description="Descubre la colección de moda masculina premium en FashionMarket. Elegancia y sofisticación."
+>
+	<!-- Hero Section -->
+	<section
+		class="relative h-[80vh] min-h-[600px] flex items-center bg-brand-navy-500"
+	>
+		<div class="absolute inset-0 opacity-20">
+			<div
+				class="w-full h-full bg-gradient-to-br from-brand-navy-400 to-brand-navy-700"
+			>
+			</div>
+		</div>
+
+		<div class="container-custom relative z-10">
+			<div class="max-w-2xl">
+				<h1
+					class="text-4xl md:text-6xl font-serif text-white mb-6 leading-tight"
+				>
+					Elegancia para el <span class="text-accent-leather"
+						>Hombre Moderno</span
+					>
+				</h1>
+				<p class="text-lg md:text-xl text-brand-navy-200 mb-8 max-w-lg">
+					Descubre nuestra colección de moda masculina premium.
+					Diseños sofisticados que definen tu estilo.
+				</p>
+				<div class="flex flex-wrap gap-4">
+					<a href="/productos" class="btn-primary text-lg px-8 py-4">
+						Ver Colección
+					</a>
+					<a
+						href="#featured"
+						class="btn-secondary border-white text-white hover:bg-white hover:text-brand-navy-500 text-lg px-8 py-4"
+					>
+						Destacados
+					</a>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- Categories Section -->
+	<section class="py-16 md:py-24 bg-cream-200">
+		<div class="container-custom">
+			<h2 class="text-3xl md:text-4xl font-serif text-center mb-12">
+				Explora Nuestras Categorías
+			</h2>
+
+			<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+				{
+					categories.map((category) => (
+						<a
+							href={`/categoria/${category.slug}`}
+							class="group relative h-64 rounded-xl overflow-hidden bg-brand-navy-500"
+						>
+							<div class="absolute inset-0 bg-gradient-to-t from-brand-navy-900/80 to-transparent transition-opacity group-hover:opacity-90" />
+							<div class="absolute inset-0 flex items-end p-6">
+								<div>
+									<h3 class="text-2xl font-serif text-white mb-2">
+										{category.name}
+									</h3>
+									<span class="text-brand-navy-200 group-hover:text-white transition-colors flex items-center gap-2">
+										Ver productos
+										<svg
+											class="w-4 h-4 transform group-hover:translate-x-1 transition-transform"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M9 5l7 7-7 7"
+											/>
+										</svg>
+									</span>
+								</div>
+							</div>
+						</a>
+					))
+				}
+			</div>
+		</div>
+	</section>
+
+	<!-- Featured Products Section -->
+	<section id="featured" class="py-16 md:py-24 bg-white">
+		<div class="container-custom">
+			<div class="flex items-end justify-between mb-12">
+				<div>
+					<h2 class="text-3xl md:text-4xl font-serif">
+						Productos Destacados
+					</h2>
+					<p class="text-brand-charcoal-500 mt-2">
+						Nuestra selección de lo mejor de la temporada
+					</p>
+				</div>
+				<a
+					href="/productos"
+					class="hidden md:flex items-center gap-2 text-brand-navy-500 hover:text-brand-navy-600 font-medium"
+				>
+					Ver todos
+					<svg
+						class="w-4 h-4"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M9 5l7 7-7 7"></path>
+					</svg>
+				</a>
+			</div>
+
+			{
+				products.length > 0 ? (
+					<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+						{products.map((product) => (
+							<a
+								href={`/productos/${product.slug}`}
+								class="group card"
+							>
+								<div class="aspect-[4/5] bg-cream-200 overflow-hidden">
+									<img
+										src={
+											product.images[0] ||
+											"https://placehold.co/400x500/1e3a5f/ffffff?text=Producto"
+										}
+										alt={product.name}
+										class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+										loading="lazy"
+									/>
+								</div>
+								<div class="p-4">
+									{product.category && (
+										<span class="text-xs text-brand-charcoal-400 uppercase tracking-wide">
+											{product.category.name}
+										</span>
+									)}
+									<h3 class="font-medium text-brand-charcoal-700 mt-1 group-hover:text-brand-navy-500 transition-colors">
+										{product.name}
+									</h3>
+									<p class="font-serif text-lg text-brand-navy-500 mt-2">
+										{formatPrice(product.price)}
+									</p>
+								</div>
+							</a>
+						))}
+					</div>
+				) : (
+					<div class="text-center py-12 text-brand-charcoal-400">
+						<p>No hay productos destacados disponibles</p>
+					</div>
+				)
+			}
+
+			<div class="mt-8 text-center md:hidden">
+				<a href="/productos" class="btn-secondary">
+					Ver todos los productos
+				</a>
+			</div>
+		</div>
+	</section>
+
+	<!-- Brand Values Section -->
+	<section class="py-16 md:py-24 bg-cream-100">
+		<div class="container-custom">
+			<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+				<div class="text-center">
+					<div
+						class="w-16 h-16 mx-auto mb-4 rounded-full bg-brand-navy-500/10 flex items-center justify-center"
+					>
+						<svg
+							class="w-8 h-8 text-brand-navy-500"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="1.5"
+								d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+							></path>
+						</svg>
+					</div>
+					<h3 class="font-serif text-xl text-brand-navy-500 mb-2">
+						Calidad Premium
+					</h3>
+					<p class="text-brand-charcoal-500">
+						Materiales seleccionados y acabados de primera clase en
+						cada prenda.
+					</p>
+				</div>
+
+				<div class="text-center">
+					<div
+						class="w-16 h-16 mx-auto mb-4 rounded-full bg-brand-navy-500/10 flex items-center justify-center"
+					>
+						<svg
+							class="w-8 h-8 text-brand-navy-500"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="1.5"
+								d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+							></path>
+						</svg>
+					</div>
+					<h3 class="font-serif text-xl text-brand-navy-500 mb-2">
+						Envío Garantizado
+					</h3>
+					<p class="text-brand-charcoal-500">
+						Entrega segura y rápida a todo el país con seguimiento
+						en tiempo real.
+					</p>
+				</div>
+
+				<div class="text-center">
+					<div
+						class="w-16 h-16 mx-auto mb-4 rounded-full bg-brand-navy-500/10 flex items-center justify-center"
+					>
+						<svg
+							class="w-8 h-8 text-brand-navy-500"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="1.5"
+								d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+							></path>
+						</svg>
+					</div>
+					<h3 class="font-serif text-xl text-brand-navy-500 mb-2">
+						Devolución Fácil
+					</h3>
+					<p class="text-brand-charcoal-500">
+						30 días para cambios o devoluciones sin complicaciones.
+					</p>
+				</div>
+			</div>
+		</div>
+	</section>
+</PublicLayout>

@@ -1,0 +1,146 @@
+---
+import PublicLayout from "../../layouts/PublicLayout.astro";
+import { getProducts, getCategories, formatPrice } from "../../lib/supabase";
+
+// SSG - Generate at build time
+export const prerender = true;
+
+// Get query parameters for filtering
+const category = Astro.url.searchParams.get("categoria");
+
+// Fetch products and categories
+let products: any[] = [];
+let categories: any[] = [];
+
+try {
+    products = await getProducts({ categorySlug: category || undefined });
+    categories = await getCategories();
+} catch (e) {
+    console.error("Error fetching products:", e);
+}
+---
+
+<PublicLayout
+    title="Productos"
+    description="Explora nuestra colección completa de moda masculina premium"
+>
+    <section class="py-12 md:py-16 bg-cream-200">
+        <div class="container-custom">
+            <!-- Header -->
+            <div class="mb-10">
+                <h1 class="text-3xl md:text-4xl font-serif mb-4">
+                    Todos los Productos
+                </h1>
+                <p class="text-brand-charcoal-500">
+                    Descubre nuestra colección completa de moda masculina
+                    premium
+                </p>
+            </div>
+
+            <div class="flex flex-col lg:flex-row gap-8">
+                <!-- Filters Sidebar -->
+                <aside class="lg:w-64 flex-shrink-0">
+                    <div class="bg-white rounded-xl p-6 shadow-elegant">
+                        <h3 class="font-medium text-brand-navy-500 mb-4">
+                            Categorías
+                        </h3>
+                        <ul class="space-y-2">
+                            <li>
+                                <a
+                                    href="/productos"
+                                    class={`block py-2 px-3 rounded-lg transition-colors ${!category ? "bg-brand-navy-500 text-white" : "text-brand-charcoal-600 hover:bg-cream-200"}`}
+                                >
+                                    Todos
+                                </a>
+                            </li>
+                            {
+                                categories.map((cat) => (
+                                    <li>
+                                        <a
+                                            href={`/categoria/${cat.slug}`}
+                                            class={`block py-2 px-3 rounded-lg transition-colors ${category === cat.slug ? "bg-brand-navy-500 text-white" : "text-brand-charcoal-600 hover:bg-cream-200"}`}
+                                        >
+                                            {cat.name}
+                                        </a>
+                                    </li>
+                                ))
+                            }
+                        </ul>
+                    </div>
+                </aside>
+
+                <!-- Products Grid -->
+                <div class="flex-1">
+                    {
+                        products.length > 0 ? (
+                            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                                {products.map((product) => (
+                                    <a
+                                        href={`/productos/${product.slug}`}
+                                        class="group card"
+                                    >
+                                        <div class="aspect-[4/5] bg-cream-200 overflow-hidden">
+                                            <img
+                                                src={
+                                                    product.images[0] ||
+                                                    "https://placehold.co/400x500/1e3a5f/ffffff?text=Producto"
+                                                }
+                                                alt={product.name}
+                                                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                loading="lazy"
+                                            />
+                                        </div>
+                                        <div class="p-4">
+                                            {product.category && (
+                                                <span class="text-xs text-brand-charcoal-400 uppercase tracking-wide">
+                                                    {product.category.name}
+                                                </span>
+                                            )}
+                                            <h3 class="font-medium text-brand-charcoal-700 mt-1 group-hover:text-brand-navy-500 transition-colors">
+                                                {product.name}
+                                            </h3>
+                                            <div class="flex items-center justify-between mt-2">
+                                                <p class="font-serif text-lg text-brand-navy-500">
+                                                    {formatPrice(product.price)}
+                                                </p>
+                                                {product.stock <= 5 &&
+                                                    product.stock > 0 && (
+                                                        <span class="text-xs text-amber-600">
+                                                            Pocas unidades
+                                                        </span>
+                                                    )}
+                                            </div>
+                                        </div>
+                                    </a>
+                                ))}
+                            </div>
+                        ) : (
+                            <div class="text-center py-16 bg-white rounded-xl">
+                                <svg
+                                    class="w-16 h-16 mx-auto text-brand-charcoal-200 mb-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="1"
+                                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                                    />
+                                </svg>
+                                <h3 class="text-xl font-medium text-brand-charcoal-600 mb-2">
+                                    No hay productos disponibles
+                                </h3>
+                                <p class="text-brand-charcoal-400">
+                                    Vuelve pronto, estamos añadiendo nuevos
+                                    productos.
+                                </p>
+                            </div>
+                        )
+                    }
+                </div>
+            </div>
+        </div>
+    </section>
+</PublicLayout>

@@ -1,0 +1,297 @@
+---
+import PublicLayout from "../layouts/PublicLayout.astro";
+
+// SSR - Render on each request for dynamic cart state
+export const prerender = false;
+---
+
+<PublicLayout
+    title="Tu Carrito"
+    description="Revisa y finaliza tu compra en FashionMarket"
+>
+    <section class="py-12 md:py-16 bg-cream-200 min-h-[60vh]">
+        <div class="container-custom">
+            <h1 class="text-3xl md:text-4xl font-serif mb-8">Tu Carrito</h1>
+
+            <div
+                id="cart-container"
+                class="grid grid-cols-1 lg:grid-cols-3 gap-8"
+            >
+                <!-- Cart Items (populated by JS) -->
+                <div id="cart-items" class="lg:col-span-2 space-y-4">
+                    <!-- Loading state -->
+                    <div class="bg-white rounded-xl p-8 text-center">
+                        <svg
+                            class="animate-spin w-8 h-8 mx-auto text-brand-navy-500 mb-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                        >
+                            <circle
+                                class="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                stroke-width="4"></circle>
+                            <path
+                                class="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                            ></path>
+                        </svg>
+                        <p class="text-brand-charcoal-500">
+                            Cargando carrito...
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Order Summary -->
+                <div id="order-summary" class="lg:col-span-1 hidden">
+                    <div
+                        class="bg-white rounded-xl p-6 shadow-elegant sticky top-24"
+                    >
+                        <h2 class="font-serif text-xl text-brand-navy-500 mb-6">
+                            Resumen del Pedido
+                        </h2>
+
+                        <div class="space-y-3 mb-6">
+                            <div
+                                class="flex justify-between text-brand-charcoal-600"
+                            >
+                                <span>Subtotal</span>
+                                <span id="subtotal">€0,00</span>
+                            </div>
+                            <div
+                                class="flex justify-between text-brand-charcoal-600"
+                            >
+                                <span>Envío</span>
+                                <span id="shipping">Calculado en checkout</span>
+                            </div>
+                        </div>
+
+                        <div
+                            class="border-t border-brand-charcoal-100 pt-4 mb-6"
+                        >
+                            <div class="flex justify-between items-center">
+                                <span
+                                    class="font-medium text-brand-charcoal-700"
+                                    >Total</span
+                                >
+                                <span
+                                    id="total"
+                                    class="font-serif text-2xl text-brand-navy-500"
+                                    >€0,00</span
+                                >
+                            </div>
+                        </div>
+
+                        <button
+                            id="checkout-btn"
+                            class="w-full py-4 px-6 bg-brand-navy-500 text-white font-semibold rounded-lg hover:bg-brand-navy-600 transition-colors"
+                        >
+                            Proceder al Pago
+                        </button>
+
+                        <p
+                            class="text-xs text-brand-charcoal-400 text-center mt-4"
+                        >
+                            La integración con Stripe está en desarrollo
+                        </p>
+
+                        <a
+                            href="/productos"
+                            class="block text-center text-sm text-brand-charcoal-500 hover:text-brand-navy-500 mt-4"
+                        >
+                            Continuar comprando
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty Cart State -->
+            <div
+                id="empty-cart"
+                class="hidden text-center py-16 bg-white rounded-xl"
+            >
+                <svg
+                    class="w-20 h-20 mx-auto text-brand-charcoal-200 mb-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1"
+                        d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                </svg>
+                <h2 class="text-2xl font-serif text-brand-navy-500 mb-4">
+                    Tu carrito está vacío
+                </h2>
+                <p class="text-brand-charcoal-500 mb-8">
+                    ¿No sabes por dónde empezar? Explora nuestra colección.
+                </p>
+                <a href="/productos" class="btn-primary"> Ver Productos </a>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // Format price from cents
+        function formatPrice(cents: number): string {
+            return new Intl.NumberFormat("es-ES", {
+                style: "currency",
+                currency: "EUR",
+            }).format(cents / 100);
+        }
+
+        // Get cart from localStorage
+        function getCart(): any[] {
+            try {
+                const saved = localStorage.getItem("fashionmarket-cart");
+                return saved ? JSON.parse(saved) : [];
+            } catch {
+                return [];
+            }
+        }
+
+        // Save cart to localStorage
+        function saveCart(cart: any[]): void {
+            localStorage.setItem("fashionmarket-cart", JSON.stringify(cart));
+        }
+
+        // Render cart
+        function renderCart(): void {
+            const cart = getCart();
+            const itemsContainer = document.getElementById("cart-items")!;
+            const summaryContainer = document.getElementById("order-summary")!;
+            const emptyContainer = document.getElementById("empty-cart")!;
+            const subtotalEl = document.getElementById("subtotal")!;
+            const totalEl = document.getElementById("total")!;
+
+            if (cart.length === 0) {
+                itemsContainer.innerHTML = "";
+                summaryContainer.classList.add("hidden");
+                emptyContainer.classList.remove("hidden");
+                return;
+            }
+
+            emptyContainer.classList.add("hidden");
+            summaryContainer.classList.remove("hidden");
+
+            // Calculate totals
+            const subtotal = cart.reduce(
+                (sum, item) => sum + item.price * item.quantity,
+                0,
+            );
+            subtotalEl.textContent = formatPrice(subtotal);
+            totalEl.textContent = formatPrice(subtotal);
+
+            // Render items
+            itemsContainer.innerHTML = cart
+                .map(
+                    (item, index) => `
+        <div class="bg-white rounded-xl p-4 md:p-6 flex gap-4" data-index="${index}">
+          <div class="w-24 h-28 md:w-32 md:h-40 bg-cream-200 rounded-lg overflow-hidden flex-shrink-0">
+            <img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover" />
+          </div>
+          
+          <div class="flex-1 flex flex-col">
+            <div class="flex justify-between">
+              <div>
+                <a href="/productos/${item.slug}" class="font-medium text-brand-charcoal-700 hover:text-brand-navy-500">
+                  ${item.name}
+                </a>
+                <p class="text-sm text-brand-charcoal-400 mt-1">Talla: ${item.size}</p>
+              </div>
+              <button 
+                class="remove-btn p-2 text-brand-charcoal-400 hover:text-red-500 transition-colors"
+                data-id="${item.id}"
+                data-size="${item.size}"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div class="mt-auto flex items-center justify-between pt-4">
+              <div class="flex items-center gap-2">
+                <button 
+                  class="qty-btn w-8 h-8 flex items-center justify-center border border-brand-charcoal-200 rounded hover:border-brand-navy-300"
+                  data-action="decrease"
+                  data-id="${item.id}"
+                  data-size="${item.size}"
+                >
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
+                  </svg>
+                </button>
+                <span class="w-10 text-center font-medium">${item.quantity}</span>
+                <button 
+                  class="qty-btn w-8 h-8 flex items-center justify-center border border-brand-charcoal-200 rounded hover:border-brand-navy-300"
+                  data-action="increase"
+                  data-id="${item.id}"
+                  data-size="${item.size}"
+                >
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                </button>
+              </div>
+              
+              <p class="font-serif text-lg text-brand-navy-500">
+                ${formatPrice(item.price * item.quantity)}
+              </p>
+            </div>
+          </div>
+        </div>
+      `,
+                )
+                .join("");
+
+            // Add event listeners
+            document.querySelectorAll(".remove-btn").forEach((btn) => {
+                btn.addEventListener("click", (e) => {
+                    const target = e.currentTarget as HTMLElement;
+                    const id = target.dataset.id!;
+                    const size = target.dataset.size!;
+                    const cart = getCart().filter(
+                        (item) => !(item.id === id && item.size === size),
+                    );
+                    saveCart(cart);
+                    renderCart();
+                });
+            });
+
+            document.querySelectorAll(".qty-btn").forEach((btn) => {
+                btn.addEventListener("click", (e) => {
+                    const target = e.currentTarget as HTMLElement;
+                    const action = target.dataset.action!;
+                    const id = target.dataset.id!;
+                    const size = target.dataset.size!;
+
+                    const cart = getCart()
+                        .map((item) => {
+                            if (item.id === id && item.size === size) {
+                                const newQty =
+                                    action === "increase"
+                                        ? item.quantity + 1
+                                        : item.quantity - 1;
+                                if (newQty <= 0) return null;
+                                return { ...item, quantity: newQty };
+                            }
+                            return item;
+                        })
+                        .filter(Boolean);
+
+                    saveCart(cart);
+                    renderCart();
+                });
+            });
+        }
+
+        // Initialize
+        document.addEventListener("DOMContentLoaded", renderCart);
+    </script>
+</PublicLayout>

@@ -1,0 +1,270 @@
+---
+import PublicLayout from "../../layouts/PublicLayout.astro";
+import AddToCartButton from "../../components/islands/AddToCartButton";
+import { getProductBySlug, getProducts, formatPrice } from "../../lib/supabase";
+
+// SSG - Generate at build time
+export const prerender = true;
+
+// Generate static paths for all products
+export async function getStaticPaths() {
+    const products = await getProducts();
+    return products.map((product) => ({
+        params: { slug: product.slug },
+        props: { product },
+    }));
+}
+
+const { product } = Astro.props;
+
+if (!product) {
+    return Astro.redirect("/productos");
+}
+
+// Get related products from same category
+let relatedProducts: any[] = [];
+if (product.category) {
+    try {
+        const categoryProducts = await getProducts({
+            categorySlug: product.category.slug,
+            limit: 4,
+        });
+        relatedProducts = categoryProducts
+            .filter((p) => p.id !== product.id)
+            .slice(0, 3);
+    } catch (e) {
+        console.error("Error fetching related:", e);
+    }
+}
+
+const mainImage =
+    product.images[0] ||
+    "https://placehold.co/800x1000/1e3a5f/ffffff?text=Producto";
+---
+
+<PublicLayout
+    title={product.name}
+    description={product.description ||
+        `${product.name} - Moda masculina premium en FashionMarket`}
+>
+    <section class="py-12 md:py-16 bg-cream-200">
+        <div class="container-custom">
+            <!-- Breadcrumb -->
+            <nav class="mb-8 text-sm">
+                <ol class="flex items-center gap-2 text-brand-charcoal-400">
+                    <li>
+                        <a href="/" class="hover:text-brand-navy-500">Inicio</a>
+                    </li>
+                    <li>/</li>
+                    <li>
+                        <a href="/productos" class="hover:text-brand-navy-500"
+                            >Productos</a>
+                    </li>
+                    {
+                        product.category && (
+                            <>
+                                <li>/</li>
+                                <li>
+                                    <a
+                                        href={`/categoria/${product.category.slug}`}
+                                        class="hover:text-brand-navy-500"
+                                    >
+                                        {product.category.name}
+                                    </a>
+                                </li>
+                            </>
+                        )
+                    }
+                    <li>/</li>
+                    <li class="text-brand-charcoal-600">{product.name}</li>
+                </ol>
+            </nav>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+                <!-- Product Gallery -->
+                <div class="space-y-4">
+                    <!-- Main Image -->
+                    <div
+                        class="aspect-[4/5] bg-white rounded-xl overflow-hidden shadow-elegant"
+                    >
+                        <img
+                            id="main-image"
+                            src={mainImage}
+                            alt={product.name}
+                            class="w-full h-full object-cover"
+                        />
+                    </div>
+
+                    <!-- Thumbnails -->
+                    {
+                        product.images.length > 1 && (
+                            <div class="flex gap-3 overflow-x-auto pb-2">
+                                {product.images.map(
+                                    (img: string, idx: number) => (
+                                        <button
+                                            class={`flex-shrink-0 w-20 h-24 rounded-lg overflow-hidden border-2 transition-colors thumbnail-btn ${idx === 0 ? "border-brand-navy-500" : "border-transparent hover:border-brand-charcoal-300"}`}
+                                            data-image={img}
+                                        >
+                                            <img
+                                                src={img}
+                                                alt={`${product.name} - Vista ${idx + 1}`}
+                                                class="w-full h-full object-cover"
+                                            />
+                                        </button>
+                                    ),
+                                )}
+                            </div>
+                        )
+                    }
+                </div>
+
+                <!-- Product Info -->
+                <div class="lg:py-4">
+                    {
+                        product.category && (
+                            <a
+                                href={`/categoria/${product.category.slug}`}
+                                class="text-sm text-brand-charcoal-400 uppercase tracking-wide hover:text-brand-navy-500"
+                            >
+                                {product.category.name}
+                            </a>
+                        )
+                    }
+
+                    <h1
+                        class="text-3xl md:text-4xl font-serif text-brand-navy-500 mt-2 mb-4"
+                    >
+                        {product.name}
+                    </h1>
+
+                    <p class="font-serif text-3xl text-brand-navy-500 mb-6">
+                        {formatPrice(product.price)}
+                    </p>
+
+                    {
+                        product.description && (
+                            <div class="prose prose-brand-charcoal mb-8">
+                                <p class="text-brand-charcoal-600 leading-relaxed">
+                                    {product.description}
+                                </p>
+                            </div>
+                        )
+                    }
+
+                    <!-- Add to Cart Component (React Island) -->
+                    <div class="bg-white rounded-xl p-6 shadow-elegant">
+                        <AddToCartButton client:load product={product} />
+                    </div>
+
+                    <!-- Product Features -->
+                    <div class="mt-8 pt-8 border-t border-brand-charcoal-100">
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div class="flex items-center gap-3">
+                                <svg
+                                    class="w-5 h-5 text-brand-navy-500"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="1.5"
+                                        d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                <span class="text-brand-charcoal-600"
+                                    >Envío gratuito +50€</span
+                                >
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <svg
+                                    class="w-5 h-5 text-brand-navy-500"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="1.5"
+                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                                    ></path>
+                                </svg>
+                                <span class="text-brand-charcoal-600"
+                                    >30 días devolución</span
+                                >
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Related Products -->
+            {
+                relatedProducts.length > 0 && (
+                    <div class="mt-16 pt-16 border-t border-brand-charcoal-100">
+                        <h2 class="text-2xl font-serif mb-8">
+                            También te puede interesar
+                        </h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {relatedProducts.map((related) => (
+                                <a
+                                    href={`/productos/${related.slug}`}
+                                    class="group card"
+                                >
+                                    <div class="aspect-[4/5] bg-cream-200 overflow-hidden">
+                                        <img
+                                            src={
+                                                related.images[0] ||
+                                                "https://placehold.co/400x500/1e3a5f/ffffff?text=Producto"
+                                            }
+                                            alt={related.name}
+                                            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                            loading="lazy"
+                                        />
+                                    </div>
+                                    <div class="p-4">
+                                        <h3 class="font-medium text-brand-charcoal-700 group-hover:text-brand-navy-500 transition-colors">
+                                            {related.name}
+                                        </h3>
+                                        <p class="font-serif text-lg text-brand-navy-500 mt-2">
+                                            {formatPrice(related.price)}
+                                        </p>
+                                    </div>
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+                )
+            }
+        </div>
+    </section>
+
+    <script>
+        // Image gallery functionality
+        document.addEventListener("DOMContentLoaded", () => {
+            const mainImage = document.getElementById(
+                "main-image",
+            ) as HTMLImageElement;
+            const thumbnails = document.querySelectorAll(".thumbnail-btn");
+
+            thumbnails.forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    const newSrc = (btn as HTMLElement).dataset.image;
+                    if (newSrc && mainImage) {
+                        mainImage.src = newSrc;
+                        // Update active state
+                        thumbnails.forEach((t) =>
+                            t.classList.remove("border-brand-navy-500"),
+                        );
+                        thumbnails.forEach((t) =>
+                            t.classList.add("border-transparent"),
+                        );
+                        btn.classList.remove("border-transparent");
+                        btn.classList.add("border-brand-navy-500");
+                    }
+                });
+            });
+        });
+    </script>
+</PublicLayout>
