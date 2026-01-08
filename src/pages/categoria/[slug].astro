@@ -1,26 +1,26 @@
 ---
 import PublicLayout from "../../layouts/PublicLayout.astro";
-import { getProducts, getCategories, formatPrice } from "../../lib/supabase";
+import {
+    getProducts,
+    getCategories,
+    formatPrice,
+    getProductMainImage,
+    supabase,
+} from "../../lib/supabase";
 
 // SSG - Generate at build time
 export const prerender = true;
 
-// Generate static paths for all categories
+// Generate paths for each category
 export async function getStaticPaths() {
     const categories = await getCategories();
-    return categories.map((category) => ({
-        params: { slug: category.slug },
-        props: { category },
+    return categories.map((cat) => ({
+        params: { slug: cat.slug },
+        props: { category: cat },
     }));
 }
 
 const { category } = Astro.props;
-
-if (!category) {
-    return Astro.redirect("/productos");
-}
-
-// Fetch products for this category
 let products: any[] = [];
 let categories: any[] = [];
 
@@ -34,45 +34,36 @@ try {
 
 <PublicLayout
     title={category.name}
-    description={category.description ||
-        `${category.name} - Moda masculina premium en FashionMarket`}
+    description={`Explora nuestra colección de ${category.name.toLowerCase()} premium`}
 >
     <section class="py-12 md:py-16 bg-cream-200">
         <div class="container-custom">
             <!-- Header -->
             <div class="mb-10">
-                <nav class="mb-4 text-sm">
-                    <ol class="flex items-center gap-2 text-brand-charcoal-400">
-                        <li>
-                            <a href="/" class="hover:text-brand-navy-500"
-                                >Inicio</a>
-                        </li>
-                        <li>/</li>
-                        <li>
-                            <a
-                                href="/productos"
-                                class="hover:text-brand-navy-500">Productos</a>
-                        </li>
-                        <li>/</li>
-                        <li class="text-brand-charcoal-600">{category.name}</li>
-                    </ol>
+                <nav class="text-sm text-brand-charcoal-400 mb-4">
+                    <a href="/" class="hover:text-brand-navy-500">Inicio</a>
+                    <span class="mx-2">/</span>
+                    <a href="/productos" class="hover:text-brand-navy-500"
+                        >Productos</a
+                    >
+                    <span class="mx-2">/</span>
+                    <span class="text-brand-charcoal-600">{category.name}</span>
                 </nav>
                 <h1 class="text-3xl md:text-4xl font-serif mb-4">
                     {category.name}
                 </h1>
-                {
-                    category.description && (
-                        <p class="text-brand-charcoal-500 max-w-2xl">
-                            {category.description}
-                        </p>
-                    )
-                }
+                <p class="text-brand-charcoal-500">
+                    Nuestra colección de {category.name.toLowerCase()} premium para
+                    el hombre moderno
+                </p>
             </div>
 
             <div class="flex flex-col lg:flex-row gap-8">
                 <!-- Filters Sidebar -->
                 <aside class="lg:w-64 flex-shrink-0">
-                    <div class="bg-white rounded-xl p-6 shadow-elegant">
+                    <div
+                        class="bg-white rounded-xl p-6 shadow-elegant sticky top-24"
+                    >
                         <h3 class="font-medium text-brand-navy-500 mb-4">
                             Categorías
                         </h3>
@@ -90,7 +81,11 @@ try {
                                     <li>
                                         <a
                                             href={`/categoria/${cat.slug}`}
-                                            class={`block py-2 px-3 rounded-lg transition-colors ${cat.slug === category.slug ? "bg-brand-navy-500 text-white" : "text-brand-charcoal-600 hover:bg-cream-200"}`}
+                                            class={`block py-2 px-3 rounded-lg transition-colors ${
+                                                cat.slug === category.slug
+                                                    ? "bg-brand-navy-500 text-white"
+                                                    : "text-brand-charcoal-600 hover:bg-cream-200"
+                                            }`}
                                         >
                                             {cat.name}
                                         </a>
@@ -107,7 +102,7 @@ try {
                         <p class="text-brand-charcoal-500">
                             {products.length} producto{
                                 products.length !== 1 ? "s" : ""
-                            }
+                            } en {category.name}
                         </p>
                     </div>
 
@@ -119,16 +114,27 @@ try {
                                         href={`/productos/${product.slug}`}
                                         class="group card"
                                     >
-                                        <div class="aspect-[4/5] bg-cream-200 overflow-hidden">
+                                        <div class="relative aspect-[4/5] bg-cream-200 overflow-hidden">
                                             <img
-                                                src={
-                                                    product.images[0] ||
-                                                    "https://placehold.co/400x500/1e3a5f/ffffff?text=Producto"
-                                                }
+                                                src={getProductMainImage(
+                                                    product,
+                                                )}
                                                 alt={product.name}
                                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                                 loading="lazy"
                                             />
+                                            {product.is_offer && (
+                                                <span class="absolute top-3 left-3 px-2 py-1 bg-red-500 text-white text-xs font-bold rounded">
+                                                    OFERTA
+                                                </span>
+                                            )}
+                                            {product.stock === 0 && (
+                                                <div class="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                                    <span class="px-4 py-2 bg-white text-brand-charcoal-700 font-medium rounded">
+                                                        Agotado
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                         <div class="p-4">
                                             <h3 class="font-medium text-brand-charcoal-700 group-hover:text-brand-navy-500 transition-colors">
@@ -167,11 +173,10 @@ try {
                                 <h3 class="text-xl font-medium text-brand-charcoal-600 mb-2">
                                     No hay productos en esta categoría
                                 </h3>
-                                <p class="text-brand-charcoal-400 mb-4">
-                                    Vuelve pronto, estamos añadiendo nuevos
-                                    productos.
+                                <p class="text-brand-charcoal-400 mb-6">
+                                    Estamos añadiendo nuevos productos pronto
                                 </p>
-                                <a href="/productos" class="btn-secondary">
+                                <a href="/productos" class="btn-primary">
                                     Ver todos los productos
                                 </a>
                             </div>

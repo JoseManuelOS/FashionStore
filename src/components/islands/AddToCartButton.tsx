@@ -7,18 +7,40 @@ interface AddToCartButtonProps {
     product: Product;
 }
 
+// Helper to get main image
+function getMainImage(product: Product): string {
+    if (product.images && product.images.length > 0) {
+        // Handle both array of objects (from DB) and array of strings (legacy)
+        const firstImage = product.images[0];
+        if (typeof firstImage === 'string') {
+            return firstImage;
+        }
+        return (firstImage as any).image_url || 'https://placehold.co/400x500/1e3a5f/ffffff?text=Producto';
+    }
+    return 'https://placehold.co/400x500/1e3a5f/ffffff?text=Producto';
+}
+
 export default function AddToCartButton({ product }: AddToCartButtonProps) {
-    const [selectedSize, setSelectedSize] = useState(product.sizes[0] || 'M');
+    const [selectedSize, setSelectedSize] = useState(product.sizes?.[0] || 'M');
     const [quantity, setQuantity] = useState(1);
     const [isAdding, setIsAdding] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
     const cart = useStore($cart);
 
     const isOutOfStock = product.stock <= 0;
-    const image = product.images[0] || 'https://placehold.co/400x500/1e3a5f/ffffff?text=Producto';
+    const image = getMainImage(product);
 
     const handleAddToCart = () => {
         if (isOutOfStock) return;
+
+        // Check if adding more than available stock
+        const existingItem = cart.find(i => i.id === product.id && i.size === selectedSize);
+        const currentQty = existingItem?.quantity || 0;
+
+        if (currentQty + quantity > product.stock) {
+            alert(`Solo hay ${product.stock} unidades disponibles`);
+            return;
+        }
 
         setIsAdding(true);
 
@@ -47,30 +69,32 @@ export default function AddToCartButton({ product }: AddToCartButtonProps) {
     return (
         <div className="space-y-6">
             {/* Size Selection */}
-            <div>
-                <label className="block text-sm font-medium text-brand-charcoal-600 mb-3">
-                    Talla
-                </label>
-                <div className="flex gap-2">
-                    {product.sizes.map((size) => (
-                        <button
-                            key={size}
-                            onClick={() => setSelectedSize(size)}
-                            className={`
-                w-12 h-12 flex items-center justify-center
-                border-2 rounded-lg font-medium text-sm
-                transition-all duration-200
-                ${selectedSize === size
-                                    ? 'border-brand-navy-500 bg-brand-navy-500 text-white'
-                                    : 'border-brand-charcoal-200 text-brand-charcoal-600 hover:border-brand-navy-300'
-                                }
-              `}
-                        >
-                            {size}
-                        </button>
-                    ))}
+            {product.sizes && product.sizes.length > 0 && (
+                <div>
+                    <label className="block text-sm font-medium text-brand-charcoal-600 mb-3">
+                        Talla
+                    </label>
+                    <div className="flex gap-2 flex-wrap">
+                        {product.sizes.map((size) => (
+                            <button
+                                key={size}
+                                onClick={() => setSelectedSize(size)}
+                                className={`
+                  w-12 h-12 flex items-center justify-center
+                  border-2 rounded-lg font-medium text-sm
+                  transition-all duration-200
+                  ${selectedSize === size
+                                        ? 'border-brand-navy-500 bg-brand-navy-500 text-white'
+                                        : 'border-brand-charcoal-200 text-brand-charcoal-600 hover:border-brand-navy-300'
+                                    }
+                `}
+                            >
+                                {size}
+                            </button>
+                        ))}
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Quantity Selection */}
             <div>
@@ -106,10 +130,10 @@ export default function AddToCartButton({ product }: AddToCartButtonProps) {
                 <span className={`w-2 h-2 rounded-full ${product.stock > 5 ? 'bg-green-500' : product.stock > 0 ? 'bg-amber-500' : 'bg-red-500'}`} />
                 <span className="text-sm text-brand-charcoal-500">
                     {isOutOfStock
-                        ? 'Sin stock'
+                        ? 'Sin stock - Agotado'
                         : product.stock <= 5
                             ? `¡Solo quedan ${product.stock} unidades!`
-                            : 'En stock'
+                            : `${product.stock} unidades disponibles`
                     }
                 </span>
             </div>
@@ -146,7 +170,7 @@ export default function AddToCartButton({ product }: AddToCartButtonProps) {
                         ¡Añadido al carrito!
                     </span>
                 ) : isOutOfStock ? (
-                    'Sin stock'
+                    'Agotado'
                 ) : (
                     'Añadir al Carrito'
                 )}

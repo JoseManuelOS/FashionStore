@@ -1,6 +1,5 @@
 ---
 import AdminLayout from "../../../layouts/AdminLayout.astro";
-import ImageUploader from "../../../components/islands/ImageUploader";
 import { supabaseAdmin, getCategories } from "../../../lib/supabase";
 import { slugify } from "../../../lib/utils";
 
@@ -10,11 +9,17 @@ export const prerender = false;
 const { id } = Astro.params;
 let error: string | null = null;
 let product: any = null;
+let productImages: any[] = [];
 
-// Fetch product
+// Fetch product with images
 const { data } = await supabaseAdmin
     .from("products")
-    .select("*")
+    .select(
+        `
+    *,
+    images:product_images(id, image_url, order)
+  `,
+    )
     .eq("id", id)
     .single();
 
@@ -24,6 +29,9 @@ if (!product) {
     return Astro.redirect("/admin/productos");
 }
 
+productImages = (product.images || []).sort(
+    (a: any, b: any) => a.order - b.order,
+);
 const categories = await getCategories();
 
 // Handle form submission
@@ -34,20 +42,26 @@ if (Astro.request.method === "POST") {
         const name = formData.get("name") as string;
         const slug = slugify(name);
         const description = formData.get("description") as string;
-        const price = Math.round(
-            parseFloat(formData.get("price") as string) * 100,
-        );
+        const price = parseFloat(formData.get("price") as string);
         const stock = parseInt(formData.get("stock") as string);
         const category_id = (formData.get("category_id") as string) || null;
-        const imagesJson = formData.get("images") as string;
-        const images = imagesJson ? JSON.parse(imagesJson) : product.images;
         const sizesRaw = formData.get("sizes") as string;
         const sizes = sizesRaw
             ? sizesRaw.split(",").map((s) => s.trim())
             : product.sizes;
-        const featured = formData.get("featured") === "on";
+        const is_offer = formData.get("is_offer") === "on";
         const active = formData.get("active") === "on";
 
+        // Get new image URLs (comma separated)
+        const imagesRaw = formData.get("images") as string;
+        const newImageUrls = imagesRaw
+            ? imagesRaw
+                  .split(",")
+                  .map((url) => url.trim())
+                  .filter(Boolean)
+            : [];
+
+        // Update product
         const { error: updateError } = await supabaseAdmin
             .from("products")
             .update({
@@ -57,9 +71,8 @@ if (Astro.request.method === "POST") {
                 price,
                 stock,
                 category_id: category_id || null,
-                images,
                 sizes,
-                featured,
+                is_offer,
                 active,
             })
             .eq("id", id);
@@ -67,12 +80,35 @@ if (Astro.request.method === "POST") {
         if (updateError) {
             error = "Error al actualizar el producto: " + updateError.message;
         } else {
+            // Handle images: delete old and insert new if provided
+            if (newImageUrls.length > 0) {
+                // Delete existing images
+                await supabaseAdmin
+                    .from("product_images")
+                    .delete()
+                    .eq("product_id", id);
+
+                // Insert new images
+                const imageRecords = newImageUrls.map((url, index) => ({
+                    product_id: id,
+                    image_url: url,
+                    order: index,
+                }));
+                await supabaseAdmin.from("product_images").insert(imageRecords);
+            }
+
             return Astro.redirect("/admin/productos?updated=true");
         }
     } catch (e) {
         error = "Error al procesar el formulario";
+        console.error(e);
     }
 }
+
+// Current images as comma-separated URLs for the form
+const currentImageUrls = productImages
+    .map((img: any) => img.image_url)
+    .join(", ");
 ---
 
 <AdminLayout title={`Editar: ${product.name}`}>
@@ -97,10 +133,39 @@ if (Astro.request.method === "POST") {
             Volver a productos
         </a>
 
+        <h1 class="text-2xl font-serif text-brand-navy-500 mb-6">
+            Editar Producto
+        </h1>
+
         {
             error && (
                 <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
                     {error}
+                </div>
+            )
+        }
+
+        <!-- Current Images Preview -->
+        {
+            productImages.length > 0 && (
+                <div class="mb-6 bg-white rounded-xl shadow-elegant p-6">
+                    <h3 class="text-sm font-medium text-brand-charcoal-700 mb-3">
+                        Imágenes Actuales
+                    </h3>
+                    <div class="flex gap-3 overflow-x-auto pb-2">
+                        {productImages.map((img: any, idx: number) => (
+                            <div class="relative flex-shrink-0 w-24 h-28 bg-cream-200 rounded-lg overflow-hidden">
+                                <img
+                                    src={img.image_url}
+                                    alt={`${product.name} - ${idx + 1}`}
+                                    class="w-full h-full object-cover"
+                                />
+                                <span class="absolute bottom-1 right-1 w-5 h-5 bg-brand-navy-500 text-white text-xs rounded-full flex items-center justify-center">
+                                    {idx + 1}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             )
         }
@@ -170,7 +235,7 @@ if (Astro.request.method === "POST") {
                         required
                         min="0"
                         step="0.01"
-                        value={(product.price / 100).toFixed(2)}
+                        value={product.price}
                         class="w-full px-4 py-3 border-2 border-brand-charcoal-200 rounded-lg focus:outline-none focus:border-brand-navy-500 transition-colors"
                     />
                 </div>
@@ -206,7 +271,7 @@ if (Astro.request.method === "POST") {
                         type="text"
                         id="sizes"
                         name="sizes"
-                        value={product.sizes.join(", ")}
+                        value={product.sizes?.join(", ")}
                         class="w-full px-4 py-3 border-2 border-brand-charcoal-200 rounded-lg focus:outline-none focus:border-brand-navy-500 transition-colors"
                     />
                 </div>
@@ -228,13 +293,26 @@ if (Astro.request.method === "POST") {
                     >
                 </div>
 
-                <!-- Image Uploader -->
+                <!-- Images -->
                 <div class="md:col-span-2">
-                    <ImageUploader
-                        client:load
-                        existingImages={product.images}
-                        onImagesChange={() => {}}
-                    />
+                    <label
+                        for="images"
+                        class="block text-sm font-medium text-brand-charcoal-700 mb-2"
+                    >
+                        URLs de Imágenes (separadas por coma)
+                    </label>
+                    <textarea
+                        id="images"
+                        name="images"
+                        rows="3"
+                        class="w-full px-4 py-3 border-2 border-brand-charcoal-200 rounded-lg focus:outline-none focus:border-brand-navy-500 transition-colors resize-none"
+                        placeholder="Deja vacío para mantener las imágenes actuales"
+                        >{currentImageUrls}</textarea
+                    >
+                    <p class="mt-2 text-xs text-brand-charcoal-400">
+                        Si modificas las URLs, se reemplazarán todas las
+                        imágenes existentes.
+                    </p>
                 </div>
 
                 <!-- Checkboxes -->
@@ -242,12 +320,12 @@ if (Astro.request.method === "POST") {
                     <label class="flex items-center gap-2 cursor-pointer">
                         <input
                             type="checkbox"
-                            name="featured"
-                            checked={product.featured}
-                            class="w-5 h-5 rounded border-brand-charcoal-300 text-brand-navy-500 focus:ring-brand-navy-500"
+                            name="is_offer"
+                            checked={product.is_offer}
+                            class="w-5 h-5 rounded border-brand-charcoal-300 text-red-500 focus:ring-red-500"
                         />
                         <span class="text-brand-charcoal-700"
-                            >Producto destacado</span
+                            >🔥 Producto en oferta</span
                         >
                     </label>
 

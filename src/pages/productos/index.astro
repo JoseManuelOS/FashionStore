@@ -1,19 +1,21 @@
 ---
 import PublicLayout from "../../layouts/PublicLayout.astro";
-import { getProducts, getCategories, formatPrice } from "../../lib/supabase";
+import {
+    getProducts,
+    getCategories,
+    formatPrice,
+    getProductMainImage,
+} from "../../lib/supabase";
 
 // SSG - Generate at build time
 export const prerender = true;
-
-// Get query parameters for filtering
-const category = Astro.url.searchParams.get("categoria");
 
 // Fetch products and categories
 let products: any[] = [];
 let categories: any[] = [];
 
 try {
-    products = await getProducts({ categorySlug: category || undefined });
+    products = await getProducts();
     categories = await getCategories();
 } catch (e) {
     console.error("Error fetching products:", e);
@@ -40,7 +42,9 @@ try {
             <div class="flex flex-col lg:flex-row gap-8">
                 <!-- Filters Sidebar -->
                 <aside class="lg:w-64 flex-shrink-0">
-                    <div class="bg-white rounded-xl p-6 shadow-elegant">
+                    <div
+                        class="bg-white rounded-xl p-6 shadow-elegant sticky top-24"
+                    >
                         <h3 class="font-medium text-brand-navy-500 mb-4">
                             Categorías
                         </h3>
@@ -48,7 +52,7 @@ try {
                             <li>
                                 <a
                                     href="/productos"
-                                    class={`block py-2 px-3 rounded-lg transition-colors ${!category ? "bg-brand-navy-500 text-white" : "text-brand-charcoal-600 hover:bg-cream-200"}`}
+                                    class="block py-2 px-3 rounded-lg bg-brand-navy-500 text-white"
                                 >
                                     Todos
                                 </a>
@@ -58,7 +62,7 @@ try {
                                     <li>
                                         <a
                                             href={`/categoria/${cat.slug}`}
-                                            class={`block py-2 px-3 rounded-lg transition-colors ${category === cat.slug ? "bg-brand-navy-500 text-white" : "text-brand-charcoal-600 hover:bg-cream-200"}`}
+                                            class="block py-2 px-3 rounded-lg text-brand-charcoal-600 hover:bg-cream-200 transition-colors"
                                         >
                                             {cat.name}
                                         </a>
@@ -66,11 +70,34 @@ try {
                                 ))
                             }
                         </ul>
+
+                        <!-- Offers filter -->
+                        <div
+                            class="mt-6 pt-6 border-t border-brand-charcoal-100"
+                        >
+                            <h3 class="font-medium text-brand-navy-500 mb-4">
+                                Filtros
+                            </h3>
+                            <a
+                                href="/ofertas"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-brand-charcoal-600 hover:bg-red-50 hover:text-red-600 transition-colors"
+                            >
+                                🔥 Solo Ofertas
+                            </a>
+                        </div>
                     </div>
                 </aside>
 
                 <!-- Products Grid -->
                 <div class="flex-1">
+                    <div class="flex items-center justify-between mb-6">
+                        <p class="text-brand-charcoal-500">
+                            {products.length} producto{
+                                products.length !== 1 ? "s" : ""
+                            }
+                        </p>
+                    </div>
+
                     {
                         products.length > 0 ? (
                             <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -79,16 +106,27 @@ try {
                                         href={`/productos/${product.slug}`}
                                         class="group card"
                                     >
-                                        <div class="aspect-[4/5] bg-cream-200 overflow-hidden">
+                                        <div class="relative aspect-[4/5] bg-cream-200 overflow-hidden">
                                             <img
-                                                src={
-                                                    product.images[0] ||
-                                                    "https://placehold.co/400x500/1e3a5f/ffffff?text=Producto"
-                                                }
+                                                src={getProductMainImage(
+                                                    product,
+                                                )}
                                                 alt={product.name}
                                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                                 loading="lazy"
                                             />
+                                            {product.is_offer && (
+                                                <span class="absolute top-3 left-3 px-2 py-1 bg-red-500 text-white text-xs font-bold rounded">
+                                                    OFERTA
+                                                </span>
+                                            )}
+                                            {product.stock === 0 && (
+                                                <div class="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                                    <span class="px-4 py-2 bg-white text-brand-charcoal-700 font-medium rounded">
+                                                        Agotado
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                         <div class="p-4">
                                             {product.category && (

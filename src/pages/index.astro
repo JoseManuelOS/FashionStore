@@ -1,17 +1,28 @@
 ---
 import PublicLayout from "../layouts/PublicLayout.astro";
-import { getProducts, getCategories, formatPrice } from "../lib/supabase";
+import {
+	getProducts,
+	getCategories,
+	formatPrice,
+	getSetting,
+	getProductMainImage,
+} from "../lib/supabase";
 
 // SSG - Generate at build time
 export const prerender = true;
 
-// Fetch featured products and categories
+// Fetch data
 let products: any[] = [];
+let offerProducts: any[] = [];
 let categories: any[] = [];
+let offersEnabled = false;
 
 try {
-	products = await getProducts({ featured: true, limit: 6 });
+	products = await getProducts({ limit: 6 });
+	offerProducts = await getProducts({ isOffer: true, limit: 4 });
 	categories = await getCategories();
+	const offersSetting = await getSetting("offers_enabled");
+	offersEnabled = offersSetting === true || offersSetting === "true";
 } catch (e) {
 	console.error("Error fetching data:", e);
 }
@@ -49,16 +60,74 @@ try {
 					<a href="/productos" class="btn-primary text-lg px-8 py-4">
 						Ver Colección
 					</a>
-					<a
-						href="#featured"
-						class="btn-secondary border-white text-white hover:bg-white hover:text-brand-navy-500 text-lg px-8 py-4"
-					>
-						Destacados
-					</a>
+					{
+						offersEnabled && offerProducts.length > 0 && (
+							<a
+								href="#ofertas"
+								class="btn-secondary border-white text-white hover:bg-white hover:text-brand-navy-500 text-lg px-8 py-4"
+							>
+								🔥 Ofertas Flash
+							</a>
+						)
+					}
 				</div>
 			</div>
 		</div>
 	</section>
+
+	<!-- ⚡ OFERTAS FLASH SECTION (Controlled by settings) -->
+	{
+		offersEnabled && offerProducts.length > 0 && (
+			<section
+				id="ofertas"
+				class="py-16 md:py-24 bg-gradient-to-br from-red-600 to-orange-500"
+			>
+				<div class="container-custom">
+					<div class="text-center mb-12">
+						<span class="inline-block px-4 py-2 bg-white/20 rounded-full text-white text-sm font-medium mb-4">
+							⚡ Tiempo Limitado
+						</span>
+						<h2 class="text-3xl md:text-4xl font-serif text-white mb-4">
+							Ofertas Flash
+						</h2>
+						<p class="text-white/80 max-w-lg mx-auto">
+							Aprovecha estos precios especiales antes de que se
+							agoten
+						</p>
+					</div>
+
+					<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+						{offerProducts.map((product) => (
+							<a
+								href={`/productos/${product.slug}`}
+								class="group bg-white rounded-xl overflow-hidden shadow-elegant-lg hover:scale-[1.02] transition-transform"
+							>
+								<div class="relative aspect-[4/5] bg-cream-200 overflow-hidden">
+									<img
+										src={getProductMainImage(product)}
+										alt={product.name}
+										class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+										loading="lazy"
+									/>
+									<span class="absolute top-3 left-3 px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-full">
+										🔥 OFERTA
+									</span>
+								</div>
+								<div class="p-4">
+									<h3 class="font-medium text-brand-charcoal-700 group-hover:text-brand-navy-500 transition-colors">
+										{product.name}
+									</h3>
+									<p class="font-serif text-xl text-red-600 mt-2">
+										{formatPrice(product.price)}
+									</p>
+								</div>
+							</a>
+						))}
+					</div>
+				</div>
+			</section>
+		)
+	}
 
 	<!-- Categories Section -->
 	<section class="py-16 md:py-24 bg-cream-200">
@@ -111,10 +180,10 @@ try {
 			<div class="flex items-end justify-between mb-12">
 				<div>
 					<h2 class="text-3xl md:text-4xl font-serif">
-						Productos Destacados
+						Nuevos Productos
 					</h2>
 					<p class="text-brand-charcoal-500 mt-2">
-						Nuestra selección de lo mejor de la temporada
+						Lo último de nuestra colección
 					</p>
 				</div>
 				<a
@@ -145,16 +214,24 @@ try {
 								href={`/productos/${product.slug}`}
 								class="group card"
 							>
-								<div class="aspect-[4/5] bg-cream-200 overflow-hidden">
+								<div class="relative aspect-[4/5] bg-cream-200 overflow-hidden">
 									<img
-										src={
-											product.images[0] ||
-											"https://placehold.co/400x500/1e3a5f/ffffff?text=Producto"
-										}
+										src={getProductMainImage(product)}
 										alt={product.name}
 										class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
 										loading="lazy"
 									/>
+									{product.is_offer && (
+										<span class="absolute top-3 left-3 px-2 py-1 bg-red-500 text-white text-xs font-bold rounded">
+											OFERTA
+										</span>
+									)}
+									{product.stock <= 5 &&
+										product.stock > 0 && (
+											<span class="absolute top-3 right-3 px-2 py-1 bg-amber-500 text-white text-xs font-bold rounded">
+												¡Últimas!
+											</span>
+										)}
 								</div>
 								<div class="p-4">
 									{product.category && (
@@ -174,7 +251,7 @@ try {
 					</div>
 				) : (
 					<div class="text-center py-12 text-brand-charcoal-400">
-						<p>No hay productos destacados disponibles</p>
+						<p>No hay productos disponibles</p>
 					</div>
 				)
 			}
