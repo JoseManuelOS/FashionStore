@@ -31,6 +31,8 @@ export interface ProductImage {
     product_id: string;
     image_url: string;
     order: number;
+    color?: string;
+    color_hex?: string;
     created_at: string;
 }
 
@@ -45,6 +47,8 @@ export interface Product {
     is_offer: boolean;
     sizes: string[];
     active: boolean;
+    original_price?: number;
+    discount_percent?: number;
     created_at: string;
     // Joined data
     category?: Category;

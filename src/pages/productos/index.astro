@@ -1,184 +1,207 @@
 ---
 import PublicLayout from "../../layouts/PublicLayout.astro";
-import {
-    getProducts,
-    getCategories,
-    formatPrice,
-    getProductMainImage,
-} from "../../lib/supabase";
+import ProductCard from "../../components/islands/ProductCard";
+import FilterSidebar from "../../components/islands/FilterSidebar";
+import { getProducts, getCategories } from "../../lib/supabase";
 
-// SSG - Generate at build time
-export const prerender = true;
+// SSR for dynamic filtering
+export const prerender = false;
 
-// Fetch products and categories
-let products: any[] = [];
+// Get URL params for filters
+const url = new URL(Astro.request.url);
+const searchQuery = url.searchParams.get("buscar") || "";
+const categoryFilter = url.searchParams.get("categoria") || "";
+const sizesFilter =
+  url.searchParams.get("tallas")?.split(",").filter(Boolean) || [];
+const priceMin = Number(url.searchParams.get("precioMin")) || 0;
+const priceMax = Number(url.searchParams.get("precioMax")) || 1000;
+const colorFilter = url.searchParams.get("color") || "";
+const offersOnly = url.searchParams.get("ofertas") === "true";
+const sortBy = url.searchParams.get("ordenar") || "newest";
+
+let allProducts: any[] = [];
 let categories: any[] = [];
 
 try {
-    products = await getProducts();
-    categories = await getCategories();
+  allProducts = await getProducts();
+  categories = await getCategories();
 } catch (e) {
-    console.error("Error fetching products:", e);
+  console.error("Error fetching products:", e);
 }
+
+// Apply filters
+let products = allProducts;
+
+if (searchQuery) {
+  const query = searchQuery.toLowerCase();
+  products = products.filter(
+    (p) =>
+      p.name?.toLowerCase().includes(query) ||
+      p.description?.toLowerCase().includes(query) ||
+      p.category?.name?.toLowerCase().includes(query),
+  );
+}
+
+if (categoryFilter) {
+  products = products.filter((p) => p.category?.slug === categoryFilter);
+}
+
+if (sizesFilter.length > 0) {
+  products = products.filter((p) =>
+    sizesFilter.some((size) => p.sizes?.includes(size)),
+  );
+}
+
+if (priceMin > 0) {
+  products = products.filter((p) => p.price >= priceMin);
+}
+
+if (priceMax < 1000) {
+  products = products.filter((p) => p.price <= priceMax);
+}
+
+if (offersOnly) {
+  products = products.filter((p) => p.is_offer);
+}
+
+// Sort
+if (sortBy === "price-low") {
+  products.sort((a, b) => a.price - b.price);
+} else if (sortBy === "price-high") {
+  products.sort((a, b) => b.price - a.price);
+} else if (sortBy === "name") {
+  products.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+// Get all unique sizes and max price
+const allSizes = [...new Set(allProducts.flatMap((p) => p.sizes || []))];
+const globalMaxPrice = Math.max(...allProducts.map((p) => p.price), 500);
+
+// Initial filter values for the component
+const initialFilters = {
+  search: searchQuery,
+  category: categoryFilter,
+  sizes: sizesFilter,
+  priceMin: priceMin,
+  priceMax: priceMax || globalMaxPrice,
+  offers: offersOnly,
+  color: colorFilter,
+};
 ---
 
 <PublicLayout
-    title="Productos"
-    description="Explora nuestra colección completa de moda masculina premium"
+  title={searchQuery ? `Buscando: ${searchQuery}` : "Productos"}
+  description="Explora nuestra colección completa de moda masculina premium"
 >
-    <section class="py-12 md:py-16 bg-cream-200">
-        <div class="container-custom">
-            <!-- Header -->
-            <div class="mb-10">
-                <h1 class="text-3xl md:text-4xl font-serif mb-4">
-                    Todos los Productos
-                </h1>
-                <p class="text-brand-charcoal-500">
-                    Descubre nuestra colección completa de moda masculina
-                    premium
-                </p>
-            </div>
-
-            <div class="flex flex-col lg:flex-row gap-8">
-                <!-- Filters Sidebar -->
-                <aside class="lg:w-64 flex-shrink-0">
-                    <div
-                        class="bg-white rounded-xl p-6 shadow-elegant sticky top-24"
-                    >
-                        <h3 class="font-medium text-brand-navy-500 mb-4">
-                            Categorías
-                        </h3>
-                        <ul class="space-y-2">
-                            <li>
-                                <a
-                                    href="/productos"
-                                    class="block py-2 px-3 rounded-lg bg-brand-navy-500 text-white"
-                                >
-                                    Todos
-                                </a>
-                            </li>
-                            {
-                                categories.map((cat) => (
-                                    <li>
-                                        <a
-                                            href={`/categoria/${cat.slug}`}
-                                            class="block py-2 px-3 rounded-lg text-brand-charcoal-600 hover:bg-cream-200 transition-colors"
-                                        >
-                                            {cat.name}
-                                        </a>
-                                    </li>
-                                ))
-                            }
-                        </ul>
-
-                        <!-- Offers filter -->
-                        <div
-                            class="mt-6 pt-6 border-t border-brand-charcoal-100"
-                        >
-                            <h3 class="font-medium text-brand-navy-500 mb-4">
-                                Filtros
-                            </h3>
-                            <a
-                                href="/ofertas"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-brand-charcoal-600 hover:bg-red-50 hover:text-red-600 transition-colors"
-                            >
-                                🔥 Solo Ofertas
-                            </a>
-                        </div>
-                    </div>
-                </aside>
-
-                <!-- Products Grid -->
-                <div class="flex-1">
-                    <div class="flex items-center justify-between mb-6">
-                        <p class="text-brand-charcoal-500">
-                            {products.length} producto{
-                                products.length !== 1 ? "s" : ""
-                            }
-                        </p>
-                    </div>
-
-                    {
-                        products.length > 0 ? (
-                            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                                {products.map((product) => (
-                                    <a
-                                        href={`/productos/${product.slug}`}
-                                        class="group card"
-                                    >
-                                        <div class="relative aspect-[4/5] bg-cream-200 overflow-hidden">
-                                            <img
-                                                src={getProductMainImage(
-                                                    product,
-                                                )}
-                                                alt={product.name}
-                                                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                                loading="lazy"
-                                            />
-                                            {product.is_offer && (
-                                                <span class="absolute top-3 left-3 px-2 py-1 bg-red-500 text-white text-xs font-bold rounded">
-                                                    OFERTA
-                                                </span>
-                                            )}
-                                            {product.stock === 0 && (
-                                                <div class="absolute inset-0 bg-black/50 flex items-center justify-center">
-                                                    <span class="px-4 py-2 bg-white text-brand-charcoal-700 font-medium rounded">
-                                                        Agotado
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div class="p-4">
-                                            {product.category && (
-                                                <span class="text-xs text-brand-charcoal-400 uppercase tracking-wide">
-                                                    {product.category.name}
-                                                </span>
-                                            )}
-                                            <h3 class="font-medium text-brand-charcoal-700 mt-1 group-hover:text-brand-navy-500 transition-colors">
-                                                {product.name}
-                                            </h3>
-                                            <div class="flex items-center justify-between mt-2">
-                                                <p class="font-serif text-lg text-brand-navy-500">
-                                                    {formatPrice(product.price)}
-                                                </p>
-                                                {product.stock <= 5 &&
-                                                    product.stock > 0 && (
-                                                        <span class="text-xs text-amber-600">
-                                                            Pocas unidades
-                                                        </span>
-                                                    )}
-                                            </div>
-                                        </div>
-                                    </a>
-                                ))}
-                            </div>
-                        ) : (
-                            <div class="text-center py-16 bg-white rounded-xl">
-                                <svg
-                                    class="w-16 h-16 mx-auto text-brand-charcoal-200 mb-4"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="1"
-                                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                                    />
-                                </svg>
-                                <h3 class="text-xl font-medium text-brand-charcoal-600 mb-2">
-                                    No hay productos disponibles
-                                </h3>
-                                <p class="text-brand-charcoal-400">
-                                    Vuelve pronto, estamos añadiendo nuevos
-                                    productos.
-                                </p>
-                            </div>
-                        )
-                    }
-                </div>
-            </div>
+  <section class="py-8 md:py-12 min-h-screen">
+    <div class="container-custom">
+      <!-- Header -->
+      <div
+        class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6"
+      >
+        <div>
+          {
+            searchQuery ? (
+              <h1 class="text-2xl md:text-3xl font-display text-white">
+                Resultados para "
+                <span class="text-neon-cyan">{searchQuery}</span>"
+              </h1>
+            ) : (
+              <h1 class="text-2xl md:text-3xl font-display text-white">
+                {categoryFilter
+                  ? categories.find((c) => c.slug === categoryFilter)?.name
+                  : "Todos los Productos"}
+              </h1>
+            )
+          }
+          <p class="text-sm text-zinc-500 mt-1">
+            {products.length} producto{products.length !== 1 ? "s" : ""}
+          </p>
         </div>
-    </section>
+
+        <!-- Sort -->
+        <select
+          id="sort-select"
+          class="bg-dark-400 border border-white/10 text-white px-4 py-2.5 rounded-lg text-sm focus:outline-none focus:border-neon-cyan/50 w-full md:w-auto"
+        >
+          <option value="newest" selected={sortBy === "newest"}
+            >Más recientes</option
+          >
+          <option value="price-low" selected={sortBy === "price-low"}
+            >Precio: menor a mayor</option
+          >
+          <option value="price-high" selected={sortBy === "price-high"}
+            >Precio: mayor a menor</option
+          >
+          <option value="name" selected={sortBy === "name"}>Nombre A-Z</option>
+        </select>
+      </div>
+
+      <div class="flex flex-col lg:flex-row gap-6">
+        <!-- Filters Sidebar -->
+        <aside class="lg:w-64 flex-shrink-0">
+          <FilterSidebar
+            client:load
+            categories={categories}
+            allSizes={allSizes}
+            maxPrice={globalMaxPrice}
+            initialFilters={initialFilters}
+          />
+        </aside>
+
+        <!-- Products Grid -->
+        <div class="flex-1">
+          {
+            products.length > 0 ? (
+              <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                {products.map((product) => (
+                  <ProductCard client:load product={product} />
+                ))}
+              </div>
+            ) : (
+              <div class="text-center py-16 glass-card">
+                <svg
+                  class="w-12 h-12 mx-auto text-zinc-600 mb-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+                <h3 class="text-lg font-display text-white mb-2">
+                  Sin resultados
+                </h3>
+                <p class="text-sm text-zinc-500 mb-4">
+                  Prueba con otros filtros
+                </p>
+                <a
+                  href="/productos"
+                  class="text-neon-cyan hover:underline text-sm"
+                >
+                  Ver todos
+                </a>
+              </div>
+            )
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // Sort select
+    const sortSelect = document.getElementById(
+      "sort-select",
+    ) as HTMLSelectElement;
+    sortSelect?.addEventListener("change", () => {
+      const url = new URL(window.location.href);
+      url.searchParams.set("ordenar", sortSelect.value);
+      window.location.href = url.toString();
+    });
+  </script>
 </PublicLayout>

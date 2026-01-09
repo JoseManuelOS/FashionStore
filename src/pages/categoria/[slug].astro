@@ -5,13 +5,10 @@ import {
     getCategories,
     formatPrice,
     getProductMainImage,
-    supabase,
 } from "../../lib/supabase";
 
-// SSG - Generate at build time
 export const prerender = true;
 
-// Generate paths for each category
 export async function getStaticPaths() {
     const categories = await getCategories();
     return categories.map((cat) => ({
@@ -36,23 +33,27 @@ try {
     title={category.name}
     description={`Explora nuestra colección de ${category.name.toLowerCase()} premium`}
 >
-    <section class="py-12 md:py-16 bg-cream-200">
+    <section class="py-16 min-h-screen">
         <div class="container-custom">
             <!-- Header -->
-            <div class="mb-10">
-                <nav class="text-sm text-brand-charcoal-400 mb-4">
-                    <a href="/" class="hover:text-brand-navy-500">Inicio</a>
-                    <span class="mx-2">/</span>
-                    <a href="/productos" class="hover:text-brand-navy-500"
+            <div class="mb-12">
+                <nav class="text-sm text-zinc-500 mb-4">
+                    <a href="/" class="hover:text-neon-cyan transition-colors"
+                        >Inicio</a
+                    >
+                    <span class="mx-2 text-zinc-600">/</span>
+                    <a
+                        href="/productos"
+                        class="hover:text-neon-cyan transition-colors"
                         >Productos</a
                     >
-                    <span class="mx-2">/</span>
-                    <span class="text-brand-charcoal-600">{category.name}</span>
+                    <span class="mx-2 text-zinc-600">/</span>
+                    <span class="text-zinc-300">{category.name}</span>
                 </nav>
-                <h1 class="text-3xl md:text-4xl font-serif mb-4">
+                <h1 class="text-4xl md:text-5xl font-display text-white mb-4">
                     {category.name}
                 </h1>
-                <p class="text-brand-charcoal-500">
+                <p class="text-zinc-400">
                     Nuestra colección de {category.name.toLowerCase()} premium para
                     el hombre moderno
                 </p>
@@ -61,18 +62,19 @@ try {
             <div class="flex flex-col lg:flex-row gap-8">
                 <!-- Filters Sidebar -->
                 <aside class="lg:w-64 flex-shrink-0">
-                    <div
-                        class="bg-white rounded-xl p-6 shadow-elegant sticky top-24"
-                    >
-                        <h3 class="font-medium text-brand-navy-500 mb-4">
+                    <div class="glass-card p-6 sticky top-24">
+                        <h3 class="font-display text-white text-lg mb-4">
                             Categorías
                         </h3>
                         <ul class="space-y-2">
                             <li>
                                 <a
                                     href="/productos"
-                                    class="block py-2 px-3 rounded-lg text-brand-charcoal-600 hover:bg-cream-200 transition-colors"
+                                    class="flex items-center gap-3 py-2.5 px-4 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors"
                                 >
+                                    <span
+                                        class="w-1.5 h-1.5 rounded-full bg-zinc-600"
+                                    ></span>
                                     Todos
                                 </a>
                             </li>
@@ -81,12 +83,15 @@ try {
                                     <li>
                                         <a
                                             href={`/categoria/${cat.slug}`}
-                                            class={`block py-2 px-3 rounded-lg transition-colors ${
+                                            class={`flex items-center gap-3 py-2.5 px-4 rounded-lg transition-colors ${
                                                 cat.slug === category.slug
-                                                    ? "bg-brand-navy-500 text-white"
-                                                    : "text-brand-charcoal-600 hover:bg-cream-200"
+                                                    ? "bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30"
+                                                    : "text-zinc-400 hover:text-white hover:bg-white/5"
                                             }`}
                                         >
+                                            <span
+                                                class={`w-1.5 h-1.5 rounded-full ${cat.slug === category.slug ? "bg-neon-cyan" : "bg-zinc-600"}`}
+                                            />
                                             {cat.name}
                                         </a>
                                     </li>
@@ -98,8 +103,8 @@ try {
 
                 <!-- Products Grid -->
                 <div class="flex-1">
-                    <div class="flex items-center justify-between mb-6">
-                        <p class="text-brand-charcoal-500">
+                    <div class="flex items-center justify-between mb-8">
+                        <p class="text-zinc-500">
                             {products.length} producto{
                                 products.length !== 1 ? "s" : ""
                             } en {category.name}
@@ -112,42 +117,49 @@ try {
                                 {products.map((product) => (
                                     <a
                                         href={`/productos/${product.slug}`}
-                                        class="group card"
+                                        class="product-card group"
                                     >
-                                        <div class="relative aspect-[4/5] bg-cream-200 overflow-hidden">
+                                        <div class="relative aspect-[4/5] bg-dark-400 overflow-hidden">
                                             <img
                                                 src={getProductMainImage(
                                                     product,
                                                 )}
                                                 alt={product.name}
-                                                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                class="product-image w-full h-full object-cover"
                                                 loading="lazy"
                                             />
                                             {product.is_offer && (
-                                                <span class="absolute top-3 left-3 px-2 py-1 bg-red-500 text-white text-xs font-bold rounded">
-                                                    OFERTA
-                                                </span>
+                                                <div class="absolute top-3 left-3">
+                                                    <span class="badge-offer">
+                                                        Oferta
+                                                    </span>
+                                                </div>
                                             )}
                                             {product.stock === 0 && (
-                                                <div class="absolute inset-0 bg-black/50 flex items-center justify-center">
-                                                    <span class="px-4 py-2 bg-white text-brand-charcoal-700 font-medium rounded">
+                                                <div class="absolute inset-0 bg-dark-600/80 flex items-center justify-center">
+                                                    <span class="px-4 py-2 bg-zinc-800 text-zinc-300 font-medium rounded-lg">
                                                         Agotado
                                                     </span>
                                                 </div>
                                             )}
+                                            <div class="absolute inset-0 bg-dark-600/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                                                <span class="px-6 py-3 bg-neon-cyan text-dark-600 font-semibold rounded-lg transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                                                    Ver Producto
+                                                </span>
+                                            </div>
                                         </div>
-                                        <div class="p-4">
-                                            <h3 class="font-medium text-brand-charcoal-700 group-hover:text-brand-navy-500 transition-colors">
+                                        <div class="p-5">
+                                            <h3 class="font-medium text-white group-hover:text-neon-cyan transition-colors">
                                                 {product.name}
                                             </h3>
-                                            <div class="flex items-center justify-between mt-2">
-                                                <p class="font-serif text-lg text-brand-navy-500">
+                                            <div class="flex items-center justify-between mt-3">
+                                                <p class="font-display text-xl text-zinc-300">
                                                     {formatPrice(product.price)}
                                                 </p>
                                                 {product.stock <= 5 &&
                                                     product.stock > 0 && (
-                                                        <span class="text-xs text-amber-600">
-                                                            Pocas unidades
+                                                        <span class="text-xs text-neon-fuchsia">
+                                                            Últimas unidades
                                                         </span>
                                                     )}
                                             </div>
@@ -156,9 +168,9 @@ try {
                                 ))}
                             </div>
                         ) : (
-                            <div class="text-center py-16 bg-white rounded-xl">
+                            <div class="text-center py-20 glass-card">
                                 <svg
-                                    class="w-16 h-16 mx-auto text-brand-charcoal-200 mb-4"
+                                    class="w-16 h-16 mx-auto text-zinc-600 mb-4"
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
@@ -170,14 +182,14 @@ try {
                                         d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
                                     />
                                 </svg>
-                                <h3 class="text-xl font-medium text-brand-charcoal-600 mb-2">
+                                <h3 class="text-xl font-display text-white mb-2">
                                     No hay productos en esta categoría
                                 </h3>
-                                <p class="text-brand-charcoal-400 mb-6">
+                                <p class="text-zinc-500 mb-6">
                                     Estamos añadiendo nuevos productos pronto
                                 </p>
                                 <a href="/productos" class="btn-primary">
-                                    Ver todos los productos
+                                    <span>Ver todos los productos</span>
                                 </a>
                             </div>
                         )

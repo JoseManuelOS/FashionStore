@@ -11,7 +11,6 @@ import {
 // SSG - Generate at build time
 export const prerender = true;
 
-// Generate static paths for all products
 export async function getStaticPaths() {
     const products = await getProducts();
     return products.map((product) => ({
@@ -26,11 +25,9 @@ if (!product) {
     return Astro.redirect("/productos");
 }
 
-// Get images array (sorted by order)
 const images = product.images || [];
 const mainImage = getProductMainImage(product);
 
-// Get related products from same category
 let relatedProducts: any[] = [];
 if (product.category) {
     try {
@@ -52,27 +49,32 @@ if (product.category) {
     description={product.description ||
         `${product.name} - Moda masculina premium en FashionMarket`}
 >
-    <section class="py-12 md:py-16 bg-cream-200">
+    <section class="py-12 md:py-20">
         <div class="container-custom">
             <!-- Breadcrumb -->
             <nav class="mb-8 text-sm">
-                <ol class="flex items-center gap-2 text-brand-charcoal-400">
+                <ol class="flex items-center gap-2 text-zinc-500">
                     <li>
-                        <a href="/" class="hover:text-brand-navy-500">Inicio</a>
+                        <a
+                            href="/"
+                            class="hover:text-neon-cyan transition-colors"
+                            >Inicio</a>
                     </li>
-                    <li>/</li>
+                    <li class="text-zinc-600">/</li>
                     <li>
-                        <a href="/productos" class="hover:text-brand-navy-500"
+                        <a
+                            href="/productos"
+                            class="hover:text-neon-cyan transition-colors"
                             >Productos</a>
                     </li>
                     {
                         product.category && (
                             <>
-                                <li>/</li>
+                                <li class="text-zinc-600">/</li>
                                 <li>
                                     <a
                                         href={`/categoria/${product.category.slug}`}
-                                        class="hover:text-brand-navy-500"
+                                        class="hover:text-neon-cyan transition-colors"
                                     >
                                         {product.category.name}
                                     </a>
@@ -80,31 +82,39 @@ if (product.category) {
                             </>
                         )
                     }
-                    <li>/</li>
-                    <li class="text-brand-charcoal-600">{product.name}</li>
+                    <li class="text-zinc-600">/</li>
+                    <li class="text-zinc-300">{product.name}</li>
                 </ol>
             </nav>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
                 <!-- Product Gallery -->
                 <div class="space-y-4">
                     <!-- Main Image -->
                     <div
-                        class="relative aspect-[4/5] bg-white rounded-xl overflow-hidden shadow-elegant"
+                        class="relative aspect-[4/5] glass-card overflow-hidden group"
+                        transition:name={`product-image-${product.id}`}
                     >
                         <img
                             id="main-image"
                             src={mainImage}
                             alt={product.name}
-                            class="w-full h-full object-cover"
+                            class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                         />
                         {
                             product.is_offer && (
-                                <span class="absolute top-4 left-4 px-3 py-1 bg-red-500 text-white text-sm font-bold rounded-full">
-                                    🔥 OFERTA
-                                </span>
+                                <div class="absolute top-4 left-4">
+                                    <span class="badge-offer text-sm">
+                                        🔥 Oferta
+                                    </span>
+                                </div>
                             )
                         }
+                        <!-- Gradient Overlay -->
+                        <div
+                            class="absolute inset-0 bg-gradient-to-t from-dark-600/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                        </div>
                     </div>
 
                     <!-- Thumbnails -->
@@ -113,7 +123,7 @@ if (product.category) {
                             <div class="flex gap-3 overflow-x-auto pb-2">
                                 {images.map((img: any, idx: number) => (
                                     <button
-                                        class={`flex-shrink-0 w-20 h-24 rounded-lg overflow-hidden border-2 transition-colors thumbnail-btn ${idx === 0 ? "border-brand-navy-500" : "border-transparent hover:border-brand-charcoal-300"}`}
+                                        class={`flex-shrink-0 w-20 h-24 rounded-lg overflow-hidden border-2 transition-all thumbnail-btn ${idx === 0 ? "border-neon-cyan shadow-glow-cyan" : "border-white/10 hover:border-white/30"}`}
                                         data-image={img.image_url}
                                     >
                                         <img
@@ -134,7 +144,7 @@ if (product.category) {
                         product.category && (
                             <a
                                 href={`/categoria/${product.category.slug}`}
-                                class="text-sm text-brand-charcoal-400 uppercase tracking-wide hover:text-brand-navy-500"
+                                class="inline-block text-sm text-neon-cyan uppercase tracking-wider hover:text-neon-cyan-light transition-colors mb-2"
                             >
                                 {product.category.name}
                             </a>
@@ -142,19 +152,21 @@ if (product.category) {
                     }
 
                     <h1
-                        class="text-3xl md:text-4xl font-serif text-brand-navy-500 mt-2 mb-4"
+                        class="text-4xl md:text-5xl font-display text-white mb-6"
                     >
                         {product.name}
                     </h1>
 
-                    <p class="font-serif text-3xl text-brand-navy-500 mb-6">
+                    <p
+                        class="font-display text-4xl text-transparent bg-clip-text bg-gradient-to-r from-neon-cyan to-neon-fuchsia mb-8"
+                    >
                         {formatPrice(product.price)}
                     </p>
 
                     {
                         product.description && (
-                            <div class="prose prose-brand-charcoal mb-8">
-                                <p class="text-brand-charcoal-600 leading-relaxed">
+                            <div class="mb-8">
+                                <p class="text-zinc-400 leading-relaxed text-lg">
                                     {product.description}
                                 </p>
                             </div>
@@ -162,16 +174,18 @@ if (product.category) {
                     }
 
                     <!-- Add to Cart Component (React Island) -->
-                    <div class="bg-white rounded-xl p-6 shadow-elegant">
+                    <div class="glass-card p-6 mb-8">
                         <AddToCartButton client:load product={product} />
                     </div>
 
                     <!-- Product Features -->
-                    <div class="mt-8 pt-8 border-t border-brand-charcoal-100">
-                        <div class="grid grid-cols-2 gap-4 text-sm">
-                            <div class="flex items-center gap-3">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex items-center gap-3 p-4 glass-card">
+                            <div
+                                class="w-10 h-10 rounded-lg bg-neon-cyan/10 flex items-center justify-center"
+                            >
                                 <svg
-                                    class="w-5 h-5 text-brand-navy-500"
+                                    class="w-5 h-5 text-neon-cyan"
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
@@ -179,16 +193,20 @@ if (product.category) {
                                     <path
                                         stroke-linecap="round"
                                         stroke-linejoin="round"
-                                        stroke-width="1.5"
+                                        stroke-width="2"
                                         d="M5 13l4 4L19 7"></path>
                                 </svg>
-                                <span class="text-brand-charcoal-600"
-                                    >Envío gratuito +50€</span
-                                >
                             </div>
-                            <div class="flex items-center gap-3">
+                            <span class="text-sm text-zinc-300"
+                                >Envío gratis +50€</span
+                            >
+                        </div>
+                        <div class="flex items-center gap-3 p-4 glass-card">
+                            <div
+                                class="w-10 h-10 rounded-lg bg-neon-fuchsia/10 flex items-center justify-center"
+                            >
                                 <svg
-                                    class="w-5 h-5 text-brand-navy-500"
+                                    class="w-5 h-5 text-neon-fuchsia"
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
@@ -196,14 +214,14 @@ if (product.category) {
                                     <path
                                         stroke-linecap="round"
                                         stroke-linejoin="round"
-                                        stroke-width="1.5"
+                                        stroke-width="2"
                                         d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                                     ></path>
                                 </svg>
-                                <span class="text-brand-charcoal-600"
-                                    >30 días devolución</span
-                                >
                             </div>
+                            <span class="text-sm text-zinc-300"
+                                >30 días devolución</span
+                            >
                         </div>
                     </div>
                 </div>
@@ -212,29 +230,29 @@ if (product.category) {
             <!-- Related Products -->
             {
                 relatedProducts.length > 0 && (
-                    <div class="mt-16 pt-16 border-t border-brand-charcoal-100">
-                        <h2 class="text-2xl font-serif mb-8">
+                    <div class="mt-20 pt-20 border-t border-white/5">
+                        <h2 class="text-3xl font-display text-white mb-10">
                             También te puede interesar
                         </h2>
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                             {relatedProducts.map((related) => (
                                 <a
                                     href={`/productos/${related.slug}`}
-                                    class="group card"
+                                    class="product-card group"
                                 >
-                                    <div class="aspect-[4/5] bg-cream-200 overflow-hidden">
+                                    <div class="aspect-[4/5] bg-dark-400 overflow-hidden">
                                         <img
                                             src={getProductMainImage(related)}
                                             alt={related.name}
-                                            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                            class="product-image w-full h-full object-cover"
                                             loading="lazy"
                                         />
                                     </div>
-                                    <div class="p-4">
-                                        <h3 class="font-medium text-brand-charcoal-700 group-hover:text-brand-navy-500 transition-colors">
+                                    <div class="p-5">
+                                        <h3 class="font-medium text-white group-hover:text-neon-cyan transition-colors">
                                             {related.name}
                                         </h3>
-                                        <p class="font-serif text-lg text-brand-navy-500 mt-2">
+                                        <p class="font-display text-xl text-zinc-300 mt-2">
                                             {formatPrice(related.price)}
                                         </p>
                                     </div>
@@ -248,7 +266,6 @@ if (product.category) {
     </section>
 
     <script>
-        // Image gallery functionality
         document.addEventListener("DOMContentLoaded", () => {
             const mainImage = document.getElementById(
                 "main-image",
@@ -260,14 +277,18 @@ if (product.category) {
                     const newSrc = (btn as HTMLElement).dataset.image;
                     if (newSrc && mainImage) {
                         mainImage.src = newSrc;
-                        thumbnails.forEach((t) =>
-                            t.classList.remove("border-brand-navy-500"),
+                        thumbnails.forEach((t) => {
+                            t.classList.remove(
+                                "border-neon-cyan",
+                                "shadow-glow-cyan",
+                            );
+                            t.classList.add("border-white/10");
+                        });
+                        btn.classList.remove("border-white/10");
+                        btn.classList.add(
+                            "border-neon-cyan",
+                            "shadow-glow-cyan",
                         );
-                        thumbnails.forEach((t) =>
-                            t.classList.add("border-transparent"),
-                        );
-                        btn.classList.remove("border-transparent");
-                        btn.classList.add("border-brand-navy-500");
                     }
                 });
             });

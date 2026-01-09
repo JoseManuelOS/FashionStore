@@ -36,7 +36,9 @@ CREATE TABLE IF NOT EXISTS products (
   is_offer BOOLEAN DEFAULT FALSE,
   sizes TEXT[] DEFAULT ARRAY['S', 'M', 'L', 'XL'],
   active BOOLEAN DEFAULT TRUE,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  original_price NUMERIC(10, 2),
+  discount_percent INTEGER CHECK (discount_percent >= 0 AND discount_percent <= 100)
 );
 
 -- Índices
@@ -53,7 +55,9 @@ CREATE TABLE IF NOT EXISTS product_images (
   product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
   image_url TEXT NOT NULL,
   "order" INTEGER DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  color VARCHAR(100),
+  color_hex VARCHAR(20)
 );
 
 -- Índice para obtener imágenes de un producto ordenadas
@@ -113,6 +117,53 @@ INSERT INTO settings (key, value, description) VALUES
   ('store_open', 'true', 'Tienda abierta para pedidos');
 
 -- =============================================
+-- 🏷️ TABLA: tags
+-- Etiquetas para productos (colores, estilos, etc.)
+-- =============================================
+CREATE TABLE IF NOT EXISTS tags (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(100) NOT NULL UNIQUE,
+  slug VARCHAR(100) NOT NULL UNIQUE,
+  type VARCHAR(50) DEFAULT 'general'
+);
+
+-- Índice
+CREATE INDEX IF NOT EXISTS idx_tags_type ON tags(type);
+CREATE INDEX IF NOT EXISTS idx_tags_slug ON tags(slug);
+
+-- =============================================
+-- 🔗 TABLA: product_tags
+-- Relación N:M entre productos y etiquetas
+-- =============================================
+CREATE TABLE IF NOT EXISTS product_tags (
+  product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  tag_id UUID NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+  PRIMARY KEY (product_id, tag_id)
+);
+
+-- Índices
+CREATE INDEX IF NOT EXISTS idx_product_tags_product ON product_tags(product_id);
+CREATE INDEX IF NOT EXISTS idx_product_tags_tag ON product_tags(tag_id);
+
+-- =============================================
+-- 📏 TABLA: product_variants
+-- Variantes de talla/stock por producto
+-- =============================================
+CREATE TABLE IF NOT EXISTS product_variants (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  size VARCHAR(20) NOT NULL,
+  stock INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0),
+  sku VARCHAR(100),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Índices
+CREATE UNIQUE INDEX IF NOT EXISTS idx_product_variants_unique ON product_variants(product_id, size);
+CREATE INDEX IF NOT EXISTS idx_product_variants_product ON product_variants(product_id);
+CREATE INDEX IF NOT EXISTS idx_product_variants_sku ON product_variants(sku) WHERE sku IS NOT NULL;
+
+-- =============================================
 -- 🔄 TRIGGER: updated_at automático
 -- =============================================
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -147,6 +198,9 @@ ALTER TABLE product_images ENABLE ROW LEVEL SECURITY;
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tags ENABLE ROW LEVEL SECURITY;
+ALTER TABLE product_tags ENABLE ROW LEVEL SECURITY;
+ALTER TABLE product_variants ENABLE ROW LEVEL SECURITY;
 
 -- ----- CATEGORIES -----
 -- Lectura pública
@@ -240,6 +294,60 @@ CREATE POLICY "settings_public_read"
 -- Escritura: solo usuarios autenticados
 CREATE POLICY "settings_auth_write"
   ON settings FOR ALL
+  TO authenticated
+  USING (auth.uid() IS NOT NULL)
+  WITH CHECK (auth.uid() IS NOT NULL);
+
+-- ----- TAGS -----
+-- Lectura pública
+CREATE POLICY "tags_public_read"
+  ON tags FOR SELECT
+  TO public
+  USING (true);
+
+-- Escritura: solo usuarios autenticados
+CREATE POLICY "tags_auth_write"
+  ON tags FOR ALL
+  TO authenticated
+  USING (auth.uid() IS NOT NULL)
+  WITH CHECK (auth.uid() IS NOT NULL);
+
+-- ----- PRODUCT_TAGS -----
+-- Lectura pública (si el producto está activo)
+CREATE POLICY "product_tags_public_read"
+  ON product_tags FOR SELECT
+  TO public
+  USING (
+    EXISTS (
+      SELECT 1 FROM products 
+      WHERE products.id = product_tags.product_id 
+      AND products.active = true
+    )
+  );
+
+-- Escritura: solo usuarios autenticados
+CREATE POLICY "product_tags_auth_write"
+  ON product_tags FOR ALL
+  TO authenticated
+  USING (auth.uid() IS NOT NULL)
+  WITH CHECK (auth.uid() IS NOT NULL);
+
+-- ----- PRODUCT_VARIANTS -----
+-- Lectura pública (si el producto está activo)
+CREATE POLICY "product_variants_public_read"
+  ON product_variants FOR SELECT
+  TO public
+  USING (
+    EXISTS (
+      SELECT 1 FROM products 
+      WHERE products.id = product_variants.product_id 
+      AND products.active = true
+    )
+  );
+
+-- Escritura: solo usuarios autenticados
+CREATE POLICY "product_variants_auth_write"
+  ON product_variants FOR ALL
   TO authenticated
   USING (auth.uid() IS NOT NULL)
   WITH CHECK (auth.uid() IS NOT NULL);
