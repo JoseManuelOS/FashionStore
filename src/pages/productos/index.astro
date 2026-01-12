@@ -18,6 +18,8 @@ const priceMax = Number(url.searchParams.get("precioMax")) || 1000;
 const colorFilter = url.searchParams.get("color") || "";
 const offersOnly = url.searchParams.get("ofertas") === "true";
 const sortBy = url.searchParams.get("ordenar") || "newest";
+const currentPage = Number(url.searchParams.get("pagina")) || 1;
+const PRODUCTS_PER_PAGE = 16;
 
 let allProducts: any[] = [];
 let categories: any[] = [];
@@ -73,6 +75,13 @@ if (sortBy === "price-low") {
   products.sort((a, b) => a.name.localeCompare(b.name));
 }
 
+// Pagination
+const totalProducts = products.length;
+const totalPages = Math.ceil(totalProducts / PRODUCTS_PER_PAGE);
+const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
+const endIndex = startIndex + PRODUCTS_PER_PAGE;
+const paginatedProducts = products.slice(startIndex, endIndex);
+
 // Get all unique sizes and max price
 const allSizes = [...new Set(allProducts.flatMap((p) => p.sizes || []))];
 const globalMaxPrice = Math.max(...allProducts.map((p) => p.price), 500);
@@ -115,7 +124,7 @@ const initialFilters = {
             )
           }
           <p class="text-sm text-zinc-500 mt-1">
-            {products.length} producto{products.length !== 1 ? "s" : ""}
+            {totalProducts} producto{totalProducts !== 1 ? "s" : ""}
           </p>
         </div>
 
@@ -152,12 +161,70 @@ const initialFilters = {
         <!-- Products Grid -->
         <div class="flex-1">
           {
-            products.length > 0 ? (
-              <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-                {products.map((product) => (
-                  <ProductCard client:load product={product} />
-                ))}
-              </div>
+            paginatedProducts.length > 0 ? (
+              <>
+                <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                  {paginatedProducts.map((product) => (
+                    <ProductCard client:load product={product} />
+                  ))}
+                </div>
+                
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div class="flex items-center justify-center gap-2 mt-8 pt-6 border-t border-white/5">
+                    {/* Previous */}
+                    <a
+                      href={currentPage > 1 ? `?${new URLSearchParams({
+                        ...(searchQuery && { buscar: searchQuery }),
+                        ...(categoryFilter && { categoria: categoryFilter }),
+                        ...(sizesFilter.length && { tallas: sizesFilter.join(',') }),
+                        ...(priceMin > 0 && { precioMin: priceMin.toString() }),
+                        ...(priceMax < 1000 && { precioMax: priceMax.toString() }),
+                        ...(offersOnly && { ofertas: 'true' }),
+                        ...(colorFilter && { color: colorFilter }),
+                        ...(sortBy !== 'newest' && { ordenar: sortBy }),
+                        pagina: (currentPage - 1).toString()
+                      }).toString()}` : '#'}
+                      class={`p-2 rounded-lg transition-colors ${currentPage === 1 
+                        ? 'text-zinc-600 cursor-not-allowed' 
+                        : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}
+                      aria-disabled={currentPage === 1}
+                    >
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </a>
+
+                    {/* Page Info */}
+                    <span class="px-4 py-2 text-sm text-zinc-400">
+                      Página <span class="text-white font-medium">{currentPage}</span> de <span class="text-white font-medium">{totalPages}</span>
+                    </span>
+
+                    {/* Next */}
+                    <a
+                      href={currentPage < totalPages ? `?${new URLSearchParams({
+                        ...(searchQuery && { buscar: searchQuery }),
+                        ...(categoryFilter && { categoria: categoryFilter }),
+                        ...(sizesFilter.length && { tallas: sizesFilter.join(',') }),
+                        ...(priceMin > 0 && { precioMin: priceMin.toString() }),
+                        ...(priceMax < 1000 && { precioMax: priceMax.toString() }),
+                        ...(offersOnly && { ofertas: 'true' }),
+                        ...(colorFilter && { color: colorFilter }),
+                        ...(sortBy !== 'newest' && { ordenar: sortBy }),
+                        pagina: (currentPage + 1).toString()
+                      }).toString()}` : '#'}
+                      class={`p-2 rounded-lg transition-colors ${currentPage === totalPages 
+                        ? 'text-zinc-600 cursor-not-allowed' 
+                        : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}
+                      aria-disabled={currentPage === totalPages}
+                    >
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </a>
+                  </div>
+                )}
+              </>
             ) : (
               <div class="text-center py-16 glass-card">
                 <svg

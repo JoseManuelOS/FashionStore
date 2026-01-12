@@ -4,8 +4,13 @@ import { $cartCount } from '../../stores/cart';
 export default function CartIcon() {
     const count = useStore($cartCount);
 
+    const handleClick = () => {
+        window.dispatchEvent(new CustomEvent('toggle-cart'));
+    };
+
     return (
         <button
+            onClick={handleClick}
             className="relative p-2.5 rounded-xl bg-white/5 border border-white/10 text-zinc-300 hover:text-neon-cyan hover:border-neon-cyan/30 hover:bg-neon-cyan/5 transition-all group"
             aria-label="Abrir carrito"
         >

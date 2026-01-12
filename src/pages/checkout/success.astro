@@ -1,0 +1,133 @@
+---
+import PublicLayout from "../../layouts/PublicLayout.astro";
+import { supabase } from "../../lib/supabase";
+
+export const prerender = false;
+
+const { url } = Astro;
+const sessionId = url.searchParams.get("session_id");
+
+// Clear cart after successful payment
+---
+
+<PublicLayout
+    title="Pago Exitoso"
+    description="Tu pedido ha sido procesado correctamente"
+>
+    <section class="py-12 md:py-20 min-h-[60vh] flex items-center">
+        <div class="container-custom max-w-2xl mx-auto text-center">
+            <div
+                class="bg-dark-400/50 backdrop-blur-xl border border-white/10 rounded-3xl p-12"
+            >
+                <!-- Success Icon -->
+                <div
+                    class="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-r from-green-400 to-emerald-500 flex items-center justify-center"
+                >
+                    <svg
+                        class="w-12 h-12 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+
+                <h1
+                    class="text-3xl md:text-4xl font-display font-bold text-white mb-4"
+                >
+                    ¡Pago Exitoso!
+                </h1>
+                <p class="text-lg text-zinc-300 mb-8">
+                    Tu pedido ha sido procesado correctamente
+                </p>
+
+                <div class="bg-dark-500/50 rounded-xl p-6 mb-8">
+                    <p class="text-zinc-400 mb-4">
+                        Recibirás un correo electrónico con los detalles de tu
+                        pedido y el seguimiento de envío.
+                    </p>
+                    <p class="text-zinc-400">
+                        Si tienes alguna pregunta, no dudes en contactarnos.
+                    </p>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <a
+                        href="/cuenta/pedidos"
+                        class="px-8 py-4 bg-gradient-to-r from-neon-cyan to-neon-cyan-light text-dark-500 font-semibold rounded-xl hover:shadow-lg hover:shadow-neon-cyan/25 transition-all duration-200"
+                    >
+                        Ver mis Pedidos
+                    </a>
+                    <a
+                        href="/productos"
+                        class="px-8 py-4 border border-white/10 text-white font-semibold rounded-xl hover:border-neon-cyan/50 transition-all duration-200"
+                    >
+                        Seguir Comprando
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // Clear cart and send order confirmation email
+        (async () => {
+            try {
+                const cart = localStorage.getItem("fashionmarket-cart");
+                const cartItems = cart ? JSON.parse(cart) : [];
+                
+                // Get customer email from URL params or session
+                const urlParams = new URLSearchParams(window.location.search);
+                const sessionId = urlParams.get('session_id');
+                
+                if (cartItems.length > 0 && sessionId) {
+                    // Calculate total
+                    const total = cartItems.reduce((sum: number, item: any) => 
+                        sum + (item.price * item.quantity), 0
+                    );
+                    
+                    // Get customer name and email from form (stored temporarily or from session)
+                    const customerEmail = sessionStorage.getItem('checkout_email');
+                    const customerName = sessionStorage.getItem('checkout_name');
+                    const shippingAddressStr = sessionStorage.getItem('checkout_address');
+                    const shippingAddress = shippingAddressStr ? JSON.parse(shippingAddressStr) : null;
+                    
+                    if (customerEmail && customerName) {
+                        // Send confirmation email
+                        await fetch('/api/email/send-order-confirmation', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                to: customerEmail,
+                                customerName: customerName,
+                                orderItems: cartItems,
+                                total: total,
+                                sessionId: sessionId,
+                                shippingAddress: shippingAddress
+                            }),
+                        });
+                        
+                        // Clean up session storage
+                        sessionStorage.removeItem('checkout_email');
+                        sessionStorage.removeItem('checkout_name');
+                        sessionStorage.removeItem('checkout_address');
+                    }
+                }
+                
+                // Clear cart
+                localStorage.removeItem("fashionmarket-cart");
+                // Dispatch event to update cart icon
+                window.dispatchEvent(new CustomEvent("cart-updated"));
+            } catch (error) {
+                console.error("Error:", error);
+            }
+        })();
+    </script>
+</PublicLayout>

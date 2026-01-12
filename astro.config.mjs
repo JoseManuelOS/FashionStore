@@ -5,9 +5,8 @@ import tailwindcss from '@tailwindcss/vite';
 import node from '@astrojs/node';
 
 // https://astro.build/config
-// Astro 5.0: Static is default, use `export const prerender = false` for SSR pages
 export default defineConfig({
-  output: 'static',
+  output: 'server',
   adapter: node({
     mode: 'standalone'
   }),

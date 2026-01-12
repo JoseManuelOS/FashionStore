@@ -1,23 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useStore } from '@nanostores/react';
 import { $cart, $cartCount, $cartTotal, removeFromCart, updateQuantity, clearCart } from '../../stores/cart';
 
-interface CartSlideOverProps {
-    isOpen: boolean;
-    onClose: () => void;
-}
-
-export default function CartSlideOver({ isOpen: initialOpen, onClose }: CartSlideOverProps) {
-    const [isOpen, setIsOpen] = useState(initialOpen);
+export default function CartSlideOver() {
+    const [isOpen, setIsOpen] = useState(false);
     const cart = useStore($cart);
     const count = useStore($cartCount);
     const total = useStore($cartTotal);
 
+    const openCart = useCallback(() => setIsOpen(true), []);
+    const closeCart = useCallback(() => setIsOpen(false), []);
+
     useEffect(() => {
-        const handleToggle = () => setIsOpen(prev => !prev);
-        window.addEventListener('toggle-cart', handleToggle);
-        return () => window.removeEventListener('toggle-cart', handleToggle);
-    }, []);
+        window.addEventListener('toggle-cart', openCart);
+        window.addEventListener('close-cart', closeCart);
+        return () => {
+            window.removeEventListener('toggle-cart', openCart);
+            window.removeEventListener('close-cart', closeCart);
+        };
+    }, [openCart, closeCart]);
 
     useEffect(() => {
         if (isOpen) {
@@ -27,11 +28,6 @@ export default function CartSlideOver({ isOpen: initialOpen, onClose }: CartSlid
         }
         return () => { document.body.style.overflow = ''; };
     }, [isOpen]);
-
-    const handleClose = () => {
-        setIsOpen(false);
-        onClose();
-    };
 
     const formatPrice = (price: number) => {
         return new Intl.NumberFormat('es-ES', {
@@ -47,7 +43,7 @@ export default function CartSlideOver({ isOpen: initialOpen, onClose }: CartSlid
             {/* Backdrop */}
             <div
                 className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 animate-fade-in"
-                onClick={handleClose}
+                onClick={closeCart}
             />
 
             {/* Slide Over Panel */}
@@ -67,7 +63,7 @@ export default function CartSlideOver({ isOpen: initialOpen, onClose }: CartSlid
                             </div>
                         </div>
                         <button
-                            onClick={handleClose}
+                            onClick={closeCart}
                             className="p-2 text-zinc-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -87,12 +83,13 @@ export default function CartSlideOver({ isOpen: initialOpen, onClose }: CartSlid
                                 </div>
                                 <p className="text-zinc-400 mb-2">Tu carrito está vacío</p>
                                 <p className="text-sm text-zinc-600 mb-6">Añade productos para continuar</p>
-                                <button
-                                    onClick={handleClose}
-                                    className="px-6 py-3 bg-neon-cyan text-dark-600 font-semibold rounded-lg hover:shadow-glow-cyan transition-shadow"
+                                <a
+                                    href="/productos"
+                                    onClick={closeCart}
+                                    className="inline-block px-6 py-3 bg-neon-cyan text-dark-600 font-semibold rounded-lg hover:shadow-glow-cyan transition-shadow"
                                 >
                                     Explorar Productos
-                                </button>
+                                </a>
                             </div>
                         ) : (
                             <div className="space-y-4">

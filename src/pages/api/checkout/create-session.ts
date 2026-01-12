@@ -1,0 +1,185 @@
+import type { APIRoute } from 'astro';
+import Stripe from 'stripe';
+
+// Verificar que la clave existe
+if (!import.meta.env.STRIPE_SECRET_KEY) {
+    throw new Error('STRIPE_SECRET_KEY no está configurada en las variables de entorno');
+}
+
+const stripe = new Stripe(import.meta.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2024-12-18.acacia',
+});
+
+export const POST: APIRoute = async ({ request }) => {
+    console.log('=== INICIO DE CHECKOUT ===');
+    
+    try {
+        const body = await request.json();
+        console.log('Body recibido:', JSON.stringify(body, null, 2));
+        
+        const { items, customerEmail, customerPhone, customerName, shippingAddress, discount } = body;
+
+        if (!items || items.length === 0) {
+            console.error('Carrito vacío');
+            return new Response(
+                JSON.stringify({ error: 'El carrito está vacío' }),
+                { 
+                    status: 400,
+                    headers: { 'Content-Type': 'application/json' }
+                }
+            );
+        }
+
+        console.log('Items del carrito:', items.length);
+        if (discount) {
+            console.log('Descuento aplicado:', discount);
+        }
+
+        // Convertir items del carrito a line_items de Stripe
+        const lineItems = items.map((item: any) => {
+            const unitAmount = Math.round(item.price * 100);
+            console.log(`Item: ${item.name}, Price: ${item.price}€ -> ${unitAmount} centavos`);
+            
+            return {
+                price_data: {
+                    currency: 'eur',
+                    product_data: {
+                        name: item.name,
+                        images: item.image ? [item.image] : [],
+                        metadata: {
+                            product_id: item.id,
+                            size: item.size || '',
+                        },
+                    },
+                    unit_amount: unitAmount,
+                },
+                quantity: item.quantity,
+            };
+        });
+
+        // Session config
+        // 'card' incluye automáticamente Visa, Mastercard, Apple Pay y Google Pay
+        // PayPal y Revolut Pay son métodos separados
+        const sessionConfig: any = {
+            payment_method_types: ['card', 'paypal', 'revolut_pay'],
+            line_items: lineItems,
+            mode: 'payment',
+            success_url: `${request.headers.get('origin')}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${request.headers.get('origin')}/checkout`,
+        };
+
+        // Add discount if provided
+        if (discount && discount.code) {
+            // Calculate discount for Stripe
+            const subtotal = items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
+            let discountAmount = 0;
+            
+            if (discount.type === 'percentage') {
+                discountAmount = Math.round((subtotal * discount.value) / 100 * 100); // Convert to cents
+            } else if (discount.type === 'fixed') {
+                discountAmount = Math.round(Math.min(discount.value, subtotal) * 100); // Convert to cents
+            }
+
+            if (discountAmount > 0) {
+                console.log(`Aplicando descuento: ${discount.code} - ${discountAmount} centavos`);
+                sessionConfig.discounts = [{
+                    coupon: await stripe.coupons.create(
+                        discount.type === 'percentage' 
+                            ? {
+                                percent_off: discount.value,
+                                duration: 'once',
+                                name: discount.code,
+                            }
+                            : {
+                                amount_off: discountAmount,
+                                currency: 'eur',
+                                duration: 'once',
+                                name: discount.code,
+                            }
+                    ).then(coupon => coupon.id)
+                }];
+            }
+        }
+
+        // Add customer info if provided
+        if (customerEmail) {
+            sessionConfig.customer_email = customerEmail;
+            console.log('Email del cliente:', customerEmail);
+        }
+
+        // Add shipping options if complete address provided
+        if (customerPhone && customerName && shippingAddress) {
+            console.log('Usando datos de envío proporcionados');
+            sessionConfig.shipping_options = [
+                {
+                    shipping_rate_data: {
+                        type: 'fixed_amount',
+                        fixed_amount: {
+                            amount: 0,
+                            currency: 'eur',
+                        },
+                        display_name: 'Envío Gratis',
+                        delivery_estimate: {
+                            minimum: {
+                                unit: 'business_day',
+                                value: 3,
+                            },
+                            maximum: {
+                                unit: 'business_day',
+                                value: 7,
+                            },
+                        },
+                    },
+                },
+            ];
+            sessionConfig.metadata = {
+                customer_phone: customerPhone,
+                customer_name: customerName,
+            };
+        } else {
+            console.log('Stripe recogerá dirección de envío');
+            sessionConfig.shipping_address_collection = {
+                allowed_countries: ['ES', 'FR', 'IT', 'PT', 'DE', 'NL', 'BE'],
+            };
+            sessionConfig.billing_address_collection = 'required';
+        }
+
+        console.log('Creando sesión de Stripe...');
+        
+        // Crear sesión de Stripe Checkout
+        const session = await stripe.checkout.sessions.create(sessionConfig);
+
+        console.log('Sesión creada exitosamente:', session.id);
+
+        return new Response(
+            JSON.stringify({ 
+                sessionId: session.id,
+                url: session.url 
+            }),
+            { 
+                status: 200,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+    } catch (error: any) {
+        console.error('=== ERROR EN CHECKOUT ===');
+        console.error('Tipo de error:', error.constructor.name);
+        console.error('Mensaje:', error.message);
+        console.error('Stack:', error.stack);
+        
+        return new Response(
+            JSON.stringify({ 
+                error: error.message || 'Error desconocido al crear la sesión de pago',
+                type: error.type || 'unknown'
+            }),
+            { 
+                status: 500,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+    }
+};

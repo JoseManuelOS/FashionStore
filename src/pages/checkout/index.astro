@@ -1,0 +1,553 @@
+---
+import PublicLayout from "../../layouts/PublicLayout.astro";
+import { supabase } from "../../lib/supabase";
+
+export const prerender = false;
+
+// Check if user is logged in
+const { cookies } = Astro;
+const accessToken = cookies.get("sb-access-token")?.value;
+const refreshToken = cookies.get("sb-refresh-token")?.value;
+
+let user = null;
+let customerData = null;
+
+if (accessToken && refreshToken) {
+    const { data: { user: authUser } } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+    });
+    
+    if (authUser) {
+        user = authUser;
+        // Get customer data including saved address
+        const { data } = await supabase
+            .from('customers')
+            .select('*')
+            .eq('user_id', authUser.id)
+            .single();
+        
+        customerData = data;
+    }
+}
+---
+
+<PublicLayout
+    title="Checkout - Finalizar Compra"
+    description="Completa tu pedido"
+>
+    <section class="py-12 md:py-16 min-h-[70vh]">
+        <div class="container-custom max-w-4xl">
+            <h1 class="text-3xl md:text-4xl font-display font-bold text-white mb-8">
+                Finalizar Compra
+            </h1>
+
+            <form id="checkout-form" class="space-y-6">
+                <!-- Email Section -->
+                <div class="bg-dark-400/50 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+                    <h2 class="font-display text-xl text-white mb-4">Información de Contacto</h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-zinc-300 mb-2">
+                                Correo Electrónico *
+                            </label>
+                            <input
+                                type="email"
+                                id="email"
+                                name="email"
+                                required
+                                value={user?.email || ''}
+                                readonly={!!user}
+                                class="w-full px-4 py-3 bg-dark-500 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-neon-cyan/50 disabled:opacity-50"
+                                placeholder="tu@email.com"
+                            />
+                        </div>
+
+                        <div>
+                            <label for="phone" class="block text-sm font-medium text-zinc-300 mb-2">
+                                Teléfono *
+                            </label>
+                            <input
+                                type="tel"
+                                id="phone"
+                                name="phone"
+                                required
+                                value={customerData?.phone || ''}
+                                class="w-full px-4 py-3 bg-dark-500 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-neon-cyan/50"
+                                placeholder="+34 600 000 000"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shipping Address Section -->
+                <div class="bg-dark-400/50 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+                    <h2 class="font-display text-xl text-white mb-4">Dirección de Envío</h2>
+                    
+                    {customerData?.default_address && (
+                        <div class="mb-4">
+                            <label class="flex items-center gap-3 p-4 bg-dark-500 rounded-xl cursor-pointer hover:bg-dark-500/70 transition-colors">
+                                <input
+                                    type="checkbox"
+                                    id="use-saved-address"
+                                    class="w-4 h-4 text-neon-cyan bg-dark-400 border-white/20 rounded focus:ring-neon-cyan/50"
+                                />
+                                <span class="text-zinc-300">
+                                    Usar dirección guardada
+                                </span>
+                            </label>
+                            <div id="saved-address-preview" class="mt-2 ml-7 text-sm text-zinc-400 hidden">
+                                <p>{customerData.default_address.street}</p>
+                                <p>{customerData.default_address.city}, {customerData.default_address.postal_code}</p>
+                                <p>{customerData.default_address.province}, {customerData.default_address.country}</p>
+                            </div>
+                        </div>
+                    )}
+
+                    <div id="address-fields" class="space-y-4">
+                        <div>
+                            <label for="full_name" class="block text-sm font-medium text-zinc-300 mb-2">
+                                Nombre Completo *
+                            </label>
+                            <input
+                                type="text"
+                                id="full_name"
+                                name="full_name"
+                                required
+                                value={customerData?.full_name || ''}
+                                class="w-full px-4 py-3 bg-dark-500 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-neon-cyan/50"
+                                placeholder="Juan Pérez"
+                            />
+                        </div>
+
+                        <div>
+                            <label for="street" class="block text-sm font-medium text-zinc-300 mb-2">
+                                Dirección *
+                            </label>
+                            <input
+                                type="text"
+                                id="street"
+                                name="street"
+                                required
+                                class="w-full px-4 py-3 bg-dark-500 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-neon-cyan/50"
+                                placeholder="Calle Principal, 123"
+                            />
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="city" class="block text-sm font-medium text-zinc-300 mb-2">
+                                    Ciudad *
+                                </label>
+                                <input
+                                    type="text"
+                                    id="city"
+                                    name="city"
+                                    required
+                                    class="w-full px-4 py-3 bg-dark-500 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-neon-cyan/50"
+                                    placeholder="Madrid"
+                                />
+                            </div>
+
+                            <div>
+                                <label for="postal_code" class="block text-sm font-medium text-zinc-300 mb-2">
+                                    Código Postal *
+                                </label>
+                                <input
+                                    type="text"
+                                    id="postal_code"
+                                    name="postal_code"
+                                    required
+                                    class="w-full px-4 py-3 bg-dark-500 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-neon-cyan/50"
+                                    placeholder="28001"
+                                />
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="province" class="block text-sm font-medium text-zinc-300 mb-2">
+                                    Provincia *
+                                </label>
+                                <input
+                                    type="text"
+                                    id="province"
+                                    name="province"
+                                    required
+                                    class="w-full px-4 py-3 bg-dark-500 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-neon-cyan/50"
+                                    placeholder="Madrid"
+                                />
+                            </div>
+
+                            <div>
+                                <label for="country" class="block text-sm font-medium text-zinc-300 mb-2">
+                                    País *
+                                </label>
+                                <select
+                                    id="country"
+                                    name="country"
+                                    required
+                                    class="w-full px-4 py-3 bg-dark-500 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-neon-cyan/50"
+                                >
+                                    <option value="ES">España</option>
+                                    <option value="FR">Francia</option>
+                                    <option value="IT">Italia</option>
+                                    <option value="PT">Portugal</option>
+                                    <option value="DE">Alemania</option>
+                                    <option value="NL">Países Bajos</option>
+                                    <option value="BE">Bélgica</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Summary -->
+                <div class="bg-dark-400/50 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+                    <h2 class="font-display text-xl text-white mb-4">Resumen del Pedido</h2>
+                    
+                    <div id="order-items" class="space-y-3 mb-4">
+                        <!-- Will be populated by JS -->
+                    </div>
+
+                    <!-- Discount Code Section -->
+                    <div class="border-t border-white/10 pt-4 mb-4">
+                        <div class="flex gap-2">
+                            <input
+                                type="text"
+                                id="discount-code"
+                                placeholder="Código de descuento"
+                                class="flex-1 px-4 py-2.5 bg-dark-500 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-neon-cyan/50 text-sm"
+                            />
+                            <button
+                                type="button"
+                                id="apply-discount-btn"
+                                class="px-4 py-2.5 bg-dark-500 border border-white/10 text-white rounded-xl hover:border-neon-cyan/50 hover:text-neon-cyan transition-all text-sm font-medium"
+                            >
+                                Aplicar
+                            </button>
+                        </div>
+                        <div id="discount-message" class="hidden mt-2 text-sm"></div>
+                        <div id="applied-discount" class="hidden mt-3 p-3 bg-green-500/10 border border-green-500/30 rounded-xl flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span class="text-green-400 text-sm">
+                                    <span id="discount-code-display" class="font-semibold"></span> aplicado
+                                </span>
+                            </div>
+                            <button
+                                type="button"
+                                id="remove-discount-btn"
+                                class="text-green-400 hover:text-green-300 text-sm"
+                            >
+                                Eliminar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-white/10 pt-4 space-y-2">
+                        <div class="flex justify-between text-zinc-400">
+                            <span>Subtotal</span>
+                            <span id="subtotal">€0,00</span>
+                        </div>
+                        <div id="discount-row" class="hidden flex justify-between text-green-400">
+                            <span>Descuento (<span id="discount-percent"></span>)</span>
+                            <span id="discount-amount">-€0,00</span>
+                        </div>
+                        <div class="flex justify-between text-zinc-400">
+                            <span>Envío</span>
+                            <span>Gratis</span>
+                        </div>
+                        <div class="flex justify-between items-center pt-2 border-t border-white/10">
+                            <span class="font-medium text-white">Total</span>
+                            <span id="total" class="font-display text-2xl text-neon-cyan">€0,00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Buttons -->
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <button
+                        type="submit"
+                        id="submit-btn"
+                        class="flex-1 py-4 px-6 bg-gradient-to-r from-neon-cyan to-neon-cyan-light text-dark-500 font-semibold rounded-xl hover:shadow-lg hover:shadow-neon-cyan/25 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <span id="submit-text">Proceder al Pago</span>
+                        <svg id="submit-spinner" class="hidden animate-spin w-5 h-5 mx-auto" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                    </button>
+                    <a
+                        href="/carrito"
+                        class="py-4 px-6 border border-white/10 text-white font-semibold rounded-xl hover:border-neon-cyan/50 transition-all duration-200 text-center"
+                    >
+                        Volver al Carrito
+                    </a>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <script define:vars={{ customerData }}>
+        // Discount codes database
+        const DISCOUNT_CODES = {
+            'BIENVENIDO10': { type: 'percentage', value: 10, description: '10% de descuento' },
+            'FASHION15': { type: 'percentage', value: 15, description: '15% de descuento' },
+            'VERANO20': { type: 'percentage', value: 20, description: '20% de descuento' },
+            'PRIMERACOMPRA': { type: 'percentage', value: 25, description: '25% de descuento' },
+            'ENVIOGRATIS': { type: 'fixed', value: 5, description: '€5 de descuento' },
+        };
+
+        let appliedDiscount = null;
+
+        // Format price
+        function formatPrice(price) {
+            return new Intl.NumberFormat("es-ES", {
+                style: "currency",
+                currency: "EUR",
+            }).format(price);
+        }
+
+        // Get cart from localStorage
+        function getCart() {
+            try {
+                const saved = localStorage.getItem("fashionmarket-cart");
+                return saved ? JSON.parse(saved) : [];
+            } catch {
+                return [];
+            }
+        }
+
+        // Calculate discount amount
+        function calculateDiscount(subtotal, discount) {
+            if (!discount) return 0;
+            
+            if (discount.type === 'percentage') {
+                return (subtotal * discount.value) / 100;
+            } else if (discount.type === 'fixed') {
+                return Math.min(discount.value, subtotal); // Don't exceed subtotal
+            }
+            return 0;
+        }
+
+        // Update order summary
+        function updateOrderSummary() {
+            const cart = getCart();
+            const subtotalEl = document.getElementById('subtotal');
+            const totalEl = document.getElementById('total');
+            const discountRow = document.getElementById('discount-row');
+            const discountAmount = document.getElementById('discount-amount');
+            const discountPercent = document.getElementById('discount-percent');
+
+            if (!cart || cart.length === 0) {
+                window.location.href = '/carrito';
+                return;
+            }
+
+            const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+            const discount = appliedDiscount ? calculateDiscount(subtotal, appliedDiscount) : 0;
+            const total = subtotal - discount;
+
+            subtotalEl.textContent = formatPrice(subtotal);
+            
+            if (discount > 0) {
+                discountRow.classList.remove('hidden');
+                discountAmount.textContent = `-${formatPrice(discount)}`;
+                discountPercent.textContent = appliedDiscount.type === 'percentage' 
+                    ? `${appliedDiscount.value}%` 
+                    : appliedDiscount.description;
+            } else {
+                discountRow.classList.add('hidden');
+            }
+
+            totalEl.textContent = formatPrice(total);
+        }
+
+        // Render order summary
+        function renderOrderSummary() {
+            const cart = getCart();
+            const orderItems = document.getElementById('order-items');
+
+            if (!cart || cart.length === 0) {
+                window.location.href = '/carrito';
+                return;
+            }
+
+            orderItems.innerHTML = cart.map(item => `
+                <div class="flex justify-between text-sm">
+                    <span class="text-zinc-400">${item.name} x${item.quantity} (${item.size})</span>
+                    <span class="text-white">${formatPrice(item.price * item.quantity)}</span>
+                </div>
+            `).join('');
+
+            updateOrderSummary();
+        }
+
+        // Apply discount code
+        function applyDiscount() {
+            const codeInput = document.getElementById('discount-code');
+            const code = codeInput.value.trim().toUpperCase();
+            const messageDiv = document.getElementById('discount-message');
+            const appliedDiv = document.getElementById('applied-discount');
+            const codeDisplay = document.getElementById('discount-code-display');
+
+            if (!code) {
+                messageDiv.textContent = 'Por favor, introduce un código de descuento';
+                messageDiv.className = 'mt-2 text-sm text-red-400';
+                messageDiv.classList.remove('hidden');
+                return;
+            }
+
+            const discount = DISCOUNT_CODES[code];
+
+            if (!discount) {
+                messageDiv.textContent = 'Código de descuento inválido';
+                messageDiv.className = 'mt-2 text-sm text-red-400';
+                messageDiv.classList.remove('hidden');
+                return;
+            }
+
+            appliedDiscount = { ...discount, code };
+            codeInput.value = '';
+            messageDiv.classList.add('hidden');
+            appliedDiv.classList.remove('hidden');
+            codeDisplay.textContent = code;
+            
+            updateOrderSummary();
+        }
+
+        // Remove discount
+        function removeDiscount() {
+            appliedDiscount = null;
+            document.getElementById('applied-discount').classList.add('hidden');
+            updateOrderSummary();
+        }
+
+        // Handle saved address checkbox
+        const useSavedCheckbox = document.getElementById('use-saved-address');
+        const savedAddressPreview = document.getElementById('saved-address-preview');
+        const addressFields = document.getElementById('address-fields');
+
+        if (useSavedCheckbox && customerData?.default_address) {
+            useSavedCheckbox.addEventListener('change', (e) => {
+                const isChecked = e.target.checked;
+                savedAddressPreview?.classList.toggle('hidden', !isChecked);
+                
+                if (isChecked) {
+                    // Fill fields with saved address
+                    document.getElementById('street').value = customerData.default_address.street || '';
+                    document.getElementById('city').value = customerData.default_address.city || '';
+                    document.getElementById('postal_code').value = customerData.default_address.postal_code || '';
+                    document.getElementById('province').value = customerData.default_address.province || '';
+                    document.getElementById('country').value = customerData.default_address.country || 'ES';
+                } else {
+                    // Clear fields
+                    document.getElementById('street').value = '';
+                    document.getElementById('city').value = '';
+                    document.getElementById('postal_code').value = '';
+                    document.getElementById('province').value = '';
+                    document.getElementById('country').value = 'ES';
+                }
+            });
+        }
+
+        // Handle form submission
+        const form = document.getElementById('checkout-form');
+        form?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById('submit-btn');
+            const submitText = document.getElementById('submit-text');
+            const submitSpinner = document.getElementById('submit-spinner');
+
+            try {
+                // Disable button
+                submitBtn.disabled = true;
+                submitText?.classList.add('hidden');
+                submitSpinner?.classList.remove('hidden');
+
+                const cart = getCart();
+                if (!cart || cart.length === 0) {
+                    alert('Tu carrito está vacío');
+                    return;
+                }
+
+                // Get form data
+                const formData = new FormData(form);
+                const customerInfo = {
+                    email: formData.get('email'),
+                    phone: formData.get('phone'),
+                    full_name: formData.get('full_name'),
+                    address: {
+                        line1: formData.get('street'),
+                        city: formData.get('city'),
+                        postal_code: formData.get('postal_code'),
+                        state: formData.get('province'),
+                        country: formData.get('country')
+                    }
+                };
+
+                // Store customer info for email confirmation after payment
+                sessionStorage.setItem('checkout_email', customerInfo.email as string);
+                sessionStorage.setItem('checkout_name', customerInfo.full_name as string);
+                sessionStorage.setItem('checkout_address', JSON.stringify(customerInfo.address));
+
+                // Create Stripe checkout session
+                const response = await fetch('/api/checkout/create-session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        items: cart,
+                        customerEmail: customerInfo.email,
+                        customerPhone: customerInfo.phone,
+                        customerName: customerInfo.full_name,
+                        shippingAddress: customerInfo.address,
+                        discount: appliedDiscount
+                    }),
+                });
+
+                console.log('Response status:', response.status);
+                const data = await response.json();
+                console.log('Response data:', data);
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Error al crear la sesión de pago');
+                }
+
+                // Redirect to Stripe Checkout
+                if (data.url) {
+                    window.location.href = data.url;
+                } else {
+                    throw new Error('No se recibió URL de checkout');
+                }
+            } catch (error) {
+                console.error('Error during checkout:', error);
+                alert(`Error: ${error.message || 'Hubo un error al procesar tu pago. Por favor, intenta de nuevo.'}`);
+                
+                // Re-enable button
+                submitBtn.disabled = false;
+                submitText?.classList.remove('hidden');
+                submitSpinner?.classList.add('hidden');
+            }
+        });
+
+        // Discount code button handlers
+        document.getElementById('apply-discount-btn')?.addEventListener('click', applyDiscount);
+        document.getElementById('remove-discount-btn')?.addEventListener('click', removeDiscount);
+        document.getElementById('discount-code')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                applyDiscount();
+            }
+        });
+
+        // Initialize
+        renderOrderSummary();
+    </script>
+</PublicLayout>

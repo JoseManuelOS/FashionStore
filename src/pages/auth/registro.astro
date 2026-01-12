@@ -1,0 +1,473 @@
+---
+import PublicLayout from "../../layouts/PublicLayout.astro";
+
+export const prerender = false;
+
+// If already logged in, redirect to home
+const user = Astro.locals.user;
+if (user) {
+  return Astro.redirect("/");
+}
+---
+
+<PublicLayout title="Crear Cuenta | FashionMarket">
+  <div class="min-h-[80vh] flex items-center justify-center py-12 px-4">
+    <div class="w-full max-w-md">
+      <!-- Header -->
+      <div class="text-center mb-8">
+        <a href="/" class="inline-flex items-center gap-3 mb-6">
+          <div
+            class="w-12 h-12 rounded-xl bg-gradient-to-br from-neon-cyan to-neon-fuchsia flex items-center justify-center"
+          >
+            <span class="text-dark-500 font-bold text-xl">FM</span>
+          </div>
+        </a>
+        <h1 class="text-3xl font-display font-bold text-white mb-2">
+          Crea tu cuenta
+        </h1>
+        <p class="text-zinc-400">
+          Únete a FashionMarket y descubre las mejores ofertas
+        </p>
+      </div>
+
+      <!-- Register Form -->
+      <div
+        class="bg-dark-400/50 backdrop-blur-xl border border-white/10 rounded-2xl p-8"
+      >
+        <form id="register-form" class="space-y-5">
+          <!-- Full Name -->
+          <div>
+            <label
+              for="fullName"
+              class="block text-sm font-medium text-zinc-300 mb-2"
+            >
+              Nombre completo
+            </label>
+            <input
+              type="text"
+              id="fullName"
+              name="fullName"
+              required
+              class="w-full px-4 py-3 bg-dark-500 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors"
+              placeholder="Juan García"
+            />
+          </div>
+
+          <!-- Email -->
+          <div>
+            <label
+              for="email"
+              class="block text-sm font-medium text-zinc-300 mb-2"
+            >
+              Correo electrónico
+            </label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              required
+              class="w-full px-4 py-3 bg-dark-500 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors"
+              placeholder="tu@email.com"
+            />
+          </div>
+
+          <!-- Password -->
+          <div>
+            <label
+              for="password"
+              class="block text-sm font-medium text-zinc-300 mb-2"
+            >
+              Contraseña
+            </label>
+            <div class="relative">
+              <input
+                type="password"
+                id="password"
+                name="password"
+                required
+                minlength="6"
+                class="w-full px-4 py-3 bg-dark-500 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors pr-12"
+                placeholder="Mínimo 6 caracteres"
+              />
+              <button
+                type="button"
+                id="toggle-password"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white transition-colors"
+              >
+                <svg
+                  class="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.5"
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.5"
+                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                  ></path>
+                </svg>
+              </button>
+            </div>
+            <!-- Password strength indicator -->
+            <div class="mt-2 flex gap-1">
+              <div
+                id="strength-1"
+                class="h-1 flex-1 rounded-full bg-dark-300 transition-colors"
+              >
+              </div>
+              <div
+                id="strength-2"
+                class="h-1 flex-1 rounded-full bg-dark-300 transition-colors"
+              >
+              </div>
+              <div
+                id="strength-3"
+                class="h-1 flex-1 rounded-full bg-dark-300 transition-colors"
+              >
+              </div>
+              <div
+                id="strength-4"
+                class="h-1 flex-1 rounded-full bg-dark-300 transition-colors"
+              >
+              </div>
+            </div>
+            <p id="strength-text" class="text-xs text-zinc-500 mt-1"></p>
+          </div>
+
+          <!-- Confirm Password -->
+          <div>
+            <label
+              for="confirmPassword"
+              class="block text-sm font-medium text-zinc-300 mb-2"
+            >
+              Confirmar contraseña
+            </label>
+            <input
+              type="password"
+              id="confirmPassword"
+              name="confirmPassword"
+              required
+              class="w-full px-4 py-3 bg-dark-500 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors"
+              placeholder="Repite tu contraseña"
+            />
+          </div>
+
+          <!-- Terms -->
+          <div class="flex items-start gap-3">
+            <input
+              type="checkbox"
+              id="terms"
+              name="terms"
+              required
+              class="mt-1 w-4 h-4 rounded border-white/20 bg-dark-500 text-neon-cyan focus:ring-neon-cyan"
+            />
+            <label for="terms" class="text-sm text-zinc-400">
+              Acepto los <a
+                href="/terminos"
+                class="text-neon-cyan hover:text-neon-cyan-light"
+                >Términos y Condiciones</a
+              >
+              y la <a
+                href="/privacidad"
+                class="text-neon-cyan hover:text-neon-cyan-light"
+                >Política de Privacidad</a
+              >
+            </label>
+          </div>
+
+          <!-- Newsletter -->
+          <div class="flex items-start gap-3">
+            <input
+              type="checkbox"
+              id="newsletter"
+              name="newsletter"
+              class="mt-1 w-4 h-4 rounded border-white/20 bg-dark-500 text-neon-cyan focus:ring-neon-cyan"
+            />
+            <label for="newsletter" class="text-sm text-zinc-400">
+              Quiero recibir ofertas exclusivas y novedades por email
+            </label>
+          </div>
+
+          <!-- Error Message -->
+          <div
+            id="error-message"
+            class="hidden p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm"
+          >
+          </div>
+
+          <!-- Success Message -->
+          <div
+            id="success-message"
+            class="hidden p-4 bg-green-500/10 border border-green-500/30 rounded-xl text-green-400 text-sm"
+          >
+          </div>
+
+          <!-- Submit -->
+          <button
+            type="submit"
+            id="submit-btn"
+            class="w-full py-3.5 bg-gradient-to-r from-neon-cyan to-neon-cyan-light text-dark-500 font-semibold rounded-xl hover:shadow-lg hover:shadow-neon-cyan/25 transition-all duration-200 flex items-center justify-center gap-2"
+          >
+            <span>Crear cuenta</span>
+            <svg
+              class="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
+              ></path>
+            </svg>
+          </button>
+        </form>
+
+        <!-- Divider -->
+        <div class="relative my-6">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-white/10"></div>
+          </div>
+          <div class="relative flex justify-center text-sm">
+            <span class="px-4 bg-dark-400/50 text-zinc-500"
+              >o regístrate con</span
+            >
+          </div>
+        </div>
+
+        <!-- Social Login -->
+        <div class="grid grid-cols-1 gap-3">
+          <button
+            id="google-login"
+            class="flex items-center justify-center gap-2 px-4 py-3 bg-dark-500 border border-white/10 rounded-xl text-white hover:bg-dark-300 hover:border-white/20 transition-all"
+          >
+            <svg class="w-5 h-5" viewBox="0 0 24 24">
+              <path
+                fill="#4285F4"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+              ></path>
+              <path
+                fill="#34A853"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+              ></path>
+              <path
+                fill="#FBBC05"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+              ></path>
+              <path
+                fill="#EA4335"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+              ></path>
+            </svg>
+            <span class="text-sm font-medium">Google</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Login Link -->
+      <p class="text-center mt-6 text-zinc-400">
+        ¿Ya tienes cuenta?
+        <a
+          href="/auth/login"
+          class="text-neon-cyan hover:text-neon-cyan-light font-medium transition-colors"
+        >
+          Inicia sesión
+        </a>
+      </p>
+    </div>
+  </div>
+</PublicLayout>
+
+<script>
+  import { createClient } from "@supabase/supabase-js";
+
+  const supabase = createClient(
+    import.meta.env.PUBLIC_SUPABASE_URL || "",
+    import.meta.env.PUBLIC_SUPABASE_ANON_KEY || "",
+  );
+
+  const form = document.getElementById("register-form") as HTMLFormElement;
+  const errorDiv = document.getElementById("error-message") as HTMLDivElement;
+  const successDiv = document.getElementById(
+    "success-message",
+  ) as HTMLDivElement;
+  const submitBtn = document.getElementById("submit-btn") as HTMLButtonElement;
+  const togglePassword = document.getElementById(
+    "toggle-password",
+  ) as HTMLButtonElement;
+  const passwordInput = document.getElementById("password") as HTMLInputElement;
+  const confirmPasswordInput = document.getElementById(
+    "confirmPassword",
+  ) as HTMLInputElement;
+
+  // Password strength indicators
+  const strengthBars = [
+    document.getElementById("strength-1"),
+    document.getElementById("strength-2"),
+    document.getElementById("strength-3"),
+    document.getElementById("strength-4"),
+  ];
+  const strengthText = document.getElementById("strength-text");
+
+  // Toggle password visibility
+  togglePassword?.addEventListener("click", () => {
+    const type = passwordInput.type === "password" ? "text" : "password";
+    passwordInput.type = type;
+  });
+
+  // Password strength checker
+  passwordInput?.addEventListener("input", () => {
+    const password = passwordInput.value;
+    let strength = 0;
+
+    if (password.length >= 6) strength++;
+    if (password.length >= 8) strength++;
+    if (/[A-Z]/.test(password) && /[a-z]/.test(password)) strength++;
+    if (/[0-9]/.test(password) || /[^A-Za-z0-9]/.test(password)) strength++;
+
+    const colors = [
+      "bg-red-500",
+      "bg-orange-500",
+      "bg-yellow-500",
+      "bg-green-500",
+    ];
+    const texts = ["Muy débil", "Débil", "Media", "Fuerte"];
+
+    strengthBars.forEach((bar, index) => {
+      if (bar) {
+        bar.className = `h-1 flex-1 rounded-full transition-colors ${index < strength ? colors[strength - 1] : "bg-dark-300"}`;
+      }
+    });
+
+    if (strengthText) {
+      strengthText.textContent =
+        password.length > 0 ? texts[strength - 1] || "Muy débil" : "";
+      strengthText.className = `text-xs mt-1 ${strength > 2 ? "text-green-400" : strength > 1 ? "text-yellow-400" : "text-red-400"}`;
+    }
+  });
+
+  // Form submit
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(form);
+    const fullName = formData.get("fullName") as string;
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+    const confirmPassword = formData.get("confirmPassword") as string;
+    const newsletter = formData.get("newsletter") === "on";
+
+    // Validate passwords match
+    if (password !== confirmPassword) {
+      errorDiv.textContent = "Las contraseñas no coinciden";
+      errorDiv.classList.remove("hidden");
+      return;
+    }
+
+    // Show loading
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `
+      <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      <span>Creando cuenta...</span>
+    `;
+    errorDiv.classList.add("hidden");
+    successDiv.classList.add("hidden");
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            newsletter: newsletter,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      // Send welcome email
+      try {
+        await fetch("/api/email/send-welcome", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            to: email,
+            name: fullName,
+          }),
+        });
+      } catch (emailError) {
+        console.error("Error sending welcome email:", emailError);
+        // Don't fail registration if email fails
+      }
+
+      // Show success message
+      successDiv.innerHTML = `
+        <div class="flex items-start gap-3">
+          <svg class="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div>
+            <p class="font-medium">¡Cuenta creada con éxito!</p>
+            <p class="text-green-400/80 text-sm mt-1">Te hemos enviado un email de bienvenida a <strong>${email}</strong>. Revisa tu bandeja de entrada.</p>
+          </div>
+        </div>
+      `;
+      successDiv.classList.remove("hidden");
+
+      // Reset form
+      form.reset();
+
+      // Reset button
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = `
+        <span>Crear cuenta</span>
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+        </svg>
+      `;
+    } catch (error: any) {
+      let message = error.message;
+      if (error.message.includes("already registered")) {
+        message = "Este email ya está registrado. ¿Quieres iniciar sesión?";
+      }
+
+      errorDiv.textContent = message;
+      errorDiv.classList.remove("hidden");
+
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = `
+        <span>Crear cuenta</span>
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+        </svg>
+      `;
+    }
+  });
+
+  // Google login
+  document
+    .getElementById("google-login")
+    ?.addEventListener("click", async () => {
+      await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+    });
+</script>

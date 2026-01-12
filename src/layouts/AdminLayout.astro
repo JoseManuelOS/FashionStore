@@ -1,6 +1,5 @@
 ---
 import BaseLayout from "./BaseLayout.astro";
-import { supabase } from "../lib/supabase";
 
 export interface Props {
     title: string;
@@ -8,21 +7,30 @@ export interface Props {
 
 const { title } = Astro.props;
 
-// Check authentication - this runs on the server
-const accessToken = Astro.cookies.get("sb-access-token")?.value;
-const refreshToken = Astro.cookies.get("sb-refresh-token")?.value;
+// Check admin authentication
+let adminSession = null;
 
-let user = null;
-if (accessToken && refreshToken) {
-    const { data } = await supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken,
-    });
-    user = data?.user;
+// Get cookie from request header directly
+const cookieHeader = Astro.request.headers.get('cookie') || '';
+
+if (cookieHeader.includes('admin-session=')) {
+    try {
+        const match = cookieHeader.match(/admin-session=([^;]+)/);
+        if (match) {
+            const decoded = decodeURIComponent(match[1]);
+            adminSession = JSON.parse(decoded);
+            // Check if session is still valid (8 hours)
+            if (Date.now() - adminSession.timestamp > 8 * 60 * 60 * 1000) {
+                adminSession = null;
+            }
+        }
+    } catch (e) {
+        adminSession = null;
+    }
 }
 
-// If not authenticated, redirect to login
-if (!user) {
+// If not authenticated, redirect to admin login
+if (!adminSession) {
     return Astro.redirect("/admin/login");
 }
 ---
@@ -32,7 +40,7 @@ if (!user) {
         <!-- Sidebar -->
         <aside class="w-64 bg-brand-navy-500 text-white flex-shrink-0">
             <div class="p-6">
-                <a href="/admin" class="font-serif text-xl font-semibold">
+                <a href="/admin/dashboard" class="font-serif text-xl font-semibold">
                     FashionMarket
                 </a>
                 <span class="block text-brand-navy-300 text-sm mt-1"
@@ -42,7 +50,7 @@ if (!user) {
 
             <nav class="mt-4 px-4 space-y-1">
                 <a
-                    href="/admin"
+                    href="/admin/dashboard"
                     class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-brand-navy-600 transition-colors"
                 >
                     <svg
@@ -110,33 +118,32 @@ if (!user) {
                     <div
                         class="w-8 h-8 rounded-full bg-accent-leather flex items-center justify-center text-white font-medium text-sm"
                     >
-                        {user.email?.charAt(0).toUpperCase()}
+                        {adminSession.full_name?.charAt(0).toUpperCase() || adminSession.email?.charAt(0).toUpperCase()}
                     </div>
                     <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium truncate">{user.email}</p>
+                        <p class="text-sm font-medium truncate">{adminSession.full_name || adminSession.email}</p>
+                        <p class="text-xs text-brand-navy-300">{adminSession.role === 'super_admin' ? 'Super Admin' : 'Admin'}</p>
                     </div>
                 </div>
-                <form action="/api/auth/logout" method="POST" class="mt-2">
-                    <button
-                        type="submit"
-                        class="w-full flex items-center gap-3 px-4 py-2 text-brand-navy-300 hover:text-white transition-colors text-sm"
+                <button
+                    id="logout-btn"
+                    class="w-full flex items-center gap-3 px-4 py-2 text-brand-navy-300 hover:text-white transition-colors text-sm mt-2"
+                >
+                    <svg
+                        class="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
                     >
-                        <svg
-                            class="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="1.5"
-                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                            ></path>
-                        </svg>
-                        Cerrar Sesión
-                    </button>
-                </form>
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="1.5"
+                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                        ></path>
+                    </svg>
+                    Cerrar Sesión
+                </button>
             </div>
         </aside>
 
@@ -154,5 +161,18 @@ if (!user) {
                 <slot />
             </main>
         </div>
+    </div>
+
+    <script>
+        document.getElementById('logout-btn')?.addEventListener('click', async () => {
+            try {
+                await fetch('/api/admin/logout', { method: 'POST' });
+                window.location.href = '/admin/login';
+            } catch (error) {
+                console.error('Error logging out:', error);
+            }
+        });
+    </script>
+</BaseLayout>
     </div>
 </BaseLayout>

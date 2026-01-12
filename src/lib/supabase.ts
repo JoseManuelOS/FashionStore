@@ -42,7 +42,7 @@ export interface Product {
     slug: string;
     description: string | null;
     price: number;
-    stock: number;
+    stock: number; // Stock global (legacy, para compatibilidad)
     category_id: string | null;
     is_offer: boolean;
     sizes: string[];
@@ -54,6 +54,17 @@ export interface Product {
     category?: Category;
     images?: ProductImage[];
     main_image?: string; // From view
+    // Stock por talla
+    stock_by_size?: Record<string, number>;
+}
+
+export interface ProductStock {
+    id: string;
+    product_id: string;
+    size: string;
+    quantity: number;
+    created_at: string;
+    updated_at: string;
 }
 
 export interface Order {
@@ -332,4 +343,158 @@ export async function updateSetting(key: string, value: any) {
         .eq('key', key);
 
     if (error) throw error;
+}
+
+// =============================================
+// PRODUCT STOCK (Por Talla)
+// =============================================
+
+/**
+ * Obtener todo el stock de un producto por tallas
+ */
+export async function getProductStock(productId: string): Promise<ProductStock[]> {
+    const { data, error } = await supabase
+        .from('product_stock')
+        .select('*')
+        .eq('product_id', productId)
+        .order('size');
+
+    if (error) throw error;
+    return data || [];
+}
+
+/**
+ * Obtener stock de un producto como objeto { talla: cantidad }
+ */
+export async function getProductStockBySize(productId: string): Promise<Record<string, number>> {
+    const stock = await getProductStock(productId);
+    return stock.reduce((acc, item) => {
+        acc[item.size] = item.quantity;
+        return acc;
+    }, {} as Record<string, number>);
+}
+
+/**
+ * Obtener stock de una talla específica
+ */
+export async function getStockForSize(productId: string, size: string): Promise<number> {
+    const { data, error } = await supabase
+        .from('product_stock')
+        .select('quantity')
+        .eq('product_id', productId)
+        .eq('size', size)
+        .single();
+
+    if (error) return 0;
+    return data?.quantity || 0;
+}
+
+/**
+ * Actualizar stock de una talla específica
+ */
+export async function updateStockForSize(productId: string, size: string, quantity: number): Promise<void> {
+    const { error } = await supabaseAdmin
+        .from('product_stock')
+        .upsert({
+            product_id: productId,
+            size: size,
+            quantity: quantity,
+            updated_at: new Date().toISOString()
+        }, {
+            onConflict: 'product_id,size'
+        });
+
+    if (error) throw error;
+}
+
+/**
+ * Actualizar stock de múltiples tallas a la vez
+ */
+export async function updateProductStockBulk(productId: string, stockBySize: Record<string, number>): Promise<void> {
+    const updates = Object.entries(stockBySize).map(([size, quantity]) => ({
+        product_id: productId,
+        size,
+        quantity,
+        updated_at: new Date().toISOString()
+    }));
+
+    const { error } = await supabaseAdmin
+        .from('product_stock')
+        .upsert(updates, {
+            onConflict: 'product_id,size'
+        });
+
+    if (error) throw error;
+}
+
+/**
+ * Inicializar stock para un producto nuevo (todas las tallas a 0)
+ */
+export async function initProductStock(productId: string, sizes: string[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL']): Promise<void> {
+    const stockEntries = sizes.map(size => ({
+        product_id: productId,
+        size,
+        quantity: 0
+    }));
+
+    const { error } = await supabaseAdmin
+        .from('product_stock')
+        .upsert(stockEntries, {
+            onConflict: 'product_id,size',
+            ignoreDuplicates: true
+        });
+
+    if (error) throw error;
+}
+
+/**
+ * Decrementar stock después de una compra
+ */
+export async function decrementStock(productId: string, size: string, quantity: number = 1): Promise<boolean> {
+    // Primero verificar si hay suficiente stock
+    const currentStock = await getStockForSize(productId, size);
+    
+    if (currentStock < quantity) {
+        return false; // No hay suficiente stock
+    }
+
+    const { error } = await supabaseAdmin
+        .from('product_stock')
+        .update({ 
+            quantity: currentStock - quantity,
+            updated_at: new Date().toISOString()
+        })
+        .eq('product_id', productId)
+        .eq('size', size);
+
+    if (error) {
+        console.error('Error decrementando stock:', error);
+        return false;
+    }
+    
+    return true;
+}
+
+/**
+ * Obtener stock total de un producto (suma de todas las tallas)
+ */
+export async function getTotalStock(productId: string): Promise<number> {
+    const stock = await getProductStock(productId);
+    return stock.reduce((total, item) => total + item.quantity, 0);
+}
+
+/**
+ * Verificar si hay stock disponible para una talla
+ */
+export function hasStockForSize(stockBySize: Record<string, number>, size: string): boolean {
+    return (stockBySize[size] || 0) > 0;
+}
+
+/**
+ * Obtener tallas con stock disponible
+ */
+export function getAvailableSizes(stockBySize: Record<string, number>): string[] {
+    return Object.entries(stockBySize)
+        .filter(([_, quantity]) => quantity > 0)
+        .map(([size]) => size);
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface FilterSidebarProps {
     categories: Array<{ name: string; slug: string }>;
@@ -43,26 +43,72 @@ export default function FilterSidebar({
     const [offersOnly, setOffersOnly] = useState(initialFilters.offers);
     const [selectedColor, setSelectedColor] = useState(initialFilters.color);
 
-    const toggleSize = (size: string) => {
-        setSelectedSizes(prev =>
-            prev.includes(size)
-                ? prev.filter(s => s !== size)
-                : [...prev, size]
-        );
-    };
-
-    const applyFilters = () => {
+    // Build URL and navigate
+    const navigateWithFilters = useCallback((overrides: Partial<{
+        search: string;
+        category: string;
+        sizes: string[];
+        priceMin: number;
+        priceMax: number;
+        offers: boolean;
+        color: string;
+    }> = {}) => {
         const params = new URLSearchParams();
+        
+        const search = overrides.search ?? searchQuery;
+        const category = overrides.category ?? selectedCategory;
+        const sizes = overrides.sizes ?? selectedSizes;
+        const pMin = overrides.priceMin ?? priceMin;
+        const pMax = overrides.priceMax ?? priceMax;
+        const offers = overrides.offers ?? offersOnly;
+        const color = overrides.color ?? selectedColor;
 
-        if (searchQuery) params.set('buscar', searchQuery);
-        if (selectedCategory) params.set('categoria', selectedCategory);
-        if (selectedSizes.length) params.set('tallas', selectedSizes.join(','));
-        if (priceMin > 0) params.set('precioMin', priceMin.toString());
-        if (priceMax < maxPrice) params.set('precioMax', priceMax.toString());
-        if (offersOnly) params.set('ofertas', 'true');
-        if (selectedColor) params.set('color', selectedColor);
+        if (search) params.set('buscar', search);
+        if (category) params.set('categoria', category);
+        if (sizes.length) params.set('tallas', sizes.join(','));
+        if (pMin > 0) params.set('precioMin', pMin.toString());
+        if (pMax < maxPrice) params.set('precioMax', pMax.toString());
+        if (offers) params.set('ofertas', 'true');
+        if (color) params.set('color', color);
 
         window.location.href = `/productos${params.toString() ? '?' + params.toString() : ''}`;
+    }, [searchQuery, selectedCategory, selectedSizes, priceMin, priceMax, offersOnly, selectedColor, maxPrice]);
+
+    // Handle category change
+    const handleCategoryChange = (slug: string) => {
+        setSelectedCategory(slug);
+        navigateWithFilters({ category: slug });
+    };
+
+    // Handle offers toggle
+    const handleOffersToggle = () => {
+        const newValue = !offersOnly;
+        setOffersOnly(newValue);
+        navigateWithFilters({ offers: newValue });
+    };
+
+    // Handle style tag click - toggle behavior
+    const handleStyleTagClick = (tag: string) => {
+        const isActive = searchQuery.toLowerCase() === tag.toLowerCase();
+        const newSearch = isActive ? '' : tag;
+        setSearchQuery(newSearch);
+        navigateWithFilters({ search: newSearch });
+    };
+
+    // Handle size toggle
+    const handleSizeToggle = (size: string) => {
+        const newSizes = selectedSizes.includes(size)
+            ? selectedSizes.filter(s => s !== size)
+            : [...selectedSizes, size];
+        setSelectedSizes(newSizes);
+        navigateWithFilters({ sizes: newSizes });
+    };
+
+    // Handle color change
+    const handleColorChange = (colorValue: string) => {
+        const newColor = selectedColor === colorValue ? '' : colorValue;
+        setSelectedColor(newColor);
+        navigateWithFilters({ color: newColor });
     };
 
     const clearFilters = () => {
@@ -99,13 +145,79 @@ export default function FilterSidebar({
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+                        onKeyDown={(e) => e.key === 'Enter' && navigateWithFilters({ search: searchQuery })}
                         placeholder="Buscar..."
-                        className="w-full bg-dark-300 border border-white/10 text-white text-sm pl-9 pr-3 py-2.5 rounded-lg focus:outline-none focus:border-neon-cyan/50"
+                        className="w-full bg-dark-300 border border-white/10 text-white text-sm pl-9 pr-10 py-2.5 rounded-lg focus:outline-none focus:border-neon-cyan/50"
                     />
                     <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
+                    {searchQuery && (
+                        <button
+                            onClick={() => navigateWithFilters({ search: searchQuery })}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-neon-cyan hover:text-neon-cyan-light"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* Price Range - Compact */}
+            <div className="p-4 border-b border-white/5">
+                <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Precio</h3>
+                <div className="space-y-3">
+                    {/* Range Slider */}
+                    <div className="relative pt-1 pb-2">
+                        <div
+                            className="h-1.5 rounded-full"
+                            style={{ background: getSliderBackground() }}
+                        />
+                        <input
+                            type="range"
+                            min={0}
+                            max={maxPrice}
+                            value={priceMin}
+                            onChange={(e) => setPriceMin(Math.min(Number(e.target.value), priceMax - 10))}
+                            className="absolute top-1 w-full h-1.5 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-neon-cyan [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-glow-cyan"
+                        />
+                        <input
+                            type="range"
+                            min={0}
+                            max={maxPrice}
+                            value={priceMax}
+                            onChange={(e) => setPriceMax(Math.max(Number(e.target.value), priceMin + 10))}
+                            className="absolute top-1 w-full h-1.5 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-neon-cyan [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-glow-cyan"
+                        />
+                    </div>
+                    <div className="flex items-center justify-center gap-2 text-xs">
+                        <input
+                            type="text"
+                            inputMode="numeric"
+                            value={priceMin}
+                            onChange={(e) => {
+                                const val = parseInt(e.target.value) || 0;
+                                setPriceMin(Math.min(val, priceMax - 1));
+                                navigateWithFilters({ priceMin: Math.min(val, priceMax - 1), priceMax });
+                            }}
+                            className="w-16 bg-dark-300 border border-white/10 text-white text-xs px-2 py-1 rounded focus:outline-none focus:border-neon-cyan/50 text-center"
+                        />
+                        <span className="text-zinc-600">—</span>
+                        <input
+                            type="text"
+                            inputMode="numeric"
+                            value={priceMax}
+                            onChange={(e) => {
+                                const val = parseInt(e.target.value) || maxPrice;
+                                setPriceMax(Math.max(val, priceMin + 1));
+                                navigateWithFilters({ priceMin, priceMax: Math.max(val, priceMin + 1) });
+                            }}
+                            className="w-16 bg-dark-300 border border-white/10 text-white text-xs px-2 py-1 rounded focus:outline-none focus:border-neon-cyan/50 text-center"
+                        />
+                        <span className="text-zinc-500">€</span>
+                    </div>
                 </div>
             </div>
 
@@ -116,7 +228,7 @@ export default function FilterSidebar({
                     {styleTags.map(tag => (
                         <button
                             key={tag}
-                            onClick={() => setSearchQuery(tag)}
+                            onClick={() => handleStyleTagClick(tag)}
                             className={`px-2.5 py-1 text-xs rounded-full border transition-all ${searchQuery.toLowerCase() === tag.toLowerCase()
                                     ? 'border-neon-cyan text-neon-cyan bg-neon-cyan/10'
                                     : 'border-white/10 text-zinc-500 hover:text-white hover:border-white/30'
@@ -128,12 +240,38 @@ export default function FilterSidebar({
                 </div>
             </div>
 
-            {/* Categories */}
+            {/* Offers Toggle - Prominent */}
             <div className="p-4 border-b border-white/5">
-                <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Categoría</h3>
-                <div className="space-y-1">
+                <button
+                    onClick={handleOffersToggle}
+                    className={`flex items-center justify-between w-full py-3 px-4 rounded-xl text-sm font-medium transition-all ${offersOnly
+                        ? 'bg-gradient-to-r from-neon-fuchsia/20 to-neon-cyan/10 text-neon-fuchsia border border-neon-fuchsia/40 shadow-lg shadow-neon-fuchsia/10'
+                        : 'bg-dark-300 text-zinc-300 border border-white/10 hover:border-neon-fuchsia/30 hover:text-neon-fuchsia'
+                        }`}
+                >
+                    <span className="flex items-center gap-3">
+                        <span className={`w-2.5 h-2.5 rounded-full ${offersOnly ? 'bg-neon-fuchsia animate-pulse' : 'bg-zinc-600'}`} />
+                        Ofertas
+                    </span>
+                    <div className={`w-10 h-5 rounded-full transition-colors relative ${offersOnly ? 'bg-neon-fuchsia' : 'bg-dark-400'}`}>
+                        <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${offersOnly ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                    </div>
+                </button>
+            </div>
+
+            {/* Categories - Dropdown */}
+            <details className="group border-b border-white/5">
+                <summary className="flex items-center justify-between p-4 cursor-pointer list-none">
+                    <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                        Categoría {selectedCategory && <span className="text-neon-cyan normal-case">({categories.find(c => c.slug === selectedCategory)?.name})</span>}
+                    </span>
+                    <svg className="w-4 h-4 text-zinc-500 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                </summary>
+                <div className="px-4 pb-4 space-y-1">
                     <button
-                        onClick={() => setSelectedCategory('')}
+                        onClick={() => handleCategoryChange('')}
                         className={`block w-full text-left py-1.5 text-sm transition-colors ${!selectedCategory ? 'text-neon-cyan' : 'text-zinc-400 hover:text-white'}`}
                     >
                         Todas
@@ -141,82 +279,12 @@ export default function FilterSidebar({
                     {categories.map(cat => (
                         <button
                             key={cat.slug}
-                            onClick={() => setSelectedCategory(cat.slug)}
+                            onClick={() => handleCategoryChange(cat.slug)}
                             className={`block w-full text-left py-1.5 text-sm transition-colors ${selectedCategory === cat.slug ? 'text-neon-cyan' : 'text-zinc-400 hover:text-white'}`}
                         >
                             {cat.name}
                         </button>
                     ))}
-                </div>
-            </div>
-
-            {/* Price Range */}
-            <details className="group border-b border-white/5" open>
-                <summary className="flex items-center justify-between p-4 cursor-pointer list-none">
-                    <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Precio</span>
-                    <svg className="w-4 h-4 text-zinc-500 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                </summary>
-                <div className="px-4 pb-4 space-y-4">
-                    {/* Inputs */}
-                    <div className="flex gap-3 items-end">
-                        <div className="flex-1">
-                            <label className="text-xs text-zinc-600 mb-1 block">Mín</label>
-                            <input
-                                type="text"
-                                inputMode="numeric"
-                                value={priceMin}
-                                onChange={(e) => {
-                                    const val = parseInt(e.target.value) || 0;
-                                    setPriceMin(Math.min(val, priceMax - 1));
-                                }}
-                                className="w-full bg-dark-300 border border-white/10 text-white text-sm px-3 py-2 rounded-lg focus:outline-none focus:border-neon-cyan/50 text-center"
-                            />
-                        </div>
-                        <span className="text-zinc-600 pb-2">—</span>
-                        <div className="flex-1">
-                            <label className="text-xs text-zinc-600 mb-1 block">Máx</label>
-                            <input
-                                type="text"
-                                inputMode="numeric"
-                                value={priceMax}
-                                onChange={(e) => {
-                                    const val = parseInt(e.target.value) || maxPrice;
-                                    setPriceMax(Math.max(val, priceMin + 1));
-                                }}
-                                className="w-full bg-dark-300 border border-white/10 text-white text-sm px-3 py-2 rounded-lg focus:outline-none focus:border-neon-cyan/50 text-center"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Range Slider */}
-                    <div className="relative pt-2">
-                        <div
-                            className="h-1.5 rounded-full"
-                            style={{ background: getSliderBackground() }}
-                        />
-                        <input
-                            type="range"
-                            min={0}
-                            max={maxPrice}
-                            value={priceMin}
-                            onChange={(e) => setPriceMin(Math.min(Number(e.target.value), priceMax - 10))}
-                            className="absolute top-2 w-full h-1.5 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-neon-cyan [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-glow-cyan"
-                        />
-                        <input
-                            type="range"
-                            min={0}
-                            max={maxPrice}
-                            value={priceMax}
-                            onChange={(e) => setPriceMax(Math.max(Number(e.target.value), priceMin + 10))}
-                            className="absolute top-2 w-full h-1.5 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-neon-cyan [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-glow-cyan"
-                        />
-                    </div>
-
-                    <p className="text-xs text-zinc-500 text-center">
-                        {priceMin}€ - {priceMax}€
-                    </p>
                 </div>
             </details>
 
@@ -234,7 +302,7 @@ export default function FilterSidebar({
                     {allSizes.map(size => (
                         <button
                             key={size}
-                            onClick={() => toggleSize(size)}
+                            onClick={() => handleSizeToggle(size)}
                             className={`px-3 py-1.5 text-xs border rounded-md transition-all ${selectedSizes.includes(size)
                                 ? 'border-neon-cyan text-neon-cyan bg-neon-cyan/10'
                                 : 'border-white/10 text-zinc-400 hover:border-white/30'
@@ -258,7 +326,7 @@ export default function FilterSidebar({
                     {colors.map(color => (
                         <button
                             key={color.value}
-                            onClick={() => setSelectedColor(selectedColor === color.value ? '' : color.value)}
+                            onClick={() => handleColorChange(color.value)}
                             className={`w-7 h-7 rounded-full border-2 transition-all ${selectedColor === color.value
                                 ? 'border-neon-cyan scale-110 shadow-glow-cyan'
                                 : 'border-white/20 hover:border-white/50'
@@ -270,48 +338,20 @@ export default function FilterSidebar({
                 </div>
             </details>
 
-            {/* Offers Toggle */}
-            <div className="p-4 border-b border-white/5">
-                <button
-                    onClick={() => setOffersOnly(!offersOnly)}
-                    className={`flex items-center justify-between w-full py-2 px-3 rounded-lg text-sm transition-all ${offersOnly
-                        ? 'bg-neon-fuchsia/10 text-neon-fuchsia border border-neon-fuchsia/30'
-                        : 'text-zinc-400 hover:text-white hover:bg-white/5'
-                        }`}
-                >
-                    <span className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${offersOnly ? 'bg-neon-fuchsia' : 'bg-zinc-600'} animate-pulse`} />
-                        Solo ofertas
-                    </span>
-                    {offersOnly && (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                    )}
-                </button>
-            </div>
-
-            {/* Apply / Clear */}
-            <div className="p-4 space-y-2">
-                <button
-                    onClick={applyFilters}
-                    className="w-full py-2.5 bg-neon-cyan text-dark-600 font-semibold text-sm rounded-lg hover:shadow-glow-cyan transition-shadow"
-                >
-                    Aplicar filtros
-                </button>
-
-                {activeFiltersCount > 0 && (
+            {/* Clear Filters - Only show when filters are active */}
+            {activeFiltersCount > 0 && (
+                <div className="p-4">
                     <button
                         onClick={clearFilters}
-                        className="flex items-center justify-center gap-2 w-full py-2 text-sm text-zinc-500 hover:text-white transition-colors"
+                        className="flex items-center justify-center gap-2 w-full py-2.5 text-sm text-zinc-400 hover:text-white border border-white/10 hover:border-white/20 rounded-lg transition-colors"
                     >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
-                        Limpiar ({activeFiltersCount})
+                        Limpiar filtros ({activeFiltersCount})
                     </button>
-                )}
-            </div>
+                </div>
+            )}
         </div>
     );
 }

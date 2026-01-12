@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useStore } from '@nanostores/react';
 import { addToCart, $cart } from '../../stores/cart';
 import type { Product } from '../../lib/supabase';
 
 interface AddToCartButtonProps {
     product: Product;
+    stockBySize?: Record<string, number>; // Stock por talla
 }
 
 function getMainImage(product: Product): string {
@@ -18,15 +19,41 @@ function getMainImage(product: Product): string {
     return 'https://placehold.co/400x500/0d0d14/06b6d4?text=Producto';
 }
 
-export default function AddToCartButton({ product }: AddToCartButtonProps) {
+export default function AddToCartButton({ product, stockBySize: initialStockBySize }: AddToCartButtonProps) {
     const [selectedSize, setSelectedSize] = useState(product.sizes?.[0] || 'M');
     const [quantity, setQuantity] = useState(1);
     const [isAdding, setIsAdding] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [stockBySize, setStockBySize] = useState<Record<string, number>>(initialStockBySize || {});
+    const [isLoadingStock, setIsLoadingStock] = useState(!initialStockBySize);
     const cart = useStore($cart);
 
-    const isOutOfStock = product.stock <= 0;
     const image = getMainImage(product);
+
+    // Cargar stock por talla si no se pasó como prop
+    useEffect(() => {
+        if (!initialStockBySize) {
+            fetch(`/api/products/stock?productId=${product.id}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.stockBySize) {
+                        setStockBySize(data.stockBySize);
+                    }
+                })
+                .catch(console.error)
+                .finally(() => setIsLoadingStock(false));
+        }
+    }, [product.id, initialStockBySize]);
+
+    // Stock de la talla seleccionada
+    const currentSizeStock = stockBySize[selectedSize] ?? product.stock;
+    const isOutOfStock = currentSizeStock <= 0;
+    const totalStock = Object.values(stockBySize).reduce((sum, qty) => sum + qty, 0) || product.stock;
+
+    // Resetear cantidad si cambia la talla
+    useEffect(() => {
+        setQuantity(1);
+    }, [selectedSize]);
 
     const handleAddToCart = () => {
         if (isOutOfStock) return;
@@ -34,8 +61,8 @@ export default function AddToCartButton({ product }: AddToCartButtonProps) {
         const existingItem = cart.find(i => i.id === product.id && i.size === selectedSize);
         const currentQty = existingItem?.quantity || 0;
 
-        if (currentQty + quantity > product.stock) {
-            alert(`Solo hay ${product.stock} unidades disponibles`);
+        if (currentQty + quantity > currentSizeStock) {
+            alert(`Solo hay ${currentSizeStock} unidades de talla ${selectedSize} disponibles`);
             return;
         }
 
@@ -61,6 +88,15 @@ export default function AddToCartButton({ product }: AddToCartButtonProps) {
         (item) => item.id === product.id && item.size === selectedSize
     );
 
+    // Función para determinar el estado de stock de una talla
+    const getSizeStockStatus = (size: string) => {
+        const stock = stockBySize[size];
+        if (stock === undefined) return 'unknown';
+        if (stock <= 0) return 'out';
+        if (stock <= 3) return 'low';
+        return 'available';
+    };
+
     return (
         <div className="space-y-6">
             {/* Size Selection */}
@@ -70,24 +106,50 @@ export default function AddToCartButton({ product }: AddToCartButtonProps) {
                         Talla
                     </label>
                     <div className="flex gap-2 flex-wrap">
-                        {product.sizes.map((size) => (
-                            <button
-                                key={size}
-                                onClick={() => setSelectedSize(size)}
-                                className={`
-                  w-12 h-12 flex items-center justify-center
-                  border rounded-xl font-medium text-sm
-                  transition-all duration-300
-                  ${selectedSize === size
-                                        ? 'border-neon-cyan bg-neon-cyan/10 text-neon-cyan shadow-glow-cyan'
-                                        : 'border-white/10 text-zinc-400 hover:border-white/30 hover:text-white'
-                                    }
-                `}
-                            >
-                                {size}
-                            </button>
-                        ))}
+                        {product.sizes.map((size) => {
+                            const stockStatus = getSizeStockStatus(size);
+                            const sizeStock = stockBySize[size] ?? 0;
+                            const isDisabled = stockStatus === 'out';
+                            
+                            return (
+                                <button
+                                    key={size}
+                                    onClick={() => !isDisabled && setSelectedSize(size)}
+                                    disabled={isDisabled}
+                                    className={`
+                                        relative w-12 h-12 flex items-center justify-center
+                                        border rounded-xl font-medium text-sm
+                                        transition-all duration-300
+                                        ${isDisabled 
+                                            ? 'border-zinc-700 text-zinc-600 cursor-not-allowed line-through opacity-50' 
+                                            : selectedSize === size
+                                                ? 'border-neon-cyan bg-neon-cyan/10 text-neon-cyan shadow-glow-cyan'
+                                                : 'border-white/10 text-zinc-400 hover:border-white/30 hover:text-white'
+                                        }
+                                    `}
+                                    title={isDisabled ? 'Agotado' : `${sizeStock} disponibles`}
+                                >
+                                    {size}
+                                    {stockStatus === 'low' && !isDisabled && (
+                                        <span className="absolute -top-1 -right-1 w-2 h-2 bg-neon-fuchsia rounded-full animate-pulse" />
+                                    )}
+                                </button>
+                            );
+                        })}
                     </div>
+                    {/* Leyenda */}
+                    {Object.keys(stockBySize).length > 0 && (
+                        <div className="flex items-center gap-4 mt-3 text-xs text-zinc-500">
+                            <span className="flex items-center gap-1">
+                                <span className="w-2 h-2 bg-neon-fuchsia rounded-full animate-pulse" />
+                                Últimas unidades
+                            </span>
+                            <span className="flex items-center gap-1">
+                                <span className="w-2 h-2 bg-zinc-600 rounded-full" />
+                                Agotado
+                            </span>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -109,8 +171,8 @@ export default function AddToCartButton({ product }: AddToCartButtonProps) {
                         {quantity}
                     </span>
                     <button
-                        onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
-                        disabled={quantity >= product.stock}
+                        onClick={() => setQuantity(Math.min(currentSizeStock, quantity + 1))}
+                        disabled={quantity >= currentSizeStock}
                         className="w-12 h-12 flex items-center justify-center border border-white/10 rounded-xl text-zinc-400 hover:border-white/30 hover:text-white transition-colors disabled:opacity-30"
                     >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -122,21 +184,31 @@ export default function AddToCartButton({ product }: AddToCartButtonProps) {
 
             {/* Stock Info */}
             <div className="flex items-center gap-2">
-                <span className={`w-2 h-2 rounded-full ${product.stock > 5 ? 'bg-green-400' : product.stock > 0 ? 'bg-neon-fuchsia animate-pulse' : 'bg-red-500'}`} />
-                <span className="text-sm text-zinc-500">
-                    {isOutOfStock
-                        ? 'Sin stock - Agotado'
-                        : product.stock <= 5
-                            ? `¡Solo quedan ${product.stock} unidades!`
-                            : `${product.stock} unidades disponibles`
-                    }
-                </span>
+                {isLoadingStock ? (
+                    <span className="text-sm text-zinc-500">Cargando disponibilidad...</span>
+                ) : (
+                    <>
+                        <span className={`w-2 h-2 rounded-full ${
+                            currentSizeStock > 5 ? 'bg-green-400' : 
+                            currentSizeStock > 0 ? 'bg-neon-fuchsia animate-pulse' : 
+                            'bg-red-500'
+                        }`} />
+                        <span className="text-sm text-zinc-500">
+                            {isOutOfStock
+                                ? `Talla ${selectedSize} agotada`
+                                : currentSizeStock <= 3
+                                    ? `¡Solo quedan ${currentSizeStock} unidades en talla ${selectedSize}!`
+                                    : `${currentSizeStock} unidades en talla ${selectedSize}`
+                            }
+                        </span>
+                    </>
+                )}
             </div>
 
             {/* Add to Cart Button */}
             <button
                 onClick={handleAddToCart}
-                disabled={isOutOfStock || isAdding}
+                disabled={isOutOfStock || isAdding || isLoadingStock}
                 className={`
           w-full py-4 px-6 rounded-xl font-semibold text-lg
           transition-all duration-300 transform

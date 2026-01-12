@@ -9,9 +9,9 @@ export const prerender = false;
     title="Tu Carrito"
     description="Revisa y finaliza tu compra en FashionMarket"
 >
-    <section class="py-12 md:py-16 bg-cream-200 min-h-[60vh]">
+    <section class="py-12 md:py-16 min-h-[60vh]">
         <div class="container-custom">
-            <h1 class="text-3xl md:text-4xl font-serif mb-8">Tu Carrito</h1>
+            <h1 class="text-3xl md:text-4xl font-display font-bold text-white mb-8">Tu Carrito</h1>
 
             <div
                 id="cart-container"
@@ -20,9 +20,9 @@ export const prerender = false;
                 <!-- Cart Items (populated by JS) -->
                 <div id="cart-items" class="lg:col-span-2 space-y-4">
                     <!-- Loading state -->
-                    <div class="bg-white rounded-xl p-8 text-center">
+                    <div class="bg-dark-400/50 backdrop-blur-xl border border-white/10 rounded-2xl p-8 text-center">
                         <svg
-                            class="animate-spin w-8 h-8 mx-auto text-brand-navy-500 mb-4"
+                            class="animate-spin w-8 h-8 mx-auto text-neon-cyan mb-4"
                             fill="none"
                             viewBox="0 0 24 24"
                         >
@@ -39,7 +39,7 @@ export const prerender = false;
                                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                             ></path>
                         </svg>
-                        <p class="text-brand-charcoal-500">
+                        <p class="text-zinc-400">
                             Cargando carrito...
                         </p>
                     </div>
@@ -48,38 +48,38 @@ export const prerender = false;
                 <!-- Order Summary -->
                 <div id="order-summary" class="lg:col-span-1 hidden">
                     <div
-                        class="bg-white rounded-xl p-6 shadow-elegant sticky top-24"
+                        class="bg-dark-400/50 backdrop-blur-xl border border-white/10 rounded-2xl p-6 sticky top-24"
                     >
-                        <h2 class="font-serif text-xl text-brand-navy-500 mb-6">
+                        <h2 class="font-display text-xl text-white mb-6">
                             Resumen del Pedido
                         </h2>
 
                         <div class="space-y-3 mb-6">
                             <div
-                                class="flex justify-between text-brand-charcoal-600"
+                                class="flex justify-between text-zinc-400"
                             >
                                 <span>Subtotal</span>
                                 <span id="subtotal">€0,00</span>
                             </div>
                             <div
-                                class="flex justify-between text-brand-charcoal-600"
+                                class="flex justify-between text-zinc-400"
                             >
                                 <span>Envío</span>
-                                <span id="shipping">Calculado en checkout</span>
+                                <span id="shipping">Gratis</span>
                             </div>
                         </div>
 
                         <div
-                            class="border-t border-brand-charcoal-100 pt-4 mb-6"
+                            class="border-t border-white/10 pt-4 mb-6"
                         >
                             <div class="flex justify-between items-center">
                                 <span
-                                    class="font-medium text-brand-charcoal-700"
+                                    class="font-medium text-white"
                                     >Total</span
                                 >
                                 <span
                                     id="total"
-                                    class="font-serif text-2xl text-brand-navy-500"
+                                    class="font-display text-2xl text-neon-cyan"
                                     >€0,00</span
                                 >
                             </div>
@@ -87,20 +87,20 @@ export const prerender = false;
 
                         <button
                             id="checkout-btn"
-                            class="w-full py-4 px-6 bg-brand-navy-500 text-white font-semibold rounded-lg hover:bg-brand-navy-600 transition-colors"
+                            class="w-full py-4 px-6 bg-gradient-to-r from-neon-cyan to-neon-cyan-light text-dark-500 font-semibold rounded-xl hover:shadow-lg hover:shadow-neon-cyan/25 transition-all duration-200"
                         >
                             Proceder al Pago
                         </button>
 
                         <p
-                            class="text-xs text-brand-charcoal-400 text-center mt-4"
+                            class="text-xs text-zinc-500 text-center mt-4"
                         >
-                            La integración con Stripe está en desarrollo
+                            Pago seguro con Stripe
                         </p>
 
                         <a
                             href="/productos"
-                            class="block text-center text-sm text-brand-charcoal-500 hover:text-brand-navy-500 mt-4"
+                            class="block text-center text-sm text-zinc-400 hover:text-neon-cyan mt-4 transition-colors"
                         >
                             Continuar comprando
                         </a>
@@ -111,10 +111,10 @@ export const prerender = false;
             <!-- Empty Cart State -->
             <div
                 id="empty-cart"
-                class="hidden text-center py-16 bg-white rounded-xl"
+                class="hidden text-center py-16 bg-dark-400/50 backdrop-blur-xl border border-white/10 rounded-2xl lg:col-span-3"
             >
                 <svg
-                    class="w-20 h-20 mx-auto text-brand-charcoal-200 mb-6"
+                    class="w-20 h-20 mx-auto text-zinc-600 mb-6"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -125,24 +125,24 @@ export const prerender = false;
                         stroke-width="1"
                         d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
                 </svg>
-                <h2 class="text-2xl font-serif text-brand-navy-500 mb-4">
+                <h2 class="text-2xl font-display font-bold text-white mb-4">
                     Tu carrito está vacío
                 </h2>
-                <p class="text-brand-charcoal-500 mb-8">
+                <p class="text-zinc-400 mb-8">
                     ¿No sabes por dónde empezar? Explora nuestra colección.
                 </p>
-                <a href="/productos" class="btn-primary"> Ver Productos </a>
+                <a href="/productos" class="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-neon-cyan to-neon-cyan-light text-dark-500 font-semibold rounded-xl hover:shadow-lg hover:shadow-neon-cyan/25 transition-all duration-200"> Ver Productos </a>
             </div>
         </div>
     </section>
 
     <script>
-        // Format price from cents
-        function formatPrice(cents: number): string {
+        // Format price in euros
+        function formatPrice(price: number): string {
             return new Intl.NumberFormat("es-ES", {
                 style: "currency",
                 currency: "EUR",
-            }).format(cents / 100);
+            }).format(price);
         }
 
         // Get cart from localStorage
@@ -158,56 +158,65 @@ export const prerender = false;
         // Save cart to localStorage
         function saveCart(cart: any[]): void {
             localStorage.setItem("fashionmarket-cart", JSON.stringify(cart));
+            // Dispatch custom event to update cart icon
+            window.dispatchEvent(new CustomEvent('cart-updated'));
         }
 
         // Render cart
         function renderCart(): void {
-            const cart = getCart();
-            const itemsContainer = document.getElementById("cart-items")!;
-            const summaryContainer = document.getElementById("order-summary")!;
-            const emptyContainer = document.getElementById("empty-cart")!;
-            const subtotalEl = document.getElementById("subtotal")!;
-            const totalEl = document.getElementById("total")!;
+            try {
+                const cart = getCart();
+                const itemsContainer = document.getElementById("cart-items");
+                const summaryContainer = document.getElementById("order-summary");
+                const emptyContainer = document.getElementById("empty-cart");
+                const subtotalEl = document.getElementById("subtotal");
+                const totalEl = document.getElementById("total");
 
-            if (cart.length === 0) {
-                itemsContainer.innerHTML = "";
-                summaryContainer.classList.add("hidden");
-                emptyContainer.classList.remove("hidden");
-                return;
-            }
+                if (!itemsContainer || !summaryContainer || !emptyContainer || !subtotalEl || !totalEl) {
+                    console.error('Required elements not found');
+                    return;
+                }
 
-            emptyContainer.classList.add("hidden");
-            summaryContainer.classList.remove("hidden");
+                if (cart.length === 0) {
+                    itemsContainer.innerHTML = "";
+                    summaryContainer.classList.add("hidden");
+                    emptyContainer.classList.remove("hidden");
+                    return;
+                }
 
-            // Calculate totals
-            const subtotal = cart.reduce(
-                (sum, item) => sum + item.price * item.quantity,
-                0,
-            );
-            subtotalEl.textContent = formatPrice(subtotal);
-            totalEl.textContent = formatPrice(subtotal);
+                emptyContainer.classList.add("hidden");
+                summaryContainer.classList.remove("hidden");
 
-            // Render items
-            itemsContainer.innerHTML = cart
-                .map(
-                    (item, index) => `
-        <div class="bg-white rounded-xl p-4 md:p-6 flex gap-4" data-index="${index}">
-          <div class="w-24 h-28 md:w-32 md:h-40 bg-cream-200 rounded-lg overflow-hidden flex-shrink-0">
+                // Calculate totals
+                const subtotal = cart.reduce(
+                    (sum, item) => sum + item.price * item.quantity,
+                    0,
+                );
+                subtotalEl.textContent = formatPrice(subtotal);
+                totalEl.textContent = formatPrice(subtotal);
+
+                // Render items
+                itemsContainer.innerHTML = cart
+                    .map(
+                        (item, index) => `
+        <div class="bg-dark-400/50 backdrop-blur-xl border border-white/10 rounded-2xl p-4 md:p-6 flex gap-4" data-index="${index}">
+          <div class="w-24 h-28 md:w-32 md:h-40 bg-dark-500 rounded-lg overflow-hidden flex-shrink-0">
             <img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover" />
           </div>
           
           <div class="flex-1 flex flex-col">
             <div class="flex justify-between">
               <div>
-                <a href="/productos/${item.slug}" class="font-medium text-brand-charcoal-700 hover:text-brand-navy-500">
+                <a href="/productos/${item.slug}" class="font-medium text-white hover:text-neon-cyan transition-colors">
                   ${item.name}
                 </a>
-                <p class="text-sm text-brand-charcoal-400 mt-1">Talla: ${item.size}</p>
+                <p class="text-sm text-zinc-400 mt-1">Talla: ${item.size}</p>
               </div>
               <button 
-                class="remove-btn p-2 text-brand-charcoal-400 hover:text-red-500 transition-colors"
+                class="remove-btn p-2 text-zinc-400 hover:text-red-400 transition-colors"
                 data-id="${item.id}"
                 data-size="${item.size}"
+                aria-label="Eliminar producto"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -218,18 +227,19 @@ export const prerender = false;
             <div class="mt-auto flex items-center justify-between pt-4">
               <div class="flex items-center gap-2">
                 <button 
-                  class="qty-btn w-8 h-8 flex items-center justify-center border border-brand-charcoal-200 rounded hover:border-brand-navy-300"
+                  class="qty-btn w-8 h-8 flex items-center justify-center border border-white/10 rounded hover:border-neon-cyan/50 hover:text-white text-zinc-400 transition-colors"
                   data-action="decrease"
                   data-id="${item.id}"
                   data-size="${item.size}"
+                  ${item.quantity <= 1 ? 'disabled opacity-50' : ''}
                 >
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
                   </svg>
                 </button>
-                <span class="w-10 text-center font-medium">${item.quantity}</span>
+                <span class="w-10 text-center font-medium text-white">${item.quantity}</span>
                 <button 
-                  class="qty-btn w-8 h-8 flex items-center justify-center border border-brand-charcoal-200 rounded hover:border-brand-navy-300"
+                  class="qty-btn w-8 h-8 flex items-center justify-center border border-white/10 rounded hover:border-neon-cyan/50 hover:text-white text-zinc-400 transition-colors"
                   data-action="increase"
                   data-id="${item.id}"
                   data-size="${item.size}"
@@ -240,58 +250,78 @@ export const prerender = false;
                 </button>
               </div>
               
-              <p class="font-serif text-lg text-brand-navy-500">
+              <p class="font-display text-lg text-neon-cyan">
                 ${formatPrice(item.price * item.quantity)}
               </p>
             </div>
           </div>
         </div>
       `,
-                )
-                .join("");
+                    )
+                    .join("");
 
-            // Add event listeners
-            document.querySelectorAll(".remove-btn").forEach((btn) => {
-                btn.addEventListener("click", (e) => {
-                    const target = e.currentTarget as HTMLElement;
-                    const id = target.dataset.id!;
-                    const size = target.dataset.size!;
-                    const cart = getCart().filter(
-                        (item) => !(item.id === id && item.size === size),
-                    );
-                    saveCart(cart);
-                    renderCart();
+                // Add event listeners
+                document.querySelectorAll(".remove-btn").forEach((btn) => {
+                    btn.addEventListener("click", (e) => {
+                        const target = e.currentTarget as HTMLElement;
+                        const id = target.dataset.id!;
+                        const size = target.dataset.size!;
+                        const cart = getCart().filter(
+                            (item) => !(item.id === id && item.size === size),
+                        );
+                        saveCart(cart);
+                        renderCart();
+                    });
                 });
-            });
 
-            document.querySelectorAll(".qty-btn").forEach((btn) => {
-                btn.addEventListener("click", (e) => {
-                    const target = e.currentTarget as HTMLElement;
-                    const action = target.dataset.action!;
-                    const id = target.dataset.id!;
-                    const size = target.dataset.size!;
+                document.querySelectorAll(".qty-btn").forEach((btn) => {
+                    btn.addEventListener("click", (e) => {
+                        const target = e.currentTarget as HTMLElement;
+                        const action = target.dataset.action!;
+                        const id = target.dataset.id!;
+                        const size = target.dataset.size!;
 
-                    const cart = getCart()
-                        .map((item) => {
-                            if (item.id === id && item.size === size) {
-                                const newQty =
-                                    action === "increase"
-                                        ? item.quantity + 1
-                                        : item.quantity - 1;
-                                if (newQty <= 0) return null;
-                                return { ...item, quantity: newQty };
-                            }
-                            return item;
-                        })
-                        .filter(Boolean);
+                        const cart = getCart()
+                            .map((item) => {
+                                if (item.id === id && item.size === size) {
+                                    const newQty =
+                                        action === "increase"
+                                            ? item.quantity + 1
+                                            : item.quantity - 1;
+                                    if (newQty <= 0) return null;
+                                    return { ...item, quantity: newQty };
+                                }
+                                return item;
+                            })
+                            .filter(Boolean);
 
-                    saveCart(cart);
-                    renderCart();
+                        saveCart(cart);
+                        renderCart();
+                    });
                 });
+            } catch (error) {
+                console.error('Error rendering cart:', error);
+            }
+        }
+
+        // Handle checkout button
+        const checkoutBtn = document.getElementById('checkout-btn');
+        if (checkoutBtn) {
+            checkoutBtn.addEventListener('click', () => {
+                const cart = getCart();
+                if (cart.length === 0) {
+                    alert('Tu carrito está vacío');
+                    return;
+                }
+                window.location.href = '/checkout';
             });
         }
 
-        // Initialize
-        document.addEventListener("DOMContentLoaded", renderCart);
+        // Initialize on both DOMContentLoaded and immediate execution
+        if (document.readyState === 'loading') {
+            document.addEventListener("DOMContentLoaded", renderCart);
+        } else {
+            // DOM already loaded, execute immediately
+            renderCart();
+        }
     </script>
-</PublicLayout>

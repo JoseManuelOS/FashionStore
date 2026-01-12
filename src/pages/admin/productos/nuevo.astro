@@ -1,6 +1,6 @@
 ---
 import AdminLayout from "../../../layouts/AdminLayout.astro";
-import { supabaseAdmin, getCategories } from "../../../lib/supabase";
+import { supabaseAdmin, getCategories, initProductStock, updateProductStockBulk } from "../../../lib/supabase";
 import { slugify } from "../../../lib/utils";
 
 // SSR - Protected by AdminLayout
@@ -8,6 +8,7 @@ export const prerender = false;
 
 let error: string | null = null;
 const categories = await getCategories();
+const defaultSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
 // Handle form submission
 if (Astro.request.method === "POST") {
@@ -18,7 +19,6 @@ if (Astro.request.method === "POST") {
         const slug = slugify(name);
         const description = formData.get("description") as string;
         const price = parseFloat(formData.get("price") as string);
-        const stock = parseInt(formData.get("stock") as string);
         const category_id = (formData.get("category_id") as string) || null;
         const sizesRaw = formData.get("sizes") as string;
         const sizes = sizesRaw
@@ -26,6 +26,18 @@ if (Astro.request.method === "POST") {
             : ["S", "M", "L", "XL"];
         const is_offer = formData.get("is_offer") === "on";
         const active = formData.get("active") === "on";
+
+        // Procesar stock por talla
+        const stockBySize: Record<string, number> = {};
+        for (const size of defaultSizes) {
+            const stockValue = formData.get(`stock_${size}`) as string;
+            if (sizes.includes(size)) {
+                stockBySize[size] = parseInt(stockValue) || 0;
+            }
+        }
+
+        // Calcular stock total
+        const totalStock = Object.values(stockBySize).reduce((sum, qty) => sum + qty, 0);
 
         // Get image URLs (comma separated)
         const imagesRaw = formData.get("images") as string;
@@ -44,7 +56,7 @@ if (Astro.request.method === "POST") {
                 slug,
                 description,
                 price,
-                stock,
+                stock: totalStock,
                 category_id: category_id || null,
                 sizes,
                 is_offer,
@@ -56,6 +68,9 @@ if (Astro.request.method === "POST") {
         if (insertError) {
             error = "Error al crear el producto: " + insertError.message;
         } else if (product) {
+            // Inicializar y actualizar stock por talla
+            await updateProductStockBulk(product.id, stockBySize);
+
             // Insert images
             if (imageUrls.length > 0) {
                 const imageRecords = imageUrls.map((url, index) => ({
@@ -156,7 +171,7 @@ if (Astro.request.method === "POST") {
                 </div>
 
                 <!-- Price -->
-                <div>
+                <div class="md:col-span-2">
                     <label
                         for="price"
                         class="block text-sm font-medium text-brand-charcoal-700 mb-2"
@@ -175,27 +190,8 @@ if (Astro.request.method === "POST") {
                     />
                 </div>
 
-                <!-- Stock -->
-                <div>
-                    <label
-                        for="stock"
-                        class="block text-sm font-medium text-brand-charcoal-700 mb-2"
-                    >
-                        Stock *
-                    </label>
-                    <input
-                        type="number"
-                        id="stock"
-                        name="stock"
-                        required
-                        min="0"
-                        class="w-full px-4 py-3 border-2 border-brand-charcoal-200 rounded-lg focus:outline-none focus:border-brand-navy-500 transition-colors"
-                        placeholder="25"
-                    />
-                </div>
-
                 <!-- Sizes -->
-                <div>
+                <div class="md:col-span-2">
                     <label
                         for="sizes"
                         class="block text-sm font-medium text-brand-charcoal-700 mb-2"
@@ -207,9 +203,41 @@ if (Astro.request.method === "POST") {
                         id="sizes"
                         name="sizes"
                         class="w-full px-4 py-3 border-2 border-brand-charcoal-200 rounded-lg focus:outline-none focus:border-brand-navy-500 transition-colors"
-                        placeholder="S, M, L, XL"
-                        value="S, M, L, XL"
+                        placeholder="XS, S, M, L, XL, XXL"
+                        value="XS, S, M, L, XL, XXL"
                     />
+                </div>
+
+                <!-- Stock por Talla -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-brand-charcoal-700 mb-3">
+                        📦 Stock por Talla
+                    </label>
+                    <div class="bg-cream-100 rounded-lg p-4">
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+                            {defaultSizes.map((size: string) => (
+                                <div class="text-center">
+                                    <label 
+                                        for={`stock_${size}`}
+                                        class="block text-sm font-bold text-brand-navy-500 mb-1"
+                                    >
+                                        {size}
+                                    </label>
+                                    <input
+                                        type="number"
+                                        id={`stock_${size}`}
+                                        name={`stock_${size}`}
+                                        min="0"
+                                        value="0"
+                                        class="w-full px-3 py-2 text-center border-2 border-brand-charcoal-200 rounded-lg focus:outline-none focus:border-brand-navy-500 transition-colors"
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                        <p class="mt-3 text-xs text-brand-charcoal-500">
+                            💡 Introduce el stock para cada talla. Las tallas que no existan en el producto se ignorarán.
+                        </p>
+                    </div>
                 </div>
 
                 <!-- Description -->
