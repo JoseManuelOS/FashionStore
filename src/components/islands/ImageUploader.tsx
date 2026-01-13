@@ -1,14 +1,15 @@
 import { useState, useCallback } from 'react';
-import { supabase } from '../../lib/supabase';
 
 interface ImageUploaderProps {
-    bucket?: string;
+    cloudinaryUploadPreset?: string;
+    cloudinaryCloudName?: string;
     existingImages?: string[];
     onImagesChange: (urls: string[]) => void;
 }
 
 export default function ImageUploader({
-    bucket = 'products-images',
+    cloudinaryUploadPreset = 'fashionstore_products', // Cambiar según tu preset
+    cloudinaryCloudName = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || '',
     existingImages = [],
     onImagesChange
 }: ImageUploaderProps) {
@@ -18,25 +19,30 @@ export default function ImageUploader({
     const [error, setError] = useState<string | null>(null);
 
     const uploadFile = async (file: File): Promise<string | null> => {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-        const filePath = `products/${fileName}`;
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', cloudinaryUploadPreset);
+            formData.append('folder', 'products'); // Carpeta en Cloudinary
 
-        const { error: uploadError } = await supabase.storage
-            .from(bucket)
-            .upload(filePath, file);
+            const response = await fetch(
+                `https://api.cloudinary.com/v1_1/${cloudinaryCloudName}/image/upload`,
+                {
+                    method: 'POST',
+                    body: formData
+                }
+            );
 
-        if (uploadError) {
-            console.error('Upload error:', uploadError);
+            if (!response.ok) {
+                throw new Error('Error al subir imagen');
+            }
+
+            const data = await response.json();
+            return data.secure_url; // URL segura de Cloudinary
+        } catch (err) {
+            console.error('Upload error:', err);
             return null;
         }
-
-        // Get public URL
-        const { data: publicUrlData } = supabase.storage
-            .from(bucket)
-            .getPublicUrl(filePath);
-
-        return publicUrlData.publicUrl;
     };
 
     const handleFiles = useCallback(async (files: FileList | File[]) => {
@@ -67,7 +73,7 @@ export default function ImageUploader({
         setImages(newImages);
         onImagesChange(newImages);
         setUploading(false);
-    }, [images, onImagesChange, bucket]);
+    }, [images, onImagesChange]);
 
     const handleDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault();
@@ -179,7 +185,7 @@ export default function ImageUploader({
                     {images.map((url, index) => (
                         <div
                             key={url}
-                            className="relative group aspect-[4/5] bg-cream-200 rounded-lg overflow-hidden"
+                            className="relative group aspect-4/5 bg-cream-200 rounded-lg overflow-hidden"
                         >
                             <img
                                 src={url}

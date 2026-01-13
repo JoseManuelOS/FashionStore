@@ -20,33 +20,6 @@ try {
 } catch (e) {
     console.error("Error fetching categories:", e);
 }
-
-// Define search tags for each category
-const categoryTags: Record<string, string[]> = {
-    camisas: ["Manga corta", "Manga larga", "Slim fit", "Casual", "Formal", "Lino"],
-    pantalones: ["Chinos", "Vaqueros", "Cargo", "Slim fit", "Cortos"],
-    trajes: ["Clásico", "Slim fit", "Blazer", "Completo", "Formal"],
-    chaquetas: ["Bomber", "Cazadora", "Parka", "Blazer", "Sport"],
-    jerseys: ["Cuello redondo", "Cuello pico", "Lana", "Algodón", "Punto fino"],
-    polos: ["Manga corta", "Manga larga", "Slim fit", "Regular", "Piqué"],
-    zapatos: ["Casual", "Formal", "Deportivo", "Mocasines", "Oxford"],
-    accesorios: ["Cinturones", "Corbatas", "Pañuelos", "Gemelos", "Carteras"],
-};
-
-// Category icons mapping
-const categoryIcons: Record<string, string> = {
-    camisas: "shirt",
-    pantalones: "pants",
-    trajes: "suit",
-    chaquetas: "jacket",
-    jerseys: "sweater",
-    polos: "polo",
-    zapatos: "shoe",
-    accesorios: "accessory",
-};
-
-// Seasonal tags
-const seasonalTags = ["Verano", "Invierno", "Primavera", "Otoño"];
 ---
 
 <BaseLayout title={title} description={description}>
@@ -70,149 +43,21 @@ const seasonalTags = ["Verano", "Invierno", "Primavera", "Otoño"];
                     </span>
                 </a>
 
-                <!-- Desktop Navigation with Mega Menu -->
+                <!-- Desktop Navigation - Direct Categories -->
                 <nav class="hidden lg:flex items-center gap-1">
-                    <!-- Productos Dropdown -->
-                    <div class="relative group/menu">
+                    {categories.map((category) => (
                         <a
-                            href="/productos"
-                            class="px-4 py-2 text-zinc-300 hover:text-white font-medium transition-colors flex items-center gap-1"
+                            href={`/productos?categoria=${category.slug}`}
+                            class="px-3 py-2 text-zinc-300 hover:text-white font-medium transition-colors text-sm"
                         >
-                            Productos
-                            <svg
-                                class="w-4 h-4 transition-transform group-hover/menu:rotate-180"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M19 9l-7 7-7-7"></path>
-                            </svg>
+                            {category.name}
                         </a>
-
-                        <!-- Mega Menu Dropdown -->
-                        <div
-                            class="absolute left-1/2 -translate-x-1/2 top-full pt-2 opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all duration-200"
-                        >
-                            <div
-                                class="w-[800px] bg-dark-400/98 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden"
-                            >
-                                <!-- Gradient top border -->
-                                <div
-                                    class="h-px bg-gradient-to-r from-neon-cyan via-neon-fuchsia to-neon-cyan"
-                                >
-                                </div>
-
-                                <div class="p-6">
-                                    <!-- Main Categories Grid - 4 columns -->
-                                    <div class="grid grid-cols-4 gap-4">
-                                        {
-                                            categories.slice(0, 8).map((category) => (
-                                                <div class="group/cat">
-                                                    <a
-                                                        href={`/productos?categoria=${category.slug}`}
-                                                        class="flex items-center gap-2 p-2 rounded-lg hover:bg-white/5 transition-colors"
-                                                    >
-                                                        <span class="w-8 h-8 rounded-lg bg-gradient-to-br from-neon-cyan/20 to-neon-fuchsia/20 flex items-center justify-center flex-shrink-0">
-                                                            <svg class="w-4 h-4 text-neon-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                {category.slug === "camisas" && (
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-                                                                )}
-                                                                {category.slug === "pantalones" && (
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 5h16v3l-3 12H7L4 8V5z" />
-                                                                )}
-                                                                {category.slug === "trajes" && (
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                                                )}
-                                                                {category.slug === "chaquetas" && (
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                                                                )}
-                                                                {category.slug === "jerseys" && (
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                                                                )}
-                                                                {category.slug === "polos" && (
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                                                )}
-                                                                {category.slug === "zapatos" && (
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                                                )}
-                                                                {category.slug === "accesorios" && (
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                                                                )}
-                                                            </svg>
-                                                        </span>
-                                                        <div>
-                                                            <span class="font-medium text-white text-sm group-hover/cat:text-neon-cyan transition-colors">{category.name}</span>
-                                                        </div>
-                                                    </a>
-                                                    {/* Tag pills */}
-                                                    <div class="flex flex-wrap gap-1 mt-1 pl-2">
-                                                        {categoryTags[category.slug]?.slice(0, 3).map((tag) => (
-                                                            <a
-                                                                href={`/productos?buscar=${encodeURIComponent(tag)}`}
-                                                                class="text-xs px-2 py-0.5 rounded-full bg-white/5 text-zinc-400 hover:bg-neon-cyan/10 hover:text-neon-cyan transition-colors"
-                                                            >
-                                                                {tag}
-                                                            </a>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            ))
-                                        }
-                                    </div>
-
-                                    <!-- Divider -->
-                                    <div class="h-px bg-white/5 my-4"></div>
-
-                                    <!-- Bottom Section: Season + Featured + CTA -->
-                                    <div class="flex items-center justify-between gap-6">
-                                        <!-- Temporada Tags -->
-                                        <div class="flex items-center gap-3">
-                                            <span class="text-xs font-medium text-zinc-500 uppercase tracking-wider">Temporada:</span>
-                                            <div class="flex gap-2">
-                                                {seasonalTags.map((tag) => (
-                                                    <a
-                                                        href={`/productos?buscar=${encodeURIComponent(tag)}`}
-                                                        class="text-xs px-3 py-1 rounded-full border border-white/10 text-zinc-400 hover:border-neon-cyan/50 hover:text-neon-cyan transition-all"
-                                                    >
-                                                        {tag}
-                                                    </a>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        <!-- Featured Links -->
-                                        <div class="flex items-center gap-4">
-                                            <a
-                                                href="/productos?ofertas=true"
-                                                class="flex items-center gap-2 text-sm text-neon-fuchsia hover:text-neon-fuchsia-light transition-colors"
-                                            >
-                                                <span class="w-2 h-2 rounded-full bg-neon-fuchsia animate-pulse"></span>
-                                                Ofertas Flash
-                                            </a>
-                                            <a
-                                                href="/productos"
-                                                class="px-4 py-1.5 bg-gradient-to-r from-neon-cyan to-neon-fuchsia text-dark-500 text-sm font-medium rounded-lg hover:opacity-90 transition-opacity flex items-center gap-1"
-                                            >
-                                                Ver todo
-                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                                                </svg>
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    ))}
 
                     <!-- Ofertas Link -->
                     <a
-                        href="/productos?ofertas=true"
-                        class="px-4 py-2 text-neon-fuchsia hover:text-neon-fuchsia-light transition-colors font-medium flex items-center gap-1"
+                        href="/ofertas"
+                        class="px-3 py-2 text-neon-fuchsia hover:text-neon-fuchsia-light transition-colors font-medium flex items-center gap-1 text-sm"
                     >
                         <span
                             class="w-1.5 h-1.5 rounded-full bg-neon-fuchsia animate-pulse"

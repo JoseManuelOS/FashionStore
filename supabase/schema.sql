@@ -49,11 +49,12 @@ CREATE INDEX IF NOT EXISTS idx_products_is_offer ON products(is_offer) WHERE is_
 -- =============================================
 -- 🖼️ TABLA: product_images
 -- Relación 1:N con products
+-- Almacena URLs de imágenes (Cloudinary, etc.)
 -- =============================================
 CREATE TABLE IF NOT EXISTS product_images (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-  image_url TEXT NOT NULL,
+  image_url TEXT NOT NULL, -- URL completa de la imagen (ej: Cloudinary)
   "order" INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   color VARCHAR(100),
@@ -353,34 +354,12 @@ CREATE POLICY "product_variants_auth_write"
   WITH CHECK (auth.uid() IS NOT NULL);
 
 -- =============================================
--- 📸 STORAGE POLICIES (para bucket products-images)
+-- 📸 IMÁGENES
 -- =============================================
--- Nota: Primero crea el bucket "products-images" como PÚBLICO
--- en Storage > New Bucket
-
--- Lectura pública
-CREATE POLICY "storage_public_read"
-  ON storage.objects FOR SELECT
-  TO public
-  USING (bucket_id = 'products-images');
-
--- Subida solo autenticados
-CREATE POLICY "storage_auth_insert"
-  ON storage.objects FOR INSERT
-  TO authenticated
-  WITH CHECK (bucket_id = 'products-images');
-
--- Actualización solo autenticados
-CREATE POLICY "storage_auth_update"
-  ON storage.objects FOR UPDATE
-  TO authenticated
-  USING (bucket_id = 'products-images');
-
--- Eliminación solo autenticados
-CREATE POLICY "storage_auth_delete"
-  ON storage.objects FOR DELETE
-  TO authenticated
-  USING (bucket_id = 'products-images');
+-- ⚠️  Las imágenes se almacenan en Cloudinary (o servicio externo)
+-- ⚠️  NO se usa Supabase Storage
+-- ⚠️  La tabla product_images almacena las URLs completas
+-- =============================================
 
 -- =============================================
 -- 🧪 DATOS DE PRUEBA (Opcional)

@@ -122,7 +122,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     return (
         <div className="product-card group">
             <a href={`/productos/${product.slug}`} className="block">
-                <div className="relative aspect-[4/5] bg-dark-400 overflow-hidden">
+                <div className="relative aspect-4/5 bg-dark-400 overflow-hidden">
                     <img
                         src={currentImage}
                         alt={product.name}

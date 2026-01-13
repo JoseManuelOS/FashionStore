@@ -1,5 +1,5 @@
 ---
-import BaseLayout from "./BaseLayout.astro";
+import "../styles/global.css";
 
 export interface Props {
     title: string;
@@ -33,146 +33,133 @@ if (cookieHeader.includes('admin-session=')) {
 if (!adminSession) {
     return Astro.redirect("/admin/login");
 }
+
+const currentPath = Astro.url.pathname;
 ---
 
-<BaseLayout title={`Admin - ${title}`}>
-    <div class="min-h-screen bg-cream-100 flex">
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - {title}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-zinc-50 text-zinc-900 font-sans antialiased">
+    <div class="flex min-h-screen">
         <!-- Sidebar -->
-        <aside class="w-64 bg-brand-navy-500 text-white flex-shrink-0">
-            <div class="p-6">
-                <a href="/admin/dashboard" class="font-serif text-xl font-semibold">
-                    FashionMarket
-                </a>
-                <span class="block text-brand-navy-300 text-sm mt-1"
-                    >Panel de Administración</span
-                >
+        <aside class="w-60 bg-white border-r border-zinc-200 fixed h-screen z-40 flex flex-col">
+            <div class="p-6 border-b border-zinc-200">
+                <a href="/admin/dashboard" class="text-lg font-semibold text-zinc-900 block">FashionMarket</a>
+                <span class="text-xs text-zinc-500 mt-1 block">Panel Admin</span>
             </div>
 
-            <nav class="mt-4 px-4 space-y-1">
-                <a
-                    href="/admin/dashboard"
-                    class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-brand-navy-600 transition-colors"
-                >
-                    <svg
-                        class="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="1.5"
-                            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-                        ></path>
-                    </svg>
-                    <span>Dashboard</span>
-                </a>
+            <nav class="flex-1 p-3 overflow-y-auto">
+                <div class="mb-6">
+                    <div class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider px-3 mb-2">General</div>
+                    <a href="/admin/dashboard" class={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${currentPath === '/admin/dashboard' ? 'bg-zinc-900 text-white' : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'}`}>
+                        <svg class="w-[18px] h-[18px] opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+                        </svg>
+                        Dashboard
+                    </a>
+                </div>
+                
+                <div class="mb-6">
+                    <div class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider px-3 mb-2">Catálogo</div>
+                    <a href="/admin/productos" class={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${currentPath.includes('/admin/productos') ? 'bg-zinc-900 text-white' : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'}`}>
+                        <svg class="w-[18px] h-[18px] opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                        Productos
+                    </a>
+                </div>
 
-                <a
-                    href="/admin/productos"
-                    class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-brand-navy-600 transition-colors"
-                >
-                    <svg
-                        class="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="1.5"
-                            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                        ></path>
-                    </svg>
-                    <span>Productos</span>
-                </a>
+                <div class="mb-6">
+                    <div class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider px-3 mb-2">Ventas</div>
+                    <a href="/admin/pedidos" class={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${currentPath.includes('/admin/pedidos') ? 'bg-zinc-900 text-white' : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'}`}>
+                        <svg class="w-[18px] h-[18px] opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                        </svg>
+                        Pedidos
+                    </a>
+                </div>
 
-                <a
-                    href="/"
-                    class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-brand-navy-600 transition-colors mt-8"
-                >
-                    <svg
-                        class="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="1.5"
-                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                        ></path>
-                    </svg>
-                    <span>Ver Tienda</span>
-                </a>
+                <div class="mb-6">
+                    <div class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider px-3 mb-2">Clientes</div>
+                    <a href="/admin/usuarios" class={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${currentPath.includes('/admin/usuarios') ? 'bg-zinc-900 text-white' : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'}`}>
+                        <svg class="w-[18px] h-[18px] opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                        Usuarios
+                    </a>
+                    <a href="/admin/comunicaciones" class={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${currentPath.includes('/admin/comunicaciones') ? 'bg-zinc-900 text-white' : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'}`}>
+                        <svg class="w-[18px] h-[18px] opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        Comunicaciones
+                    </a>
+                </div>
+
+                <div class="mb-6">
+                    <div class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider px-3 mb-2">Diseño</div>
+                    <a href="/admin/carrusel" class={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${currentPath.includes('/admin/carrusel') ? 'bg-zinc-900 text-white' : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'}`}>
+                        <svg class="w-[18px] h-[18px] opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        Carrusel
+                    </a>
+                </div>
+                
+                <div class="mb-6">
+                    <div class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider px-3 mb-2">Otros</div>
+                    <a href="/" target="_blank" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 transition-all">
+                        <svg class="w-[18px] h-[18px] opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                        Ver Tienda
+                    </a>
+                </div>
             </nav>
 
-            <!-- User Info & Logout -->
-            <div
-                class="absolute bottom-0 left-0 w-64 p-4 border-t border-brand-navy-600"
-            >
-                <div class="flex items-center gap-3 px-4 py-2">
-                    <div
-                        class="w-8 h-8 rounded-full bg-accent-leather flex items-center justify-center text-white font-medium text-sm"
-                    >
+            <div class="p-4 border-t border-zinc-200">
+                <div class="flex items-center gap-3 p-2 mb-2">
+                    <div class="w-9 h-9 rounded-full bg-zinc-900 text-white flex items-center justify-center text-sm font-medium">
                         {adminSession.full_name?.charAt(0).toUpperCase() || adminSession.email?.charAt(0).toUpperCase()}
                     </div>
                     <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium truncate">{adminSession.full_name || adminSession.email}</p>
-                        <p class="text-xs text-brand-navy-300">{adminSession.role === 'super_admin' ? 'Super Admin' : 'Admin'}</p>
+                        <div class="text-sm font-medium text-zinc-900 truncate">{adminSession.full_name || adminSession.email}</div>
+                        <div class="text-xs text-zinc-500">{adminSession.role === 'super_admin' ? 'Super Admin' : 'Admin'}</div>
                     </div>
                 </div>
-                <button
-                    id="logout-btn"
-                    class="w-full flex items-center gap-3 px-4 py-2 text-brand-navy-300 hover:text-white transition-colors text-sm mt-2"
-                >
-                    <svg
-                        class="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="1.5"
-                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                        ></path>
+                <button id="logout-btn" class="w-full flex items-center justify-center gap-2 px-3 py-2.5 border border-zinc-200 rounded-lg text-zinc-600 text-sm hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
                     Cerrar Sesión
                 </button>
             </div>
         </aside>
 
-        <!-- Main Content -->
-        <div class="flex-1 flex flex-col">
-            <!-- Top Bar -->
-            <header
-                class="h-16 bg-white border-b border-brand-charcoal-100 flex items-center px-6"
-            >
-                <h1 class="font-serif text-xl text-brand-navy-500">{title}</h1>
+        <!-- Main -->
+        <div class="flex-1 ml-60 flex flex-col min-h-screen">
+            <header class="h-16 bg-white border-b border-zinc-200 flex items-center justify-between px-8 sticky top-0 z-30">
+                <h1 class="text-lg font-semibold text-zinc-900">{title}</h1>
             </header>
 
-            <!-- Page Content -->
-            <main class="flex-1 p-6 overflow-auto">
+            <main class="flex-1 p-8">
                 <slot />
             </main>
         </div>
     </div>
 
     <script>
-        document.getElementById('logout-btn')?.addEventListener('click', async () => {
-            try {
-                await fetch('/api/admin/logout', { method: 'POST' });
-                window.location.href = '/admin/login';
-            } catch (error) {
-                console.error('Error logging out:', error);
-            }
+        document.getElementById('logout-btn')?.addEventListener('click', () => {
+            document.cookie = 'admin-session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+            window.location.href = '/admin/login';
         });
     </script>
-</BaseLayout>
-    </div>
-</BaseLayout>
+</body>
+</html>

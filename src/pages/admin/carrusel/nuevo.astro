@@ -1,0 +1,263 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import CarouselImageUploader from "../../../components/islands/CarouselImageUploader";
+import { createCarouselSlide } from "../../../lib/supabase";
+
+let error = "";
+let success = false;
+
+if (Astro.request.method === "POST") {
+    const formData = await Astro.request.formData();
+    
+    const title = formData.get("title")?.toString() || "";
+    const subtitle = formData.get("subtitle")?.toString() || "";
+    const description = formData.get("description")?.toString() || "";
+    const image_url = formData.get("image_url")?.toString() || "";
+    const cta_text = formData.get("cta_text")?.toString() || "Ver más";
+    const cta_link = formData.get("cta_link")?.toString() || "/productos";
+    const duration = parseInt(formData.get("duration")?.toString() || "5000");
+    const sort_order = parseInt(formData.get("sort_order")?.toString() || "0");
+    const is_active = formData.get("is_active") === "true";
+
+    if (!title || !image_url) {
+        error = "El título y la imagen son obligatorios";
+    } else {
+        try {
+            await createCarouselSlide({
+                title,
+                subtitle: subtitle || null,
+                description: description || null,
+                image_url,
+                cta_text,
+                cta_link,
+                duration,
+                sort_order,
+                is_active
+            });
+            return Astro.redirect("/admin/carrusel?saved=true");
+        } catch (e: any) {
+            error = e.message || "Error al crear la slide";
+        }
+    }
+}
+---
+
+<AdminLayout title="Nueva Slide del Carrusel">
+    <div class="max-w-3xl">
+        <!-- Header -->
+        <div class="flex items-center gap-4 mb-8">
+            <a
+                href="/admin/carrusel"
+                class="p-2 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors"
+            >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+            </a>
+            <div>
+                <h1 class="text-2xl font-bold text-zinc-900">Nueva Slide</h1>
+                <p class="text-zinc-500 mt-0.5">Añade una nueva imagen al carrusel del homepage</p>
+            </div>
+        </div>
+
+        {error && (
+            <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+                {error}
+            </div>
+        )}
+
+        <form method="POST" class="space-y-6">
+            <!-- Image Section -->
+            <div class="bg-white rounded-2xl border border-zinc-200 p-6">
+                <h2 class="text-base font-semibold text-zinc-900 flex items-center gap-2 mb-5">
+                    <svg class="w-5 h-5 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    Imagen de la Slide
+                </h2>
+                
+                <div>
+                    <label class="block text-sm font-medium text-zinc-700 mb-2">
+                        Imagen del carrusel <span class="text-red-500">*</span>
+                    </label>
+                    <CarouselImageUploader client:load inputName="image_url" />
+                </div>
+            </div>
+
+            <!-- Content Section -->
+            <div class="bg-white rounded-2xl border border-zinc-200 p-6">
+                <h2 class="text-base font-semibold text-zinc-900 flex items-center gap-2 mb-5">
+                    <svg class="w-5 h-5 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Contenido
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label for="title" class="block text-sm font-medium text-zinc-700 mb-2">
+                            Título <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            id="title"
+                            name="title"
+                            required
+                            placeholder="Nueva Colección"
+                            class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                        />
+                    </div>
+
+                    <div>
+                        <label for="subtitle" class="block text-sm font-medium text-zinc-700 mb-2">
+                            Subtítulo
+                        </label>
+                        <input
+                            type="text"
+                            id="subtitle"
+                            name="subtitle"
+                            placeholder="Primavera 2026"
+                            class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                        />
+                    </div>
+                </div>
+
+                <div class="mt-5">
+                    <label for="description" class="block text-sm font-medium text-zinc-700 mb-2">
+                        Descripción
+                    </label>
+                    <textarea
+                        id="description"
+                        name="description"
+                        rows={3}
+                        placeholder="Descubre las últimas tendencias en moda masculina"
+                        class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all resize-none"
+                    ></textarea>
+                </div>
+            </div>
+
+            <!-- CTA Section -->
+            <div class="bg-white rounded-2xl border border-zinc-200 p-6">
+                <h2 class="text-base font-semibold text-zinc-900 flex items-center gap-2 mb-5">
+                    <svg class="w-5 h-5 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+                    </svg>
+                    Botón de Acción (CTA)
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label for="cta_text" class="block text-sm font-medium text-zinc-700 mb-2">
+                            Texto del botón
+                        </label>
+                        <input
+                            type="text"
+                            id="cta_text"
+                            name="cta_text"
+                            value="Ver más"
+                            placeholder="Explorar"
+                            class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                        />
+                    </div>
+
+                    <div>
+                        <label for="cta_link" class="block text-sm font-medium text-zinc-700 mb-2">
+                            Enlace del botón
+                        </label>
+                        <input
+                            type="text"
+                            id="cta_link"
+                            name="cta_link"
+                            value="/productos"
+                            placeholder="/productos"
+                            class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                        />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Config Section -->
+            <div class="bg-white rounded-2xl border border-zinc-200 p-6">
+                <h2 class="text-base font-semibold text-zinc-900 flex items-center gap-2 mb-5">
+                    <svg class="w-5 h-5 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Configuración
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <div>
+                        <label for="duration" class="block text-sm font-medium text-zinc-700 mb-2">
+                            Duración (ms)
+                        </label>
+                        <div class="relative">
+                            <input
+                                type="number"
+                                id="duration"
+                                name="duration"
+                                value="5000"
+                                min="1000"
+                                max="30000"
+                                step="500"
+                                class="w-full px-4 py-3 pr-12 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                            />
+                            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 text-sm">ms</span>
+                        </div>
+                        <p class="text-xs text-zinc-500 mt-1.5">5000ms = 5 segundos</p>
+                    </div>
+
+                    <div>
+                        <label for="sort_order" class="block text-sm font-medium text-zinc-700 mb-2">
+                            Orden
+                        </label>
+                        <input
+                            type="number"
+                            id="sort_order"
+                            name="sort_order"
+                            value="0"
+                            min="0"
+                            class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                        />
+                        <p class="text-xs text-zinc-500 mt-1.5">Menor número = primero</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-zinc-700 mb-2">
+                            Estado
+                        </label>
+                        <label class="flex items-center gap-3 px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl cursor-pointer hover:border-cyan-500 transition-colors">
+                            <input
+                                type="checkbox"
+                                name="is_active"
+                                value="true"
+                                checked
+                                class="w-5 h-5 rounded border-zinc-300 text-cyan-600 focus:ring-cyan-500"
+                            />
+                            <span class="text-zinc-700">Activa</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center justify-end gap-4 pt-4">
+                <a
+                    href="/admin/carrusel"
+                    class="px-6 py-3 text-zinc-500 hover:text-zinc-900 transition-colors"
+                >
+                    Cancelar
+                </a>
+                <button
+                    type="submit"
+                    class="px-6 py-3 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all hover:-translate-y-0.5 flex items-center gap-2"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Crear Slide
+                </button>
+            </div>
+        </form>
+    </div>
+</AdminLayout>

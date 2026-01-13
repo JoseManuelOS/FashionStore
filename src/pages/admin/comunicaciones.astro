@@ -1,0 +1,291 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { getNewsletterSubscribers } from "../../lib/supabase";
+
+const subscribers = await getNewsletterSubscribers();
+
+let message = "";
+let messageType = "";
+let sentTo: string[] = [];
+let failedTo: string[] = [];
+
+// Handle form submission
+if (Astro.request.method === "POST") {
+    const formData = await Astro.request.formData();
+    const action = formData.get("action")?.toString();
+    const subject = formData.get("subject")?.toString();
+    const content = formData.get("content")?.toString();
+
+    if (action === "send_email" && subject && content) {
+        if (subscribers.length > 0) {
+            try {
+                // Llamar al endpoint de envío de newsletter
+                const response = await fetch(new URL('/api/email/send-newsletter', Astro.url.origin), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ subject, content }),
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    sentTo = result.stats.successfulEmails || [];
+                    failedTo = result.stats.failedEmails || [];
+                    
+                    if (failedTo.length === 0) {
+                        message = `✅ Newsletter enviado correctamente a ${result.stats.sent} suscriptores`;
+                        messageType = "success";
+                    } else {
+                        message = `⚠️ Newsletter enviado a ${result.stats.sent} de ${result.stats.total} suscriptores. ${result.stats.failed} fallaron.`;
+                        messageType = "warning";
+                    }
+                } else {
+                    message = result.error || "Error al enviar el newsletter";
+                    messageType = "error";
+                }
+            } catch (error) {
+                console.error('Error enviando newsletter:', error);
+                message = "Error de conexión al enviar el newsletter";
+                messageType = "error";
+            }
+        } else {
+            message = "No hay suscriptores en el newsletter";
+            messageType = "error";
+        }
+    }
+}
+
+function formatDate(dateStr: string) {
+    return new Date(dateStr).toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+    });
+}
+---
+
+<AdminLayout title="Comunicaciones">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Content - Email Form -->
+        <div class="lg:col-span-2 space-y-6">
+            {message && (
+                <div class={`p-4 rounded-xl border ${messageType === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : messageType === 'warning' ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+                    <div class="flex items-start gap-3">
+                        {messageType === 'success' ? (
+                            <svg class="w-5 h-5 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                        ) : messageType === 'warning' ? (
+                            <svg class="w-5 h-5 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                        ) : (
+                            <svg class="w-5 h-5 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        )}
+                        <div class="flex-1">
+                            <p>{message}</p>
+                            {sentTo.length > 0 && (
+                                <details class="mt-2">
+                                    <summary class="text-sm cursor-pointer hover:underline">Ver enviados ({sentTo.length})</summary>
+                                    <div class="mt-2 text-sm opacity-80 max-h-32 overflow-auto">
+                                        {sentTo.join(', ')}
+                                    </div>
+                                </details>
+                            )}
+                            {failedTo.length > 0 && (
+                                <details class="mt-2">
+                                    <summary class="text-sm cursor-pointer hover:underline text-red-600">Ver fallidos ({failedTo.length})</summary>
+                                    <div class="mt-2 text-sm text-red-600 max-h-32 overflow-auto">
+                                        {failedTo.join(', ')}
+                                    </div>
+                                </details>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <form method="POST" class="bg-white rounded-2xl border border-zinc-200 overflow-hidden">
+                <div class="p-6 border-b border-zinc-200">
+                    <h2 class="text-lg font-semibold text-zinc-900 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        Enviar Newsletter
+                    </h2>
+                    <p class="text-sm text-zinc-500 mt-1">Envía emails a los {subscribers.length} clientes suscritos al newsletter</p>
+                </div>
+
+                <div class="p-6 space-y-5">
+                    <input type="hidden" name="action" value="send_email" />
+
+                    <!-- Audience Info -->
+                    <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7" />
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="font-medium text-emerald-900">Suscriptores del Newsletter</div>
+                                <div class="text-sm text-emerald-700">{subscribers.length} personas recibirán este email</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Subject -->
+                    <div>
+                        <label for="subject" class="block text-sm font-medium text-zinc-700 mb-2">
+                            Asunto <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            id="subject"
+                            name="subject"
+                            required
+                            placeholder="🎉 Nuevas ofertas exclusivas para ti"
+                            class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                        />
+                    </div>
+
+                    <!-- Content -->
+                    <div>
+                        <label for="content" class="block text-sm font-medium text-zinc-700 mb-2">
+                            Contenido <span class="text-red-500">*</span>
+                        </label>
+                        <textarea
+                            id="content"
+                            name="content"
+                            required
+                            rows={8}
+                            placeholder="Escribe el contenido de tu email aquí...
+
+Puedes incluir:
+- Información sobre nuevos productos
+- Descuentos especiales
+- Novedades de la tienda"
+                            class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all resize-none"
+                        ></textarea>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="flex items-center justify-between pt-2">
+                        <div class="text-sm text-zinc-500">
+                            <span class="font-medium text-zinc-700">{subscribers.length}</span> destinatarios
+                        </div>
+                        <button
+                            type="submit"
+                            disabled={subscribers.length === 0}
+                            class="px-6 py-3 bg-cyan-600 text-white font-medium rounded-xl hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                        >
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                            </svg>
+                            Enviar Newsletter
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Info Note -->
+                <div class="px-6 pb-6">
+                    <div class="p-4 bg-cyan-50 border border-cyan-200 rounded-xl">
+                        <div class="flex gap-3">
+                            <svg class="w-5 h-5 text-cyan-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <p class="text-sm text-cyan-800">
+                                <strong>Resend configurado:</strong> Los emails se enviarán usando tu cuenta de Resend.
+                                Cada suscriptor recibirá un email personalizado con su nombre.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Sidebar - Subscribers List -->
+        <div class="space-y-6">
+            <div class="bg-white rounded-2xl border border-zinc-200 overflow-hidden">
+                <div class="p-5 border-b border-zinc-200">
+                    <h2 class="font-semibold text-zinc-900 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Suscritos al Newsletter
+                    </h2>
+                    <p class="text-sm text-zinc-500 mt-1">{subscribers.length} clientes</p>
+                </div>
+                
+                {subscribers.length === 0 ? (
+                    <div class="p-6 text-center">
+                        <div class="w-12 h-12 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <svg class="w-6 h-6 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <p class="text-sm text-zinc-500">No hay suscriptores todavía</p>
+                    </div>
+                ) : (
+                    <div class="max-h-96 overflow-y-auto divide-y divide-zinc-100">
+                        {subscribers.map((sub) => (
+                            <div class="p-4 flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center text-zinc-600 text-sm font-medium">
+                                    {sub.full_name?.charAt(0).toUpperCase() || sub.email.charAt(0).toUpperCase()}
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="text-sm font-medium text-zinc-900 truncate">{sub.full_name || 'Sin nombre'}</div>
+                                    <div class="text-xs text-zinc-500 truncate">{sub.email}</div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl p-5 text-white">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                    </div>
+                    <div class="text-lg font-semibold">Newsletter</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl font-bold">{subscribers.length}</div>
+                    <div class="text-sm text-white/80 mt-1">Suscriptores activos</div>
+                </div>
+            </div>
+
+            <!-- Tips -->
+            <div class="bg-white rounded-2xl border border-zinc-200 p-5">
+                <h3 class="font-medium text-zinc-900 mb-3 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                    Consejos
+                </h3>
+                <ul class="text-sm text-zinc-600 space-y-2">
+                    <li class="flex items-start gap-2">
+                        <span class="text-cyan-500 mt-1">•</span>
+                        <span>Usa emojis en el asunto para mayor apertura</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-cyan-500 mt-1">•</span>
+                        <span>Personaliza el contenido con ofertas exclusivas</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-cyan-500 mt-1">•</span>
+                        <span>Envía en horarios de mayor engagement</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</AdminLayout>

@@ -6,313 +6,1047 @@ import {
 	formatPrice,
 	getSetting,
 	getProductMainImage,
+	getCarouselSlides,
+	type CarouselSlide,
 } from "../lib/supabase";
 
-// SSG - Generate at build time
 export const prerender = true;
 
-// Fetch data
 let products: any[] = [];
 let offerProducts: any[] = [];
 let categories: any[] = [];
 let offersEnabled = false;
+let carouselSlides: CarouselSlide[] = [];
 
 try {
-	products = await getProducts({ limit: 6 });
+	products = await getProducts({ limit: 8 });
 	offerProducts = await getProducts({ isOffer: true, limit: 4 });
 	categories = await getCategories();
 	const offersSetting = await getSetting("offers_enabled");
 	offersEnabled = offersSetting === true || offersSetting === "true";
+	carouselSlides = await getCarouselSlides();
 } catch (e) {
 	console.error("Error fetching data:", e);
 }
+
+// Fallback slides if no database slides exist
+const defaultSlides = [
+	{
+		id: "default-1",
+		image_url: "https://images.unsplash.com/photo-1490578474895-699cd4e2cf59?w=1920&q=80",
+		title: "Nueva Colección",
+		subtitle: "Primavera 2026",
+		description: "Descubre las últimas tendencias en moda masculina",
+		cta_text: "Explorar",
+		cta_link: "/productos",
+		duration: 5000,
+		sort_order: 1,
+		is_active: true
+	},
+	{
+		id: "default-2",
+		image_url: "https://images.unsplash.com/photo-1507680434567-5739c80be1ac?w=1920&q=80",
+		title: "Estilo Premium",
+		subtitle: "Elegancia Definida",
+		description: "Prendas de alta calidad para el hombre moderno",
+		cta_text: "Ver colección",
+		cta_link: "/categoria/camisas",
+		duration: 5000,
+		sort_order: 2,
+		is_active: true
+	},
+	{
+		id: "default-3",
+		image_url: "https://images.unsplash.com/photo-1617137968427-85924c800a22?w=1920&q=80",
+		title: "Ofertas Especiales",
+		subtitle: "Hasta 40% Off",
+		description: "Aprovecha nuestros descuentos exclusivos",
+		cta_text: "Comprar ahora",
+		cta_link: "/ofertas",
+		duration: 5000,
+		sort_order: 3,
+		is_active: true
+	}
+];
+
+// Use database slides or fallback to defaults
+const heroSlides = carouselSlides.length > 0 ? carouselSlides : defaultSlides;
 ---
 
 <PublicLayout
-	title="Moda Masculina Premium"
-	description="Descubre la colección de moda masculina premium en FashionMarket. Diseño futurista y elegancia."
+	title="Moda Masculina Premium | FashionMarket"
+	description="Tienda de moda masculina premium. Descubre nuestra colección de camisas, pantalones y trajes de alta calidad."
 >
-	<!-- Hero Section - Futuristic Gradient -->
-	<section class="relative min-h-[90vh] flex items-center overflow-hidden">
-		<!-- Animated Background -->
-		<div class="absolute inset-0">
-			<div class="absolute inset-0 bg-gradient-to-br from-dark-600 via-dark-500 to-dark-600"></div>
-			<div class="absolute top-0 left-1/4 w-[600px] h-[600px] bg-neon-cyan/10 rounded-full blur-[120px] animate-pulse"></div>
-			<div class="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-neon-fuchsia/10 rounded-full blur-[100px] animate-pulse" style="animation-delay: 1s;"></div>
-			<!-- Grid Pattern -->
-			<div class="absolute inset-0 opacity-20" style="background-image: linear-gradient(rgba(6, 182, 212, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(6, 182, 212, 0.1) 1px, transparent 1px); background-size: 60px 60px;"></div>
-		</div>
+	<style>
+		/* Hero Carousel */
+		.hero-carousel {
+			position: relative;
+			height: 100vh;
+			min-height: 600px;
+			max-height: 900px;
+			overflow: hidden;
+		}
 
-		<div class="container-custom relative z-10 py-20">
-			<div class="max-w-3xl">
-				<span class="inline-block px-4 py-2 bg-neon-cyan/10 border border-neon-cyan/30 rounded-full text-neon-cyan text-sm font-medium mb-6 animate-fade-in">
-					✦ Nueva Colección 2026
-				</span>
-				<h1 class="text-5xl md:text-7xl font-display text-white mb-6 leading-tight animate-slide-up">
-					El Futuro de la
-					<span class="text-transparent bg-clip-text bg-gradient-to-r from-neon-cyan to-neon-fuchsia">
-						Moda Masculina
-					</span>
-				</h1>
-				<p class="text-xl text-zinc-400 mb-10 max-w-xl leading-relaxed animate-slide-up" style="animation-delay: 0.1s;">
-					Diseños vanguardistas que fusionan tecnología y estilo. 
-					Ropa que define el hombre del mañana.
-				</p>
-				<div class="flex flex-wrap gap-4 animate-slide-up" style="animation-delay: 0.2s;">
-					<a href="/productos" class="btn-primary group">
-						<span class="flex items-center gap-2">
-							Explorar Colección
-							<svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+		.hero-slide {
+			position: absolute;
+			inset: 0;
+			opacity: 0;
+			transition: opacity 1s ease-in-out;
+		}
+
+		.hero-slide.active {
+			opacity: 1;
+		}
+
+		.hero-slide img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+		}
+
+		.hero-overlay {
+			position: absolute;
+			inset: 0;
+			background: linear-gradient(
+				to right,
+				rgba(0, 0, 0, 0.7) 0%,
+				rgba(0, 0, 0, 0.4) 50%,
+				rgba(0, 0, 0, 0.2) 100%
+			);
+		}
+
+		.hero-content {
+			position: absolute;
+			inset: 0;
+			display: flex;
+			align-items: center;
+			padding: 0 5%;
+		}
+
+		.hero-text {
+			max-width: 600px;
+			color: white;
+		}
+
+		.hero-subtitle {
+			font-size: 14px;
+			text-transform: uppercase;
+			letter-spacing: 3px;
+			color: #d4af37;
+			margin-bottom: 16px;
+			font-weight: 500;
+		}
+
+		.hero-title {
+			font-size: clamp(2.5rem, 6vw, 4.5rem);
+			font-weight: 700;
+			line-height: 1.1;
+			margin-bottom: 20px;
+			font-family: 'Space Grotesk', sans-serif;
+		}
+
+		.hero-description {
+			font-size: 18px;
+			color: rgba(255, 255, 255, 0.8);
+			margin-bottom: 32px;
+			line-height: 1.6;
+		}
+
+		.hero-btn {
+			display: inline-flex;
+			align-items: center;
+			gap: 12px;
+			padding: 16px 40px;
+			background: white;
+			color: #0a0a0f;
+			font-weight: 600;
+			font-size: 14px;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+			text-decoration: none;
+			transition: all 0.3s ease;
+		}
+
+		.hero-btn:hover {
+			background: #d4af37;
+			color: white;
+			transform: translateY(-2px);
+		}
+
+		.hero-btn svg {
+			width: 18px;
+			height: 18px;
+			transition: transform 0.3s ease;
+		}
+
+		.hero-btn:hover svg {
+			transform: translateX(4px);
+		}
+
+		/* Carousel Navigation */
+		.carousel-nav {
+			position: absolute;
+			bottom: 40px;
+			left: 50%;
+			transform: translateX(-50%);
+			display: flex;
+			gap: 12px;
+			z-index: 10;
+		}
+
+		.carousel-dot {
+			width: 40px;
+			height: 4px;
+			background: rgba(255, 255, 255, 0.3);
+			border: none;
+			cursor: pointer;
+			transition: all 0.3s ease;
+		}
+
+		.carousel-dot.active {
+			background: white;
+			width: 60px;
+		}
+
+		.carousel-arrows {
+			position: absolute;
+			bottom: 40px;
+			right: 5%;
+			display: flex;
+			gap: 8px;
+			z-index: 10;
+		}
+
+		.carousel-arrow {
+			width: 50px;
+			height: 50px;
+			background: rgba(255, 255, 255, 0.1);
+			border: 1px solid rgba(255, 255, 255, 0.2);
+			color: white;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			cursor: pointer;
+			transition: all 0.3s ease;
+		}
+
+		.carousel-arrow:hover {
+			background: white;
+			color: #0a0a0f;
+		}
+
+		/* Section Styles */
+		.section-header {
+			text-align: center;
+			margin-bottom: 60px;
+		}
+
+		.section-label {
+			font-size: 12px;
+			text-transform: uppercase;
+			letter-spacing: 3px;
+			color: #d4af37;
+			margin-bottom: 16px;
+			font-weight: 500;
+		}
+
+		.section-title {
+			font-size: clamp(2rem, 4vw, 3rem);
+			font-weight: 600;
+			color: white;
+			margin-bottom: 16px;
+		}
+
+		.section-description {
+			color: #71717a;
+			font-size: 16px;
+			max-width: 500px;
+			margin: 0 auto;
+		}
+
+		/* Categories Grid */
+		.categories-grid {
+			display: grid;
+			grid-template-columns: repeat(3, 1fr);
+			gap: 24px;
+		}
+
+		@media (max-width: 768px) {
+			.categories-grid {
+				grid-template-columns: 1fr;
+			}
+		}
+
+		.category-card {
+			position: relative;
+			height: 400px;
+			overflow: hidden;
+			background: #111;
+		}
+
+		.category-card img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			transition: transform 0.6s ease;
+		}
+
+		.category-card:hover img {
+			transform: scale(1.1);
+		}
+
+		.category-overlay {
+			position: absolute;
+			inset: 0;
+			background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, transparent 60%);
+		}
+
+		.category-content {
+			position: absolute;
+			bottom: 0;
+			left: 0;
+			right: 0;
+			padding: 32px;
+		}
+
+		.category-name {
+			font-size: 24px;
+			font-weight: 600;
+			color: white;
+			margin-bottom: 8px;
+		}
+
+		.category-link {
+			display: inline-flex;
+			align-items: center;
+			gap: 8px;
+			color: #d4af37;
+			font-size: 14px;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+			text-decoration: none;
+			transition: gap 0.3s ease;
+		}
+
+		.category-link:hover {
+			gap: 12px;
+		}
+
+		/* Products Grid */
+		.products-section {
+			background: linear-gradient(180deg, #0a0a0f 0%, #111118 100%);
+			padding: 100px 0;
+		}
+
+		.products-grid {
+			display: grid;
+			grid-template-columns: repeat(4, 1fr);
+			gap: 24px;
+		}
+
+		@media (max-width: 1024px) {
+			.products-grid {
+				grid-template-columns: repeat(2, 1fr);
+			}
+		}
+
+		@media (max-width: 640px) {
+			.products-grid {
+				grid-template-columns: 1fr;
+			}
+		}
+
+		.product-card-new {
+			background: #18181b;
+			overflow: hidden;
+			transition: transform 0.3s ease;
+		}
+
+		.product-card-new:hover {
+			transform: translateY(-8px);
+		}
+
+		.product-image-container {
+			position: relative;
+			aspect-ratio: 3/4;
+			overflow: hidden;
+			background: #27272a;
+		}
+
+		.product-image-container img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			transition: transform 0.5s ease;
+		}
+
+		.product-card-new:hover .product-image-container img {
+			transform: scale(1.05);
+		}
+
+		.product-badge {
+			position: absolute;
+			top: 12px;
+			left: 12px;
+			padding: 6px 12px;
+			font-size: 11px;
+			font-weight: 600;
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+		}
+
+		.badge-sale {
+			background: #dc2626;
+			color: white;
+		}
+
+		.badge-new {
+			background: #d4af37;
+			color: #0a0a0f;
+		}
+
+		.product-quick-view {
+			position: absolute;
+			inset: 0;
+			background: rgba(0, 0, 0, 0.6);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			opacity: 0;
+			transition: opacity 0.3s ease;
+		}
+
+		.product-card-new:hover .product-quick-view {
+			opacity: 1;
+		}
+
+		.quick-view-btn {
+			padding: 14px 28px;
+			background: white;
+			color: #0a0a0f;
+			font-size: 12px;
+			font-weight: 600;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+			text-decoration: none;
+			transform: translateY(20px);
+			transition: all 0.3s ease;
+		}
+
+		.product-card-new:hover .quick-view-btn {
+			transform: translateY(0);
+		}
+
+		.product-info {
+			padding: 20px;
+		}
+
+		.product-category {
+			font-size: 11px;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+			color: #71717a;
+			margin-bottom: 8px;
+		}
+
+		.product-name {
+			font-size: 16px;
+			font-weight: 500;
+			color: white;
+			margin-bottom: 12px;
+			line-height: 1.4;
+		}
+
+		.product-price {
+			font-size: 18px;
+			font-weight: 600;
+			color: #d4af37;
+		}
+
+		/* Features Section */
+		.features-section {
+			padding: 80px 0;
+			background: #0a0a0f;
+			border-top: 1px solid #27272a;
+			border-bottom: 1px solid #27272a;
+		}
+
+		.features-grid {
+			display: grid;
+			grid-template-columns: repeat(4, 1fr);
+			gap: 40px;
+		}
+
+		@media (max-width: 768px) {
+			.features-grid {
+				grid-template-columns: repeat(2, 1fr);
+			}
+		}
+
+		.feature-item {
+			text-align: center;
+		}
+
+		.feature-icon {
+			width: 60px;
+			height: 60px;
+			margin: 0 auto 20px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			border: 1px solid #27272a;
+			color: #d4af37;
+		}
+
+		.feature-title {
+			font-size: 16px;
+			font-weight: 600;
+			color: white;
+			margin-bottom: 8px;
+		}
+
+		.feature-text {
+			font-size: 14px;
+			color: #71717a;
+			line-height: 1.6;
+		}
+
+		/* CTA Banner */
+		.cta-banner {
+			position: relative;
+			height: 500px;
+			overflow: hidden;
+		}
+
+		.cta-banner img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+		}
+
+		.cta-overlay {
+			position: absolute;
+			inset: 0;
+			background: rgba(0, 0, 0, 0.6);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			text-align: center;
+		}
+
+		.cta-content {
+			max-width: 600px;
+			padding: 0 20px;
+		}
+
+		.cta-title {
+			font-size: clamp(2rem, 4vw, 3rem);
+			font-weight: 600;
+			color: white;
+			margin-bottom: 20px;
+		}
+
+		.cta-text {
+			font-size: 18px;
+			color: rgba(255, 255, 255, 0.8);
+			margin-bottom: 32px;
+		}
+
+		.cta-btn {
+			display: inline-flex;
+			align-items: center;
+			gap: 12px;
+			padding: 16px 40px;
+			background: #d4af37;
+			color: #0a0a0f;
+			font-weight: 600;
+			font-size: 14px;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+			text-decoration: none;
+			transition: all 0.3s ease;
+		}
+
+		.cta-btn:hover {
+			background: white;
+			transform: translateY(-2px);
+		}
+
+		/* Offers Section */
+		.offers-section {
+			padding: 100px 0;
+			background: linear-gradient(135deg, #1a1a1f 0%, #0a0a0f 100%);
+		}
+
+		.offers-grid {
+			display: grid;
+			grid-template-columns: repeat(2, 1fr);
+			gap: 24px;
+		}
+
+		@media (max-width: 768px) {
+			.offers-grid {
+				grid-template-columns: 1fr;
+			}
+		}
+
+		.offer-card {
+			position: relative;
+			height: 350px;
+			overflow: hidden;
+			display: flex;
+			background: #18181b;
+		}
+
+		.offer-image {
+			width: 50%;
+			position: relative;
+			overflow: hidden;
+		}
+
+		.offer-image img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			transition: transform 0.5s ease;
+		}
+
+		.offer-card:hover .offer-image img {
+			transform: scale(1.1);
+		}
+
+		.offer-content {
+			width: 50%;
+			padding: 40px;
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+		}
+
+		.offer-badge {
+			display: inline-block;
+			padding: 6px 16px;
+			background: #dc2626;
+			color: white;
+			font-size: 12px;
+			font-weight: 600;
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+			margin-bottom: 16px;
+			width: fit-content;
+		}
+
+		.offer-name {
+			font-size: 24px;
+			font-weight: 600;
+			color: white;
+			margin-bottom: 12px;
+		}
+
+		.offer-price {
+			font-size: 28px;
+			font-weight: 700;
+			color: #d4af37;
+			margin-bottom: 24px;
+		}
+
+		.offer-link {
+			display: inline-flex;
+			align-items: center;
+			gap: 8px;
+			color: white;
+			font-size: 14px;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+			text-decoration: none;
+			transition: gap 0.3s ease;
+		}
+
+		.offer-link:hover {
+			gap: 12px;
+			color: #d4af37;
+		}
+
+		@media (max-width: 640px) {
+			.offer-card {
+				flex-direction: column;
+				height: auto;
+			}
+			.offer-image, .offer-content {
+				width: 100%;
+			}
+			.offer-image {
+				height: 250px;
+			}
+		}
+
+		/* View All Link */
+		.view-all-container {
+			text-align: center;
+			margin-top: 60px;
+		}
+
+		.view-all-link {
+			display: inline-flex;
+			align-items: center;
+			gap: 12px;
+			padding: 16px 40px;
+			border: 1px solid #27272a;
+			color: white;
+			font-size: 14px;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+			text-decoration: none;
+			transition: all 0.3s ease;
+		}
+
+		.view-all-link:hover {
+			background: white;
+			color: #0a0a0f;
+			border-color: white;
+		}
+	</style>
+
+	<!-- Hero Carousel -->
+	<section class="hero-carousel" id="hero-carousel">
+		{heroSlides.map((slide, index) => (
+			<div class={`hero-slide ${index === 0 ? 'active' : ''}`} data-slide={index} data-duration={slide.duration}>
+				<img src={slide.image_url} alt={slide.title} />
+				<div class="hero-overlay"></div>
+				<div class="hero-content">
+					<div class="hero-text">
+						<p class="hero-subtitle">{slide.subtitle}</p>
+						<h1 class="hero-title">{slide.title}</h1>
+						<p class="hero-description">{slide.description}</p>
+						<a href={slide.cta_link} class="hero-btn">
+							{slide.cta_text}
+							<svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
 							</svg>
-						</span>
-					</a>
-					{offersEnabled && offerProducts.length > 0 && (
-						<a href="#ofertas" class="btn-secondary">
-							<span class="flex items-center gap-2">
-								<span class="w-2 h-2 rounded-full bg-neon-fuchsia animate-pulse"></span>
-								Ofertas Flash
-							</span>
 						</a>
-					)}
+					</div>
 				</div>
 			</div>
+		))}
+
+		<!-- Navigation Dots -->
+		<div class="carousel-nav">
+			{heroSlides.map((_, index) => (
+				<button 
+					class={`carousel-dot ${index === 0 ? 'active' : ''}`} 
+					data-index={index}
+					aria-label={`Slide ${index + 1}`}
+				></button>
+			))}
 		</div>
 
-		<!-- Scroll Indicator -->
-		<div class="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-			<svg class="w-6 h-6 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
-			</svg>
+		<!-- Navigation Arrows -->
+		<div class="carousel-arrows">
+			<button class="carousel-arrow" id="prev-slide" aria-label="Previous slide">
+				<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+				</svg>
+			</button>
+			<button class="carousel-arrow" id="next-slide" aria-label="Next slide">
+				<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+				</svg>
+			</button>
 		</div>
 	</section>
 
-	<!-- ⚡ OFERTAS FLASH SECTION -->
+	<!-- Features Bar -->
+	<section class="features-section">
+		<div class="container-custom">
+			<div class="features-grid">
+				<div class="feature-item">
+					<div class="feature-icon">
+						<svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+						</svg>
+					</div>
+					<h3 class="feature-title">Envío Gratis</h3>
+					<p class="feature-text">En pedidos superiores a 50€</p>
+				</div>
+				<div class="feature-item">
+					<div class="feature-icon">
+						<svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+						</svg>
+					</div>
+					<h3 class="feature-title">30 Días</h3>
+					<p class="feature-text">Devolución sin complicaciones</p>
+				</div>
+				<div class="feature-item">
+					<div class="feature-icon">
+						<svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+						</svg>
+					</div>
+					<h3 class="feature-title">Pago Seguro</h3>
+					<p class="feature-text">Transacciones 100% protegidas</p>
+				</div>
+				<div class="feature-item">
+					<div class="feature-icon">
+						<svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+						</svg>
+					</div>
+					<h3 class="feature-title">Soporte 24/7</h3>
+					<p class="feature-text">Atención al cliente siempre</p>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- Categories Section -->
+	<section style="padding: 100px 0; background: #0a0a0f;">
+		<div class="container-custom">
+			<div class="section-header">
+				<p class="section-label">Explora</p>
+				<h2 class="section-title">Nuestras Categorías</h2>
+				<p class="section-description">Encuentra el estilo perfecto para cada ocasión</p>
+			</div>
+
+			<div class="categories-grid">
+				{categories.length > 0 ? categories.map((category, index) => (
+					<a href={`/categoria/${category.slug}`} class="category-card">
+						<img 
+							src={index === 0 
+								? "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=600&q=80" 
+								: index === 1 
+								? "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=600&q=80"
+								: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=600&q=80"
+							} 
+							alt={category.name} 
+						/>
+						<div class="category-overlay"></div>
+						<div class="category-content">
+							<h3 class="category-name">{category.name}</h3>
+							<span class="category-link">
+								Ver productos
+								<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+								</svg>
+							</span>
+						</div>
+					</a>
+				)) : (
+					<div style="grid-column: 1/-1; text-align: center; padding: 60px; color: #71717a;">
+						No hay categorías disponibles
+					</div>
+				)}
+			</div>
+		</div>
+	</section>
+
+	<!-- Offers Section -->
 	{offersEnabled && offerProducts.length > 0 && (
-		<section id="ofertas" class="py-20 relative overflow-hidden">
-			<!-- Background -->
-			<div class="absolute inset-0 bg-gradient-to-br from-neon-fuchsia/10 via-dark-500 to-neon-purple/10"></div>
-			<div class="absolute inset-0 opacity-30" style="background-image: radial-gradient(circle at 2px 2px, rgba(217, 70, 239, 0.15) 1px, transparent 0); background-size: 40px 40px;"></div>
-			
-			<div class="container-custom relative z-10">
-				<div class="text-center mb-14">
-					<span class="inline-flex items-center gap-2 px-4 py-2 bg-neon-fuchsia/10 border border-neon-fuchsia/30 rounded-full text-neon-fuchsia text-sm font-medium mb-4">
-						<span class="w-2 h-2 rounded-full bg-neon-fuchsia animate-pulse"></span>
-						Tiempo Limitado
-					</span>
-					<h2 class="text-4xl md:text-5xl font-display text-white mb-4">
-						Ofertas <span class="text-neon-fuchsia">Flash</span>
-					</h2>
-					<p class="text-zinc-400 max-w-lg mx-auto">
-						Aprovecha estos precios especiales antes de que desaparezcan
-					</p>
+		<section class="offers-section" id="ofertas">
+			<div class="container-custom">
+				<div class="section-header">
+					<p class="section-label">🔥 Tiempo Limitado</p>
+					<h2 class="section-title">Ofertas Especiales</h2>
+					<p class="section-description">Aprovecha estos descuentos exclusivos</p>
 				</div>
 
-				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-					{offerProducts.map((product) => (
-						<a
-							href={`/productos/${product.slug}`}
-							class="product-card group"
-						>
-							<div class="relative aspect-[4/5] bg-dark-400 overflow-hidden">
-								<img
-									src={getProductMainImage(product)}
-									alt={product.name}
-									class="product-image w-full h-full object-cover"
-									loading="lazy"
-								/>
-								<div class="absolute top-3 left-3">
-									<span class="badge-offer">🔥 Oferta</span>
-								</div>
-								<!-- Hover Overlay -->
-								<div class="absolute inset-0 bg-gradient-to-t from-dark-600 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+				<div class="offers-grid">
+					{offerProducts.slice(0, 2).map((product) => (
+						<div class="offer-card">
+							<div class="offer-image">
+								<img src={getProductMainImage(product)} alt={product.name} />
 							</div>
-							<div class="p-5 relative z-10">
-								<h3 class="font-medium text-white group-hover:text-neon-cyan transition-colors">
-									{product.name}
-								</h3>
-								<p class="font-display text-xl text-neon-fuchsia mt-2">
-									{formatPrice(product.price)}
-								</p>
+							<div class="offer-content">
+								<span class="offer-badge">Oferta</span>
+								<h3 class="offer-name">{product.name}</h3>
+								<p class="offer-price">{formatPrice(product.price)}</p>
+								<a href={`/productos/${product.slug}`} class="offer-link">
+									Comprar ahora
+									<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+									</svg>
+								</a>
 							</div>
-						</a>
+						</div>
 					))}
 				</div>
 			</div>
 		</section>
 	)}
 
-	<!-- Categories Section -->
-	<section class="py-20">
+	<!-- Products Section -->
+	<section class="products-section">
 		<div class="container-custom">
-			<div class="text-center mb-14">
-				<h2 class="text-4xl md:text-5xl font-display text-white mb-4">
-					Categorías
-				</h2>
-				<p class="text-zinc-400">Explora nuestra colección por estilo</p>
-			</div>
-
-			<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-				{categories.map((category, index) => (
-					<a
-						href={`/categoria/${category.slug}`}
-						class="group relative h-72 rounded-2xl overflow-hidden glass-card"
-					>
-						<!-- Gradient Background -->
-						<div class={`absolute inset-0 bg-gradient-to-br ${index === 0 ? 'from-neon-cyan/20 to-dark-500' : index === 1 ? 'from-neon-fuchsia/20 to-dark-500' : 'from-neon-purple/20 to-dark-500'} transition-all group-hover:scale-110 duration-500`}></div>
-						
-						<!-- Content -->
-						<div class="absolute inset-0 flex flex-col justify-end p-8">
-							<h3 class="text-3xl font-display text-white mb-2 group-hover:text-neon-cyan transition-colors">
-								{category.name}
-							</h3>
-							<span class="flex items-center gap-2 text-zinc-400 group-hover:text-white transition-colors">
-								Ver productos
-								<svg
-									class="w-4 h-4 transform group-hover:translate-x-2 transition-transform"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-								</svg>
-							</span>
-						</div>
-						
-						<!-- Hover Glow -->
-						<div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
-							<div class="absolute inset-0 bg-gradient-to-t from-neon-cyan/10 to-transparent"></div>
-						</div>
-					</a>
-				))}
-			</div>
-		</div>
-	</section>
-
-	<!-- Featured Products Section -->
-	<section id="featured" class="py-20 bg-dark-500/50">
-		<div class="container-custom">
-			<div class="flex items-end justify-between mb-14">
-				<div>
-					<h2 class="text-4xl md:text-5xl font-display text-white">
-						Nuevos Productos
-					</h2>
-					<p class="text-zinc-400 mt-2">
-						Lo último de nuestra colección
-					</p>
-				</div>
-				<a
-					href="/productos"
-					class="hidden md:flex items-center gap-2 text-neon-cyan hover:text-neon-cyan-light font-medium transition-colors"
-				>
-					Ver todos
-					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-					</svg>
-				</a>
+			<div class="section-header">
+				<p class="section-label">Lo Nuevo</p>
+				<h2 class="section-title">Productos Destacados</h2>
+				<p class="section-description">Descubre nuestra selección de prendas premium</p>
 			</div>
 
 			{products.length > 0 ? (
-				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-					{products.map((product) => (
-						<a
-							href={`/productos/${product.slug}`}
-							class="product-card group"
-						>
-							<div class="relative aspect-[4/5] bg-dark-400 overflow-hidden">
-								<img
-									src={getProductMainImage(product)}
-									alt={product.name}
-									class="product-image w-full h-full object-cover"
-									loading="lazy"
-								/>
-								{product.is_offer && (
-									<div class="absolute top-3 left-3">
-										<span class="badge-offer">Oferta</span>
+				<div class="products-grid">
+					{products.map((product, index) => (
+						<div class="product-card-new">
+							<a href={`/productos/${product.slug}`}>
+								<div class="product-image-container">
+									<img src={getProductMainImage(product)} alt={product.name} loading="lazy" />
+									{product.is_offer && <span class="product-badge badge-sale">Oferta</span>}
+									{!product.is_offer && index < 2 && <span class="product-badge badge-new">Nuevo</span>}
+									<div class="product-quick-view">
+										<span class="quick-view-btn">Ver producto</span>
 									</div>
-								)}
-								{product.stock <= 5 && product.stock > 0 && (
-									<div class="absolute top-3 right-3">
-										<span class="badge-new">¡Últimas!</span>
-									</div>
-								)}
-								<!-- Quick View Overlay -->
-								<div class="absolute inset-0 bg-dark-600/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-									<span class="px-6 py-3 bg-neon-cyan text-dark-600 font-semibold rounded-lg transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-										Ver Producto
-									</span>
 								</div>
-							</div>
-							<div class="p-5">
-								{product.category && (
-									<span class="text-xs text-zinc-500 uppercase tracking-wider">
-										{product.category.name}
-									</span>
-								)}
-								<h3 class="font-medium text-white mt-1 group-hover:text-neon-cyan transition-colors">
-									{product.name}
-								</h3>
-								<p class="font-display text-xl text-zinc-300 mt-2">
-									{formatPrice(product.price)}
-								</p>
-							</div>
-						</a>
+								<div class="product-info">
+									{product.category && (
+										<p class="product-category">{product.category.name}</p>
+									)}
+									<h3 class="product-name">{product.name}</h3>
+									<p class="product-price">{formatPrice(product.price)}</p>
+								</div>
+							</a>
+						</div>
 					))}
 				</div>
 			) : (
-				<div class="text-center py-16 glass-card">
-					<p class="text-zinc-400">No hay productos disponibles</p>
+				<div style="text-align: center; padding: 60px; color: #71717a;">
+					No hay productos disponibles
 				</div>
 			)}
 
-			<div class="mt-10 text-center md:hidden">
-				<a href="/productos" class="btn-secondary">
+			<div class="view-all-container">
+				<a href="/productos" class="view-all-link">
 					Ver todos los productos
+					<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+					</svg>
 				</a>
 			</div>
 		</div>
 	</section>
 
-	<!-- Brand Values Section -->
-	<section class="py-20">
-		<div class="container-custom">
-			<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-				<div class="glass-card p-8 text-center group hover:border-neon-cyan/30 transition-colors">
-					<div class="w-16 h-16 mx-auto mb-6 rounded-2xl bg-neon-cyan/10 flex items-center justify-center group-hover:shadow-glow-cyan transition-shadow">
-						<svg class="w-8 h-8 text-neon-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
-						</svg>
-					</div>
-					<h3 class="font-display text-xl text-white mb-3">Calidad Premium</h3>
-					<p class="text-zinc-500">
-						Materiales de última generación y acabados impecables en cada prenda.
-					</p>
-				</div>
-
-				<div class="glass-card p-8 text-center group hover:border-neon-fuchsia/30 transition-colors">
-					<div class="w-16 h-16 mx-auto mb-6 rounded-2xl bg-neon-fuchsia/10 flex items-center justify-center group-hover:shadow-glow-fuchsia transition-shadow">
-						<svg class="w-8 h-8 text-neon-fuchsia" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-						</svg>
-					</div>
-					<h3 class="font-display text-xl text-white mb-3">Envío Express</h3>
-					<p class="text-zinc-500">
-						Entrega en 24-48h con seguimiento en tiempo real.
-					</p>
-				</div>
-
-				<div class="glass-card p-8 text-center group hover:border-neon-purple/30 transition-colors">
-					<div class="w-16 h-16 mx-auto mb-6 rounded-2xl bg-neon-purple/10 flex items-center justify-center group-hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] transition-shadow">
-						<svg class="w-8 h-8 text-neon-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-						</svg>
-					</div>
-					<h3 class="font-display text-xl text-white mb-3">Devolución Fácil</h3>
-					<p class="text-zinc-500">
-						30 días para cambios o devoluciones sin complicaciones.
-					</p>
-				</div>
+	<!-- CTA Banner -->
+	<section class="cta-banner">
+		<img src="https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=1920&q=80" alt="Nueva colección" />
+		<div class="cta-overlay">
+			<div class="cta-content">
+				<h2 class="cta-title">Suscríbete y Obtén 10% Off</h2>
+				<p class="cta-text">Únete a nuestra newsletter y recibe un descuento exclusivo en tu primera compra</p>
+				<a href="/auth/registro" class="cta-btn">
+					Crear cuenta
+					<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+					</svg>
+				</a>
 			</div>
 		</div>
 	</section>
+
+	<script>
+		// Hero Carousel Logic
+		document.addEventListener('DOMContentLoaded', () => {
+			const slides = document.querySelectorAll('.hero-slide') as NodeListOf<HTMLElement>;
+			const dots = document.querySelectorAll('.carousel-dot');
+			const prevBtn = document.getElementById('prev-slide');
+			const nextBtn = document.getElementById('next-slide');
+			let currentSlide = 0;
+			let autoplayTimeout: ReturnType<typeof setTimeout>;
+
+			// Get duration for current slide (default 5000ms)
+			function getCurrentDuration(): number {
+				const currentSlideEl = slides[currentSlide];
+				const duration = currentSlideEl?.dataset.duration;
+				return duration ? parseInt(duration) : 5000;
+			}
+
+			function goToSlide(index: number) {
+				slides.forEach((slide, i) => {
+					slide.classList.toggle('active', i === index);
+				});
+				dots.forEach((dot, i) => {
+					dot.classList.toggle('active', i === index);
+				});
+				currentSlide = index;
+			}
+
+			function nextSlide() {
+				const next = (currentSlide + 1) % slides.length;
+				goToSlide(next);
+				// Schedule next slide with current slide's duration
+				scheduleNextSlide();
+			}
+
+			function prevSlide() {
+				const prev = (currentSlide - 1 + slides.length) % slides.length;
+				goToSlide(prev);
+				scheduleNextSlide();
+			}
+
+			function scheduleNextSlide() {
+				clearTimeout(autoplayTimeout);
+				const duration = getCurrentDuration();
+				autoplayTimeout = setTimeout(nextSlide, duration);
+			}
+
+			function startAutoplay() {
+				scheduleNextSlide();
+			}
+
+			function stopAutoplay() {
+				clearTimeout(autoplayTimeout);
+			}
+
+			// Event Listeners
+			dots.forEach((dot, index) => {
+				dot.addEventListener('click', () => {
+					stopAutoplay();
+					goToSlide(index);
+					startAutoplay();
+				});
+			});
+
+			prevBtn?.addEventListener('click', () => {
+				stopAutoplay();
+				prevSlide();
+				startAutoplay();
+			});
+
+			nextBtn?.addEventListener('click', () => {
+				stopAutoplay();
+				nextSlide();
+				startAutoplay();
+			});
+
+			// Touch/Swipe support
+			let touchStartX = 0;
+			let touchEndX = 0;
+
+			const carousel = document.getElementById('hero-carousel');
+			
+			carousel?.addEventListener('touchstart', (e) => {
+				touchStartX = e.changedTouches[0].screenX;
+			}, { passive: true });
+
+			carousel?.addEventListener('touchend', (e) => {
+				touchEndX = e.changedTouches[0].screenX;
+				const diff = touchStartX - touchEndX;
+				
+				if (Math.abs(diff) > 50) {
+					stopAutoplay();
+					if (diff > 0) {
+						nextSlide();
+					} else {
+						prevSlide();
+					}
+					startAutoplay();
+				}
+			}, { passive: true });
+
+			// Pause on hover
+			carousel?.addEventListener('mouseenter', stopAutoplay);
+			carousel?.addEventListener('mouseleave', startAutoplay);
+
+			// Start autoplay
+			startAutoplay();
+		});
+	</script>
 </PublicLayout>

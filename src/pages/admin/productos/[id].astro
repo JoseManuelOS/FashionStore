@@ -3,25 +3,17 @@ import AdminLayout from "../../../layouts/AdminLayout.astro";
 import { supabaseAdmin, getCategories, getProductStockBySize, updateProductStockBulk, initProductStock } from "../../../lib/supabase";
 import { slugify } from "../../../lib/utils";
 
-// SSR - Protected by AdminLayout
 export const prerender = false;
 
 const { id } = Astro.params;
 let error: string | null = null;
-let success: string | null = null;
 let product: any = null;
 let productImages: any[] = [];
 let stockBySize: Record<string, number> = {};
 
-// Fetch product with images
 const { data } = await supabaseAdmin
     .from("products")
-    .select(
-        `
-    *,
-    images:product_images(id, image_url, order)
-  `,
-    )
+    .select(`*, images:product_images(id, image_url, order)`)
     .eq("id", id)
     .single();
 
@@ -31,10 +23,8 @@ if (!product) {
     return Astro.redirect("/admin/productos");
 }
 
-// Obtener stock por talla
 try {
     stockBySize = await getProductStockBySize(id!);
-    // Si no hay stock configurado, inicializar con las tallas del producto
     if (Object.keys(stockBySize).length === 0 && product.sizes?.length > 0) {
         await initProductStock(id!, product.sizes);
         stockBySize = product.sizes.reduce((acc: Record<string, number>, size: string) => {
@@ -46,78 +36,45 @@ try {
     console.error('Error obteniendo stock por talla:', e);
 }
 
-productImages = (product.images || []).sort(
-    (a: any, b: any) => a.order - b.order,
-);
+productImages = (product.images || []).sort((a: any, b: any) => a.order - b.order);
 const categories = await getCategories();
 
-// Handle form submission
 if (Astro.request.method === "POST") {
     try {
         const formData = await Astro.request.formData();
-
         const name = formData.get("name") as string;
         const slug = slugify(name);
         const description = formData.get("description") as string;
         const price = parseFloat(formData.get("price") as string);
         const category_id = (formData.get("category_id") as string) || null;
         const sizesRaw = formData.get("sizes") as string;
-        const sizes = sizesRaw
-            ? sizesRaw.split(",").map((s) => s.trim())
-            : product.sizes;
+        const sizes = sizesRaw ? sizesRaw.split(",").map(s => s.trim()) : product.sizes;
         const is_offer = formData.get("is_offer") === "on";
         const active = formData.get("active") === "on";
 
-        // Procesar stock por talla
         const newStockBySize: Record<string, number> = {};
         for (const size of sizes) {
             const stockValue = formData.get(`stock_${size}`) as string;
             newStockBySize[size] = parseInt(stockValue) || 0;
         }
 
-        // Calcular stock total (para compatibilidad con el campo legacy)
         const totalStock = Object.values(newStockBySize).reduce((sum, qty) => sum + qty, 0);
 
-        // Get new image URLs (comma separated)
         const imagesRaw = formData.get("images") as string;
-        const newImageUrls = imagesRaw
-            ? imagesRaw
-                  .split(",")
-                  .map((url) => url.trim())
-                  .filter(Boolean)
-            : [];
+        const newImageUrls = imagesRaw ? imagesRaw.split(",").map(url => url.trim()).filter(Boolean) : [];
 
-        // Update product
         const { error: updateError } = await supabaseAdmin
             .from("products")
-            .update({
-                name,
-                slug,
-                description,
-                price,
-                stock: totalStock, // Stock total para compatibilidad
-                category_id: category_id || null,
-                sizes,
-                is_offer,
-                active,
-            })
+            .update({ name, slug, description, price, stock: totalStock, category_id: category_id || null, sizes, is_offer, active })
             .eq("id", id);
 
         if (updateError) {
             error = "Error al actualizar el producto: " + updateError.message;
         } else {
-            // Actualizar stock por talla
             await updateProductStockBulk(id!, newStockBySize);
 
-            // Handle images: delete old and insert new if provided
             if (newImageUrls.length > 0) {
-                // Delete existing images
-                await supabaseAdmin
-                    .from("product_images")
-                    .delete()
-                    .eq("product_id", id);
-
-                // Insert new images
+                await supabaseAdmin.from("product_images").delete().eq("product_id", id);
                 const imageRecords = newImageUrls.map((url, index) => ({
                     product_id: id,
                     image_url: url,
@@ -134,272 +91,377 @@ if (Astro.request.method === "POST") {
     }
 }
 
-// Current images as comma-separated URLs for the form
-const currentImageUrls = productImages
-    .map((img: any) => img.image_url)
-    .join(", ");
+const currentImageUrls = productImages.map((img: any) => img.image_url).join(", ");
 ---
 
 <AdminLayout title={`Editar: ${product.name}`}>
-    <div class="max-w-4xl">
-        <!-- Back Link -->
-        <a
-            href="/admin/productos"
-            class="inline-flex items-center gap-2 text-brand-charcoal-500 hover:text-brand-navy-500 mb-6"
-        >
-            <svg
-                class="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-            >
-                <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M15 19l-7-7 7-7"></path>
-            </svg>
-            Volver a productos
-        </a>
-
-        <h1 class="text-2xl font-serif text-brand-navy-500 mb-6">
-            Editar Producto
-        </h1>
-
-        {
-            error && (
-                <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-                    {error}
-                </div>
-            )
+    <style>
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #71717a;
+            text-decoration: none;
+            font-size: 14px;
+            margin-bottom: 24px;
         }
+        
+        .back-link:hover {
+            color: #18181b;
+        }
+        
+        .back-link svg {
+            width: 16px;
+            height: 16px;
+        }
+        
+        .images-preview {
+            background: #fff;
+            border: 1px solid #e4e4e7;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            max-width: 720px;
+        }
+        
+        .images-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: #71717a;
+            margin-bottom: 16px;
+        }
+        
+        .images-grid {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }
+        
+        .image-thumb {
+            width: 72px;
+            height: 88px;
+            border-radius: 8px;
+            background: #f4f4f5;
+            overflow: hidden;
+            flex-shrink: 0;
+            position: relative;
+        }
+        
+        .image-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .image-number {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            width: 20px;
+            height: 20px;
+            background: #18181b;
+            color: #fff;
+            border-radius: 50%;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .form-card {
+            background: #fff;
+            border: 1px solid #e4e4e7;
+            border-radius: 12px;
+            padding: 32px;
+            max-width: 720px;
+        }
+        
+        .form-section {
+            margin-bottom: 32px;
+        }
+        
+        .form-section:last-child {
+            margin-bottom: 0;
+        }
+        
+        .section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #71717a;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f4f4f5;
+        }
+        
+        .form-grid {
+            display: grid;
+            gap: 20px;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 600px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .form-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #18181b;
+        }
+        
+        .form-input {
+            padding: 12px 16px;
+            border: 1px solid #e4e4e7;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #18181b;
+            transition: border-color 0.15s;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #18181b;
+        }
+        
+        .form-input::placeholder {
+            color: #a1a1aa;
+        }
+        
+        textarea.form-input {
+            resize: none;
+            min-height: 100px;
+        }
+        
+        .form-hint {
+            font-size: 12px;
+            color: #71717a;
+        }
+        
+        .stock-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 12px;
+        }
+        
+        .stock-item {
+            text-align: center;
+        }
+        
+        .stock-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #52525b;
+            margin-bottom: 6px;
+        }
+        
+        .stock-input {
+            width: 100%;
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #e4e4e7;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .stock-input:focus {
+            outline: none;
+            border-color: #18181b;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+        
+        .checkbox-item input {
+            width: 18px;
+            height: 18px;
+            accent-color: #18181b;
+        }
+        
+        .checkbox-item span {
+            font-size: 14px;
+            color: #52525b;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            padding-top: 24px;
+            border-top: 1px solid #f4f4f5;
+            margin-top: 32px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn-primary {
+            background: #18181b;
+            color: #fff;
+            border: none;
+        }
+        
+        .btn-primary:hover {
+            background: #27272a;
+        }
+        
+        .btn-secondary {
+            background: #fff;
+            color: #52525b;
+            border: 1px solid #e4e4e7;
+        }
+        
+        .btn-secondary:hover {
+            background: #f4f4f5;
+        }
+        
+        .error-message {
+            padding: 12px 16px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            color: #dc2626;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+    </style>
 
-        <!-- Current Images Preview -->
-        {
-            productImages.length > 0 && (
-                <div class="mb-6 bg-white rounded-xl shadow-elegant p-6">
-                    <h3 class="text-sm font-medium text-brand-charcoal-700 mb-3">
-                        Imágenes Actuales
-                    </h3>
-                    <div class="flex gap-3 overflow-x-auto pb-2">
-                        {productImages.map((img: any, idx: number) => (
-                            <div class="relative flex-shrink-0 w-24 h-28 bg-cream-200 rounded-lg overflow-hidden">
-                                <img
-                                    src={img.image_url}
-                                    alt={`${product.name} - ${idx + 1}`}
-                                    class="w-full h-full object-cover"
-                                />
-                                <span class="absolute bottom-1 right-1 w-5 h-5 bg-brand-navy-500 text-white text-xs rounded-full flex items-center justify-center">
-                                    {idx + 1}
-                                </span>
+    <a href="/admin/productos" class="back-link">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        Volver a productos
+    </a>
+
+    {error && <div class="error-message">{error}</div>}
+
+    {productImages.length > 0 && (
+        <div class="images-preview">
+            <div class="images-title">Imágenes actuales</div>
+            <div class="images-grid">
+                {productImages.map((img: any, idx: number) => (
+                    <div class="image-thumb">
+                        <img src={img.image_url} alt={`${product.name} - ${idx + 1}`} />
+                        <span class="image-number">{idx + 1}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    )}
+
+    <form method="POST" class="form-card">
+        <div class="form-section">
+            <div class="section-title">Información básica</div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label" for="name">Nombre del producto</label>
+                    <input type="text" id="name" name="name" required class="form-input" value={product.name} />
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="category_id">Categoría</label>
+                        <select id="category_id" name="category_id" class="form-input">
+                            <option value="">Sin categoría</option>
+                            {categories.map(cat => (
+                                <option value={cat.id} selected={cat.id === product.category_id}>{cat.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="price">Precio (€)</label>
+                        <input type="number" id="price" name="price" required min="0" step="0.01" class="form-input" value={product.price} />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="description">Descripción</label>
+                    <textarea id="description" name="description" class="form-input">{product.description}</textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <div class="section-title">Tallas y stock</div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label" for="sizes">Tallas disponibles</label>
+                    <input type="text" id="sizes" name="sizes" class="form-input" value={product.sizes?.join(", ")} />
+                    <span class="form-hint">Separadas por coma</span>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Stock por talla</label>
+                    <div class="stock-grid">
+                        {product.sizes?.map((size: string) => (
+                            <div class="stock-item">
+                                <div class="stock-label">{size}</div>
+                                <input type="number" name={`stock_${size}`} min="0" value={stockBySize[size] ?? 0} class="stock-input" />
                             </div>
                         ))}
                     </div>
-                </div>
-            )
-        }
-
-        <form
-            method="POST"
-            class="bg-white rounded-xl shadow-elegant p-6 md:p-8 space-y-6"
-        >
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Name -->
-                <div class="md:col-span-2">
-                    <label
-                        for="name"
-                        class="block text-sm font-medium text-brand-charcoal-700 mb-2"
-                    >
-                        Nombre del Producto *
-                    </label>
-                    <input
-                        type="text"
-                        id="name"
-                        name="name"
-                        required
-                        value={product.name}
-                        class="w-full px-4 py-3 border-2 border-brand-charcoal-200 rounded-lg focus:outline-none focus:border-brand-navy-500 transition-colors"
-                    />
-                </div>
-
-                <!-- Category -->
-                <div>
-                    <label
-                        for="category_id"
-                        class="block text-sm font-medium text-brand-charcoal-700 mb-2"
-                    >
-                        Categoría
-                    </label>
-                    <select
-                        id="category_id"
-                        name="category_id"
-                        class="w-full px-4 py-3 border-2 border-brand-charcoal-200 rounded-lg focus:outline-none focus:border-brand-navy-500 transition-colors"
-                    >
-                        <option value="">Sin categoría</option>
-                        {
-                            categories.map((cat) => (
-                                <option
-                                    value={cat.id}
-                                    selected={cat.id === product.category_id}
-                                >
-                                    {cat.name}
-                                </option>
-                            ))
-                        }
-                    </select>
-                </div>
-
-                <!-- Price -->
-                <div class="md:col-span-2">
-                    <label
-                        for="price"
-                        class="block text-sm font-medium text-brand-charcoal-700 mb-2"
-                    >
-                        Precio (€) *
-                    </label>
-                    <input
-                        type="number"
-                        id="price"
-                        name="price"
-                        required
-                        min="0"
-                        step="0.01"
-                        value={product.price}
-                        class="w-full px-4 py-3 border-2 border-brand-charcoal-200 rounded-lg focus:outline-none focus:border-brand-navy-500 transition-colors"
-                    />
-                </div>
-
-                <!-- Sizes -->
-                <div>
-                    <label
-                        for="sizes"
-                        class="block text-sm font-medium text-brand-charcoal-700 mb-2"
-                    >
-                        Tallas (separadas por coma)
-                    </label>
-                    <input
-                        type="text"
-                        id="sizes"
-                        name="sizes"
-                        value={product.sizes?.join(", ")}
-                        class="w-full px-4 py-3 border-2 border-brand-charcoal-200 rounded-lg focus:outline-none focus:border-brand-navy-500 transition-colors"
-                    />
-                </div>
-
-                <!-- Stock por Talla -->
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-brand-charcoal-700 mb-3">
-                        📦 Stock por Talla
-                    </label>
-                    <div class="bg-cream-100 rounded-lg p-4">
-                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                            {product.sizes?.map((size: string) => (
-                                <div class="text-center">
-                                    <label 
-                                        for={`stock_${size}`}
-                                        class="block text-sm font-bold text-brand-navy-500 mb-1"
-                                    >
-                                        {size}
-                                    </label>
-                                    <input
-                                        type="number"
-                                        id={`stock_${size}`}
-                                        name={`stock_${size}`}
-                                        min="0"
-                                        value={stockBySize[size] ?? 0}
-                                        class="w-full px-3 py-2 text-center border-2 border-brand-charcoal-200 rounded-lg focus:outline-none focus:border-brand-navy-500 transition-colors"
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                        <p class="mt-3 text-xs text-brand-charcoal-500">
-                            💡 El stock total se calculará automáticamente sumando todas las tallas.
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Description -->
-                <div class="md:col-span-2">
-                    <label
-                        for="description"
-                        class="block text-sm font-medium text-brand-charcoal-700 mb-2"
-                    >
-                        Descripción
-                    </label>
-                    <textarea
-                        id="description"
-                        name="description"
-                        rows="4"
-                        class="w-full px-4 py-3 border-2 border-brand-charcoal-200 rounded-lg focus:outline-none focus:border-brand-navy-500 transition-colors resize-none"
-                        >{product.description}</textarea
-                    >
-                </div>
-
-                <!-- Images -->
-                <div class="md:col-span-2">
-                    <label
-                        for="images"
-                        class="block text-sm font-medium text-brand-charcoal-700 mb-2"
-                    >
-                        URLs de Imágenes (separadas por coma)
-                    </label>
-                    <textarea
-                        id="images"
-                        name="images"
-                        rows="3"
-                        class="w-full px-4 py-3 border-2 border-brand-charcoal-200 rounded-lg focus:outline-none focus:border-brand-navy-500 transition-colors resize-none"
-                        placeholder="Deja vacío para mantener las imágenes actuales"
-                        >{currentImageUrls}</textarea
-                    >
-                    <p class="mt-2 text-xs text-brand-charcoal-400">
-                        Si modificas las URLs, se reemplazarán todas las
-                        imágenes existentes.
-                    </p>
-                </div>
-
-                <!-- Checkboxes -->
-                <div class="md:col-span-2 flex flex-wrap gap-6">
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="checkbox"
-                            name="is_offer"
-                            checked={product.is_offer}
-                            class="w-5 h-5 rounded border-brand-charcoal-300 text-red-500 focus:ring-red-500"
-                        />
-                        <span class="text-brand-charcoal-700"
-                            >🔥 Producto en oferta</span
-                        >
-                    </label>
-
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="checkbox"
-                            name="active"
-                            checked={product.active}
-                            class="w-5 h-5 rounded border-brand-charcoal-300 text-brand-navy-500 focus:ring-brand-navy-500"
-                        />
-                        <span class="text-brand-charcoal-700"
-                            >Activo (visible en tienda)</span
-                        >
-                    </label>
+                    <span class="form-hint">El stock total se calculará automáticamente</span>
                 </div>
             </div>
+        </div>
 
-            <!-- Submit -->
-            <div class="flex gap-4 pt-4 border-t border-brand-charcoal-100">
-                <button
-                    type="submit"
-                    class="px-6 py-3 bg-brand-navy-500 text-white font-semibold rounded-lg hover:bg-brand-navy-600 transition-colors"
-                >
-                    Guardar Cambios
-                </button>
-                <a
-                    href="/admin/productos"
-                    class="px-6 py-3 border border-brand-charcoal-200 text-brand-charcoal-600 font-medium rounded-lg hover:bg-cream-100 transition-colors"
-                >
-                    Cancelar
-                </a>
+        <div class="form-section">
+            <div class="section-title">Imágenes</div>
+            <div class="form-group">
+                <label class="form-label" for="images">URLs de imágenes</label>
+                <textarea id="images" name="images" class="form-input" placeholder="Deja vacío para mantener las actuales">{currentImageUrls}</textarea>
+                <span class="form-hint">Separadas por coma. Si modificas, se reemplazarán todas las imágenes.</span>
             </div>
-        </form>
-    </div>
+        </div>
+
+        <div class="form-section">
+            <div class="section-title">Opciones</div>
+            <div class="checkbox-group">
+                <label class="checkbox-item">
+                    <input type="checkbox" name="is_offer" checked={product.is_offer} />
+                    <span>Producto en oferta</span>
+                </label>
+                <label class="checkbox-item">
+                    <input type="checkbox" name="active" checked={product.active} />
+                    <span>Activo (visible en tienda)</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+            <a href="/admin/productos" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
 </AdminLayout>

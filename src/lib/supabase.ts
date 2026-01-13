@@ -498,3 +498,218 @@ export function getAvailableSizes(stockBySize: Record<string, number>): string[]
         .filter(([_, quantity]) => quantity > 0)
         .map(([size]) => size);
 }
+
+// =============================================
+// CAROUSEL SLIDES
+// =============================================
+
+export interface CarouselSlide {
+    id: string;
+    title: string;
+    subtitle: string | null;
+    description: string | null;
+    image_url: string;
+    cta_text: string;
+    cta_link: string;
+    duration: number;
+    sort_order: number;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+/**
+ * Get all active carousel slides
+ */
+export async function getCarouselSlides(): Promise<CarouselSlide[]> {
+    const { data, error } = await supabase
+        .from('carousel_slides')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+}
+
+/**
+ * Get all carousel slides (including inactive) for admin
+ */
+export async function getAllCarouselSlides(): Promise<CarouselSlide[]> {
+    const { data, error } = await supabaseAdmin
+        .from('carousel_slides')
+        .select('*')
+        .order('sort_order', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+}
+
+/**
+ * Get a single carousel slide by ID
+ */
+export async function getCarouselSlideById(id: string): Promise<CarouselSlide | null> {
+    const { data, error } = await supabaseAdmin
+        .from('carousel_slides')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+    if (error) return null;
+    return data;
+}
+
+/**
+ * Create a new carousel slide
+ */
+export async function createCarouselSlide(slide: Omit<CarouselSlide, 'id' | 'created_at' | 'updated_at'>): Promise<CarouselSlide> {
+    const { data, error } = await supabaseAdmin
+        .from('carousel_slides')
+        .insert(slide)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data;
+}
+
+/**
+ * Update a carousel slide
+ */
+export async function updateCarouselSlide(id: string, updates: Partial<CarouselSlide>): Promise<CarouselSlide> {
+    const { data, error } = await supabaseAdmin
+        .from('carousel_slides')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data;
+}
+
+/**
+ * Delete a carousel slide
+ */
+export async function deleteCarouselSlide(id: string): Promise<void> {
+    const { error } = await supabaseAdmin
+        .from('carousel_slides')
+        .delete()
+        .eq('id', id);
+
+    if (error) throw error;
+}
+
+// =============================================
+// CUSTOMERS
+// =============================================
+
+export interface Customer {
+    id: string;
+    email: string;
+    full_name: string | null;
+    phone: string | null;
+    avatar_url: string | null;
+    default_address: any;
+    newsletter: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+/**
+ * Get all customers
+ */
+export async function getCustomers(): Promise<Customer[]> {
+    const { data, error } = await supabaseAdmin
+        .from('customers')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+}
+
+/**
+ * Get customer by ID
+ */
+export async function getCustomerById(id: string): Promise<Customer | null> {
+    const { data, error } = await supabaseAdmin
+        .from('customers')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+    if (error) return null;
+    return data;
+}
+
+/**
+ * Get customers subscribed to newsletter
+ */
+export async function getNewsletterSubscribers(): Promise<Customer[]> {
+    const { data, error } = await supabaseAdmin
+        .from('customers')
+        .select('*')
+        .eq('newsletter', true)
+        .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+}
+
+/**
+ * Get customer orders
+ */
+export async function getCustomerOrders(customerId: string): Promise<Order[]> {
+    const { data, error } = await supabaseAdmin
+        .from('orders')
+        .select(`
+            *,
+            items:order_items(*)
+        `)
+        .eq('customer_id', customerId)
+        .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+}
+
+/**
+ * Get order by ID with items
+ */
+export async function getOrderById(orderId: string): Promise<Order | null> {
+    const { data, error } = await supabaseAdmin
+        .from('orders')
+        .select(`
+            *,
+            items:order_items(*)
+        `)
+        .eq('id', orderId)
+        .single();
+
+    if (error) return null;
+    return data;
+}
+
+/**
+ * Get orders statistics
+ */
+export async function getOrdersStats() {
+    const { data: orders, error } = await supabaseAdmin
+        .from('orders')
+        .select('status, total_price, created_at');
+
+    if (error) throw error;
+
+    const stats = {
+        total: orders?.length || 0,
+        pending: orders?.filter(o => o.status === 'pending').length || 0,
+        paid: orders?.filter(o => o.status === 'paid').length || 0,
+        shipped: orders?.filter(o => o.status === 'shipped').length || 0,
+        delivered: orders?.filter(o => o.status === 'delivered').length || 0,
+        cancelled: orders?.filter(o => o.status === 'cancelled').length || 0,
+        totalRevenue: orders?.filter(o => o.status !== 'cancelled').reduce((sum, o) => sum + Number(o.total_price), 0) || 0
+    };
+
+    return stats;
+}

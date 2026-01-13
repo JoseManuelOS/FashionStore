@@ -22,29 +22,38 @@
    - Copia el contenido de `supabase/schema.sql`
    - Ejecútalo en el SQL Editor
 
-3. **Crear bucket de Storage**:
-   - Ve a Storage > Nuevo bucket
-   - Nombre: `products-images`
-   - Público: Sí
-   - Ejecuta `supabase/storage-policies.sql` para las políticas
-
-4. **Crear usuario admin**:
+3. **Crear usuario admin**:
    - Ve a Authentication > Users > Add User
    - Crea un usuario con email/password para el panel de admin
 
-### 3. Configurar Variables de Entorno
+### 3. Configurar Cloudinary (para imágenes)
+
+Las imágenes se almacenan en Cloudinary. Sigue la guía completa en [CLOUDINARY_SETUP.md](CLOUDINARY_SETUP.md)
+
+**Resumen rápido:**
+1. Crear cuenta en [cloudinary.com](https://cloudinary.com)
+2. Crear upload preset "unsigned" llamado `fashionstore_products`
+3. Añadir credenciales al `.env`
+
+### 4. Configurar Variables de Entorno
 
 Crea un archivo `.env` en la raíz del proyecto:
 
 ```env
+# Supabase
 PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
 PUBLIC_SUPABASE_ANON_KEY=tu-anon-key
 SUPABASE_SERVICE_ROLE_KEY=tu-service-role-key
+
+# Cloudinary
+PUBLIC_CLOUDINARY_CLOUD_NAME=tu-cloud-name
+PUBLIC_CLOUDINARY_UPLOAD_PRESET=fashionstore_products
 ```
 
-> Encuentra estas credenciales en Supabase: Settings > API
+> Encuentra credenciales de Supabase en: Settings > API  
+> Encuentra credenciales de Cloudinary en tu dashboard
 
-### 4. Instalar y Ejecutar
+### 5. Instalar y Ejecutar
 
 ```bash
 # Instalar dependencias

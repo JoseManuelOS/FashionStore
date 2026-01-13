@@ -2,12 +2,6 @@
 import PublicLayout from "../../layouts/PublicLayout.astro";
 
 export const prerender = false;
-
-// If already logged in, redirect to home
-const user = Astro.locals.user;
-if (user) {
-  return Astro.redirect("/");
-}
 ---
 
 <PublicLayout title="Crear Cuenta | FashionMarket">
@@ -17,7 +11,7 @@ if (user) {
       <div class="text-center mb-8">
         <a href="/" class="inline-flex items-center gap-3 mb-6">
           <div
-            class="w-12 h-12 rounded-xl bg-gradient-to-br from-neon-cyan to-neon-fuchsia flex items-center justify-center"
+            class="w-12 h-12 rounded-xl bg-linear-to-br from-neon-cyan to-neon-fuchsia flex items-center justify-center"
           >
             <span class="text-dark-500 font-bold text-xl">FM</span>
           </div>
@@ -212,7 +206,7 @@ if (user) {
           <button
             type="submit"
             id="submit-btn"
-            class="w-full py-3.5 bg-gradient-to-r from-neon-cyan to-neon-cyan-light text-dark-500 font-semibold rounded-xl hover:shadow-lg hover:shadow-neon-cyan/25 transition-all duration-200 flex items-center justify-center gap-2"
+            class="w-full py-3.5 bg-linear-to-r from-neon-cyan to-neon-cyan-light text-dark-500 font-semibold rounded-xl hover:shadow-lg hover:shadow-neon-cyan/25 transition-all duration-200 flex items-center justify-center gap-2"
           >
             <span>Crear cuenta</span>
             <svg

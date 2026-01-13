@@ -492,8 +492,8 @@ if (accessToken && refreshToken) {
                 };
 
                 // Store customer info for email confirmation after payment
-                sessionStorage.setItem('checkout_email', customerInfo.email as string);
-                sessionStorage.setItem('checkout_name', customerInfo.full_name as string);
+                sessionStorage.setItem('checkout_email', String(customerInfo.email));
+                sessionStorage.setItem('checkout_name', String(customerInfo.full_name));
                 sessionStorage.setItem('checkout_address', JSON.stringify(customerInfo.address));
 
                 // Create Stripe checkout session
