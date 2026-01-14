@@ -126,11 +126,11 @@ export const prerender = false;
 
   // Estado del pedido y configuración de la barra de progreso
   const orderSteps = [
-    { key: 'pending', label: 'Pendiente', icon: '🕐' },
-    { key: 'paid', label: 'Pagado', icon: '💳' },
-    { key: 'processing', label: 'Preparando', icon: '📦' },
-    { key: 'shipped', label: 'Enviado', icon: '🚚' },
-    { key: 'delivered', label: 'Entregado', icon: '✅' },
+    { key: 'pending', label: 'Pendiente', icon: '1' },
+    { key: 'paid', label: 'Pagado', icon: '2' },
+    { key: 'processing', label: 'Preparando', icon: '3' },
+    { key: 'shipped', label: 'Enviado', icon: '4' },
+    { key: 'delivered', label: 'Entregado', icon: '5' },
   ];
 
   const statusConfig: Record<string, { label: string; color: string; step: number }> = {
@@ -166,28 +166,29 @@ export const prerender = false;
     if (status === 'cancelled') {
       return `
         <div class="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
-          <p class="text-red-400 text-sm text-center font-medium">❌ Este pedido ha sido cancelado</p>
+          <p class="text-red-400 text-sm text-center font-medium">Este pedido ha sido cancelado</p>
         </div>
       `;
     }
 
     return `
       <div class="mt-6">
+        <h4 class="text-white font-medium text-sm mb-4">Estado del pedido</h4>
         <div class="flex items-center justify-between relative">
           <!-- Progress line background -->
-          <div class="absolute top-4 left-4 right-4 h-1 bg-dark-300 rounded-full"></div>
+          <div class="absolute top-5 left-6 right-6 h-0.5 bg-dark-300 rounded-full"></div>
           <!-- Progress line filled -->
-          <div class="absolute top-4 left-4 h-1 bg-gradient-to-r from-neon-cyan to-neon-cyan-light rounded-full transition-all duration-500" style="width: ${Math.max(0, (currentStep / (orderSteps.length - 1)) * 100)}%"></div>
+          <div class="absolute top-5 left-6 h-0.5 bg-gradient-to-r from-neon-cyan to-neon-cyan-light rounded-full transition-all duration-500" style="width: calc(${Math.max(0, (currentStep / (orderSteps.length - 1)) * 100)}% - 48px)"></div>
           
           ${orderSteps.map((step, index) => {
             const isCompleted = index <= currentStep;
             const isCurrent = index === currentStep;
             return `
               <div class="flex flex-col items-center z-10 flex-1">
-                <div class="${isCompleted ? 'bg-neon-cyan text-dark-500' : 'bg-dark-300 text-zinc-500'} ${isCurrent ? 'ring-4 ring-neon-cyan/30 scale-110' : ''} w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300 shadow-lg ${isCompleted ? 'shadow-neon-cyan/30' : ''}">
-                  ${isCompleted ? step.icon : index + 1}
+                <div class="${isCompleted ? 'bg-neon-cyan text-dark-500' : 'bg-dark-300 text-zinc-500'} ${isCurrent ? 'ring-2 ring-neon-cyan/40' : ''} w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300">
+                  ${isCompleted ? `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>` : index + 1}
                 </div>
-                <span class="text-xs mt-2 ${isCompleted ? 'text-neon-cyan font-medium' : 'text-zinc-500'} text-center hidden sm:block">${step.label}</span>
+                <span class="text-xs mt-2 ${isCompleted ? 'text-neon-cyan font-medium' : 'text-zinc-500'} text-center">${step.label}</span>
               </div>
             `;
           }).join('')}
@@ -329,7 +330,7 @@ export const prerender = false;
                     ${status.label}
                   </span>
                 </div>
-                <p class="text-zinc-400 text-sm mt-1">📅 ${date}</p>
+                <p class="text-zinc-400 text-sm mt-1">${date}</p>
               </div>
               <div class="text-left sm:text-right">
                 <p class="text-zinc-400 text-sm">Total del pedido</p>

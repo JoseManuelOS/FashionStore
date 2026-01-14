@@ -21,39 +21,57 @@ export const POST: APIRoute = async ({ request }) => {
         // Generar HTML del correo
         const itemsHTML = orderItems.map((item: any) => `
             <tr>
-                <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <img src="${item.image}" alt="${item.name}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">
-                        <div>
-                            <strong style="display: block; margin-bottom: 4px;">${item.name}</strong>
-                            <span style="color: #6b7280; font-size: 14px;">Talla: ${item.size} | Cantidad: ${item.quantity}</span>
-                        </div>
-                    </div>
-                </td>
-                <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right; white-space: nowrap;">
-                    ${(item.price * item.quantity).toFixed(2)} €
+                <td style="padding: 16px; border-bottom: 1px solid #334155;">
+                    <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                        <tr>
+                            <td width="70" valign="top">
+                                <img src="${item.image}" alt="${item.name}" style="width: 64px; height: 64px; object-fit: cover; border-radius: 10px; background: #334155;">
+                            </td>
+                            <td style="padding-left: 16px;" valign="top">
+                                <div style="color: #f1f5f9; font-weight: 600; font-size: 15px; margin-bottom: 6px;">${item.name}</div>
+                                <div style="color: #64748b; font-size: 13px;">Talla: ${item.size} · Cantidad: ${item.quantity}</div>
+                            </td>
+                            <td width="80" align="right" valign="top">
+                                <div style="color: #22d3ee; font-weight: 700; font-size: 15px;">${(item.price * item.quantity).toFixed(2)} €</div>
+                            </td>
+                        </tr>
+                    </table>
                 </td>
             </tr>
         `).join('');
 
         // Dirección de envío
         const addressHTML = shippingAddress ? `
-            <div style="background-color: #f9fafb; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
-                <h2 style="font-size: 18px; color: #111827; margin-top: 0; margin-bottom: 15px;">📦 Dirección de Envío</h2>
-                <p style="margin: 0; color: #374151; line-height: 1.8;">
-                    <strong>${customerName}</strong><br>
-                    ${shippingAddress.line1}<br>
-                    ${shippingAddress.city}, ${shippingAddress.postal_code}<br>
-                    ${shippingAddress.state}<br>
-                    ${shippingAddress.country === 'ES' ? 'España' : shippingAddress.country}
-                </p>
+            <div style="background: #0f172a; border: 1px solid #334155; border-radius: 16px; padding: 24px; margin-bottom: 24px;">
+                <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                    <tr>
+                        <td width="48" valign="top">
+                            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #f97316, #ea580c); border-radius: 10px; text-align: center; line-height: 40px;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" style="vertical-align: middle;">
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                    <circle cx="12" cy="10" r="3"></circle>
+                                </svg>
+                            </div>
+                        </td>
+                        <td style="padding-left: 16px;">
+                            <div style="font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Dirección de envío</div>
+                            <div style="color: #e2e8f0; line-height: 1.6;">
+                                <strong>${customerName}</strong><br>
+                                ${shippingAddress.line1}<br>
+                                ${shippingAddress.city}, ${shippingAddress.postal_code}<br>
+                                ${shippingAddress.state ? shippingAddress.state + '<br>' : ''}
+                                ${shippingAddress.country === 'ES' ? 'España' : shippingAddress.country}
+                            </div>
+                        </td>
+                    </tr>
+                </table>
             </div>
         ` : '';
 
         const { data, error } = await resend.emails.send({
             from: 'FashionMarket <onboarding@resend.dev>',
             to: [to],
-            subject: '✅ Confirmación de Pedido - FashionMarket',
+            subject: 'Confirmación de Pedido - FashionMarket',
             html: `
                 <!DOCTYPE html>
                 <html>
@@ -61,113 +79,149 @@ export const POST: APIRoute = async ({ request }) => {
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 </head>
-                <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f3f4f6;">
-                    <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #e2e8f0; margin: 0; padding: 0; background-color: #0f172a;">
+                    <div style="max-width: 600px; margin: 0 auto; background-color: #1e293b;">
                         <!-- Header -->
-                        <div style="background: linear-gradient(135deg, #06b6d4 0%, #22d3ee 100%); padding: 40px 20px; text-align: center;">
-                            <div style="background-color: rgba(255, 255, 255, 0.2); width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
-                                <span style="font-size: 40px;">✓</span>
+                        <div style="background: linear-gradient(135deg, #0891b2 0%, #06b6d4 50%, #22d3ee 100%); padding: 48px 32px; text-align: center;">
+                            <div style="width: 80px; height: 80px; margin: 0 auto 20px; background: rgba(255,255,255,0.2); border-radius: 50%;">
+                                <table width="100%" height="100%"><tr><td align="center" valign="middle">
+                                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                </td></tr></table>
                             </div>
-                            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">¡Pedido Confirmado!</h1>
-                            <p style="color: #ffffff; margin: 10px 0 0 0; opacity: 0.9;">Gracias por tu compra</p>
+                            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">Pedido Confirmado</h1>
+                            <p style="color: rgba(255,255,255,0.9); margin: 12px 0 0 0; font-size: 16px;">Gracias por tu compra</p>
                         </div>
                         
                         <!-- Content -->
-                        <div style="padding: 40px 30px;">
-                            <p style="font-size: 16px; margin-bottom: 20px;">Hola <strong>${customerName}</strong>,</p>
-                            
-                            <p style="font-size: 16px; margin-bottom: 30px;">
-                                Tu pedido ha sido procesado exitosamente y está siendo preparado para su envío.
+                        <div style="padding: 40px 32px;">
+                            <p style="font-size: 16px; margin: 0 0 8px 0; color: #94a3b8;">
+                                Hola <strong style="color: #22d3ee;">${customerName}</strong>,
                             </p>
                             
-                            <!-- Order Status -->
-                            <div style="background-color: #ecfdf5; border-left: 4px solid #10b981; padding: 16px 20px; margin-bottom: 30px; border-radius: 4px;">
-                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                                    <span style="font-size: 20px;">📋</span>
-                                    <strong style="color: #065f46; font-size: 16px;">Estado del Pedido</strong>
-                                </div>
-                                <div style="margin-left: 32px;">
-                                    <div style="margin-bottom: 8px;">
-                                        <span style="display: inline-block; width: 12px; height: 12px; background-color: #10b981; border-radius: 50%; margin-right: 8px;"></span>
-                                        <span style="color: #065f46; font-weight: 600;">Pedido confirmado</span>
-                                    </div>
-                                    <div style="margin-bottom: 8px; opacity: 0.6;">
-                                        <span style="display: inline-block; width: 12px; height: 12px; background-color: #d1d5db; border-radius: 50%; margin-right: 8px;"></span>
-                                        <span style="color: #6b7280;">Preparando envío</span>
-                                    </div>
-                                    <div style="margin-bottom: 8px; opacity: 0.6;">
-                                        <span style="display: inline-block; width: 12px; height: 12px; background-color: #d1d5db; border-radius: 50%; margin-right: 8px;"></span>
-                                        <span style="color: #6b7280;">En reparto</span>
-                                    </div>
-                                    <div style="opacity: 0.6;">
-                                        <span style="display: inline-block; width: 12px; height: 12px; background-color: #d1d5db; border-radius: 50%; margin-right: 8px;"></span>
-                                        <span style="color: #6b7280;">Entregado</span>
-                                    </div>
-                                </div>
-                                <p style="margin: 12px 0 0 32px; font-size: 14px; color: #065f46;">
-                                    Recibirás actualizaciones por email en cada etapa del envío.
+                            <p style="font-size: 16px; margin: 0 0 32px 0; color: #94a3b8;">
+                                Tu pedido ha sido procesado correctamente y está siendo preparado para su envío.
+                            </p>
+                            
+                            <!-- Order Status Progress -->
+                            <div style="background: #0f172a; border: 1px solid #334155; border-radius: 16px; padding: 28px; margin-bottom: 24px;">
+                                <h3 style="font-size: 14px; color: #94a3b8; margin: 0 0 24px 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Estado del pedido</h3>
+                                
+                                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                    <tr>
+                                        <td width="25%" align="center" style="padding-bottom: 8px;">
+                                            <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #06b6d4, #0891b2); margin: 0 auto;">
+                                                <table width="100%" height="100%"><tr><td align="center" valign="middle">
+                                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                                </td></tr></table>
+                                            </div>
+                                        </td>
+                                        <td width="25%" align="center" style="padding-bottom: 8px;">
+                                            <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #06b6d4, #0891b2); margin: 0 auto;">
+                                                <table width="100%" height="100%"><tr><td align="center" valign="middle">
+                                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                                </td></tr></table>
+                                            </div>
+                                        </td>
+                                        <td width="25%" align="center" style="padding-bottom: 8px;">
+                                            <div style="width: 36px; height: 36px; border-radius: 50%; border: 3px solid #06b6d4; background: #1e293b; margin: 0 auto; box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.2);">
+                                                <table width="100%" height="100%"><tr><td align="center" valign="middle" style="color: #22d3ee; font-weight: 700; font-size: 14px;">3</td></tr></table>
+                                            </div>
+                                        </td>
+                                        <td width="25%" align="center" style="padding-bottom: 8px;">
+                                            <div style="width: 36px; height: 36px; border-radius: 50%; background: #334155; margin: 0 auto;">
+                                                <table width="100%" height="100%"><tr><td align="center" valign="middle" style="color: #64748b; font-weight: 600; font-size: 14px;">4</td></tr></table>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="center" style="font-size: 11px; color: #22d3ee; font-weight: 500;">Confirmado</td>
+                                        <td align="center" style="font-size: 11px; color: #22d3ee; font-weight: 500;">Pagado</td>
+                                        <td align="center" style="font-size: 11px; color: #22d3ee; font-weight: 500;">Preparando</td>
+                                        <td align="center" style="font-size: 11px; color: #64748b;">Enviado</td>
+                                    </tr>
+                                </table>
+                                
+                                <p style="margin: 20px 0 0 0; font-size: 13px; color: #64748b; text-align: center;">
+                                    Te notificaremos cuando tu pedido sea enviado.
                                 </p>
                             </div>
 
                             ${addressHTML}
                             
                             <!-- Order Details -->
-                            <div style="background-color: #f9fafb; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
-                                <h2 style="font-size: 18px; color: #111827; margin-top: 0; margin-bottom: 20px;">Detalles del Pedido</h2>
+                            <div style="background: #0f172a; border: 1px solid #334155; border-radius: 16px; overflow: hidden; margin-bottom: 24px;">
+                                <div style="padding: 20px 24px; border-bottom: 1px solid #334155;">
+                                    <h2 style="font-size: 14px; color: #94a3b8; margin: 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Detalles del pedido</h2>
+                                </div>
                                 
                                 <table style="width: 100%; border-collapse: collapse;">
                                     ${itemsHTML}
                                 </table>
                                 
-                                <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #e5e7eb;">
-                                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                                        <span style="color: #6b7280;">Subtotal:</span>
-                                        <span style="font-weight: 600;">${total.toFixed(2)} €</span>
-                                    </div>
-                                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                                        <span style="color: #6b7280;">Envío:</span>
-                                        <span style="font-weight: 600; color: #10b981;">Gratis</span>
-                                    </div>
-                                    <div style="display: flex; justify-content: space-between; padding-top: 10px; border-top: 1px solid #e5e7eb;">
-                                        <span style="font-size: 18px; font-weight: bold;">Total:</span>
-                                        <span style="font-size: 18px; font-weight: bold; color: #06b6d4;">${total.toFixed(2)} €</span>
-                                    </div>
+                                <div style="padding: 20px 24px; background: #0f172a;">
+                                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #64748b; font-size: 14px;">Subtotal</td>
+                                            <td align="right" style="padding: 8px 0; color: #e2e8f0; font-weight: 600;">${total.toFixed(2)} €</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #64748b; font-size: 14px;">Envío</td>
+                                            <td align="right" style="padding: 8px 0; color: #10b981; font-weight: 600;">Gratis</td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="2" style="padding-top: 16px; border-top: 1px solid #334155;">
+                                                <table width="100%"><tr>
+                                                    <td style="font-size: 18px; font-weight: 700; color: #f1f5f9;">Total</td>
+                                                    <td align="right" style="font-size: 20px; font-weight: 700; color: #22d3ee;">${total.toFixed(2)} €</td>
+                                                </tr></table>
+                                            </td>
+                                        </tr>
+                                    </table>
                                 </div>
                             </div>
 
                             <!-- Delivery Info -->
-                            <div style="background-color: #eff6ff; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
-                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                                    <span style="font-size: 20px;">🚚</span>
-                                    <strong style="color: #1e40af; font-size: 16px;">Información de Envío</strong>
-                                </div>
-                                <p style="margin: 0 0 8px 32px; color: #1e40af; font-size: 14px;">
-                                    <strong>Tiempo estimado:</strong> 3-7 días laborables
-                                </p>
-                                <p style="margin: 0 0 8px 32px; color: #1e40af; font-size: 14px;">
-                                    <strong>Envío:</strong> Gratis a toda España
-                                </p>
-                                <p style="margin: 0 0 0 32px; color: #1e40af; font-size: 14px;">
-                                    Te enviaremos el número de seguimiento en cuanto el pedido sea enviado.
-                                </p>
+                            <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border: 1px solid #334155; border-radius: 16px; padding: 24px; margin-bottom: 24px;">
+                                <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                                    <tr>
+                                        <td width="56" valign="top">
+                                            <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 12px;">
+                                                <table width="100%" height="100%"><tr><td align="center" valign="middle">
+                                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                                        <rect x="1" y="3" width="15" height="13" rx="2" ry="2"></rect>
+                                                        <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                                                        <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                                                        <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                                                    </svg>
+                                                </td></tr></table>
+                                            </div>
+                                        </td>
+                                        <td style="padding-left: 16px;">
+                                            <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">Tiempo de entrega estimado</div>
+                                            <div style="font-size: 18px; color: #10b981; font-weight: 700;">3-7 días laborables</div>
+                                            <div style="font-size: 13px; color: #64748b; margin-top: 4px;">Envío gratis a toda España</div>
+                                        </td>
+                                    </tr>
+                                </table>
                             </div>
                             
                             <!-- CTA Button -->
-                            <div style="text-align: center; margin: 30px 0;">
-                                <a href="${request.headers.get('origin')}/cuenta/pedidos" style="display: inline-block; background: linear-gradient(135deg, #06b6d4 0%, #22d3ee 100%); color: #ffffff; text-decoration: none; padding: 14px 40px; border-radius: 8px; font-weight: 600; font-size: 16px;">
-                                    Seguir mi Pedido
+                            <div style="text-align: center; margin: 32px 0;">
+                                <a href="${request.headers.get('origin')}/cuenta/pedidos" style="display: inline-block; background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 12px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 14px rgba(6, 182, 212, 0.4);">
+                                    Ver mi pedido
                                 </a>
                             </div>
                             
-                            <p style="font-size: 14px; color: #6b7280; margin-top: 30px; text-align: center;">
-                                ¿Necesitas ayuda? Contáctanos respondiendo a este correo<br>
-                                Estamos aquí para ayudarte
+                            <p style="font-size: 14px; color: #64748b; margin: 24px 0 0 0; text-align: center;">
+                                ¿Tienes alguna pregunta? Responde a este correo y te ayudaremos.
                             </p>
                         </div>
                         
                         <!-- Footer -->
-                        <div style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
-                            <p style="margin: 0; font-size: 14px; color: #6b7280;">
+                        <div style="background-color: #0f172a; padding: 32px; text-align: center; border-top: 1px solid #334155;">
+                            <p style="color: #64748b; margin: 0; font-size: 13px;">
                                 © ${new Date().getFullYear()} FashionMarket. Todos los derechos reservados.
                             </p>
                         </div>
