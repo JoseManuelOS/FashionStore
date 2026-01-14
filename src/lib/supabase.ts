@@ -74,6 +74,16 @@ export interface Order {
     customer_email: string | null;
     customer_name: string | null;
     shipping_address: string | null;
+    // Campos de Stripe
+    stripe_session_id?: string | null;
+    stripe_payment_intent?: string | null;
+    // Campos de envío
+    shipping_carrier?: string | null;
+    tracking_number?: string | null;
+    tracking_url?: string | null;
+    shipped_at?: string | null;
+    delivered_at?: string | null;
+    // Timestamps
     created_at: string;
     updated_at: string;
     // Joined
@@ -85,6 +95,7 @@ export interface OrderItem {
     order_id: string;
     product_id: string | null;
     product_name: string;
+    product_image?: string | null;
     quantity: number;
     size: string | null;
     price_at_purchase: number;
@@ -303,13 +314,195 @@ export async function getOrders(): Promise<Order[]> {
     return data || [];
 }
 
+export async function getOrderById(orderId: string): Promise<Order | null> {
+    const { data, error } = await supabaseAdmin
+        .from('orders')
+        .select(`
+            *,
+            items:order_items(*)
+        `)
+        .eq('id', orderId)
+        .single();
+
+    if (error) return null;
+    return data;
+}
+
 export async function updateOrderStatus(orderId: string, status: Order['status']) {
+    const updateData: any = { status };
+    
+    // Si se marca como entregado, guardar la fecha
+    if (status === 'delivered') {
+        updateData.delivered_at = new Date().toISOString();
+    }
+    
     const { error } = await supabaseAdmin
         .from('orders')
-        .update({ status })
+        .update(updateData)
         .eq('id', orderId);
 
     if (error) throw error;
+}
+
+export async function updateOrderShipping(orderId: string, shippingData: {
+    shipping_carrier?: string | null;
+    tracking_number?: string | null;
+    tracking_url?: string | null;
+    markAsShipped?: boolean;
+}) {
+    const updateData: any = {
+        shipping_carrier: shippingData.shipping_carrier,
+        tracking_number: shippingData.tracking_number,
+        tracking_url: shippingData.tracking_url
+    };
+
+    // Si se marca como enviado, actualizar estado y fecha
+    if (shippingData.markAsShipped) {
+        updateData.status = 'shipped';
+        updateData.shipped_at = new Date().toISOString();
+    }
+
+    const { error } = await supabaseAdmin
+        .from('orders')
+        .update(updateData)
+        .eq('id', orderId);
+
+    if (error) throw error;
+
+    // Si se marcó como enviado, enviar email de notificación
+    if (shippingData.markAsShipped && shippingData.tracking_number) {
+        const order = await getOrderById(orderId);
+        if (order?.customer_email) {
+            await sendShippingNotificationEmail(order);
+        }
+    }
+}
+
+async function sendShippingNotificationEmail(order: Order) {
+    try {
+        const { Resend } = await import('resend');
+        const resend = new Resend(import.meta.env.RESEND_API_KEY);
+
+        const carrierNames: Record<string, string> = {
+            seur: 'SEUR',
+            mrw: 'MRW',
+            correos: 'Correos',
+            gls: 'GLS',
+            ups: 'UPS',
+            dhl: 'DHL',
+            envialia: 'Envialia',
+            nacex: 'Nacex',
+            fedex: 'FedEx',
+            otro: 'Transportista'
+        };
+
+        const carrierName = carrierNames[order.shipping_carrier || ''] || 'Transportista';
+
+        await resend.emails.send({
+            from: 'FashionMarket <onboarding@resend.dev>',
+            to: [order.customer_email!],
+            subject: '📦 ¡Tu pedido está en camino! - FashionMarket',
+            html: `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                </head>
+                <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f3f4f6;">
+                    <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                        <!-- Header -->
+                        <div style="background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%); padding: 40px 20px; text-align: center;">
+                            <div style="font-size: 60px; margin-bottom: 15px;">📦</div>
+                            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">¡Tu pedido está en camino!</h1>
+                            <p style="color: #ffffff; margin: 10px 0 0 0; opacity: 0.9;">Pedido #${order.id.slice(0, 8)}</p>
+                        </div>
+                        
+                        <!-- Content -->
+                        <div style="padding: 40px 30px;">
+                            <p style="font-size: 16px; margin-bottom: 20px;">Hola <strong>${order.customer_name || 'Cliente'}</strong>,</p>
+                            
+                            <p style="font-size: 16px; margin-bottom: 30px;">
+                                ¡Buenas noticias! Tu pedido ha sido enviado y está en camino.
+                            </p>
+                            
+                            <!-- Tracking Info -->
+                            <div style="background-color: #f3e8ff; border-left: 4px solid #8b5cf6; padding: 20px; margin-bottom: 30px; border-radius: 4px;">
+                                <h2 style="font-size: 18px; color: #6b21a8; margin: 0 0 15px 0;">Información de Seguimiento</h2>
+                                
+                                <div style="margin-bottom: 12px;">
+                                    <span style="color: #7c3aed; font-weight: 600;">Transportista:</span>
+                                    <span style="color: #374151; margin-left: 8px;">${carrierName}</span>
+                                </div>
+                                
+                                <div style="margin-bottom: 12px;">
+                                    <span style="color: #7c3aed; font-weight: 600;">Código de seguimiento:</span>
+                                    <span style="color: #374151; margin-left: 8px; font-family: monospace; background: #e9d5ff; padding: 2px 8px; border-radius: 4px;">${order.tracking_number}</span>
+                                </div>
+                                
+                                ${order.tracking_url ? `
+                                    <a href="${order.tracking_url}" 
+                                       style="display: inline-block; margin-top: 15px; padding: 12px 24px; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                                        🔍 Rastrear mi pedido
+                                    </a>
+                                ` : ''}
+                            </div>
+                            
+                            <!-- Status -->
+                            <div style="background-color: #ecfdf5; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
+                                <h3 style="font-size: 16px; color: #065f46; margin: 0 0 15px 0;">📋 Estado del Pedido</h3>
+                                <div style="margin-left: 10px;">
+                                    <div style="margin-bottom: 10px;">
+                                        <span style="display: inline-block; width: 14px; height: 14px; background-color: #10b981; border-radius: 50%; margin-right: 10px; vertical-align: middle;"></span>
+                                        <span style="color: #065f46; font-weight: 600;">Pedido confirmado</span>
+                                    </div>
+                                    <div style="margin-bottom: 10px;">
+                                        <span style="display: inline-block; width: 14px; height: 14px; background-color: #10b981; border-radius: 50%; margin-right: 10px; vertical-align: middle;"></span>
+                                        <span style="color: #065f46; font-weight: 600;">Preparado y enviado</span>
+                                    </div>
+                                    <div style="margin-bottom: 10px;">
+                                        <span style="display: inline-block; width: 14px; height: 14px; background-color: #8b5cf6; border-radius: 50%; margin-right: 10px; vertical-align: middle;"></span>
+                                        <span style="color: #7c3aed; font-weight: 600;">En reparto</span>
+                                    </div>
+                                    <div style="opacity: 0.6;">
+                                        <span style="display: inline-block; width: 14px; height: 14px; background-color: #d1d5db; border-radius: 50%; margin-right: 10px; vertical-align: middle;"></span>
+                                        <span style="color: #6b7280;">Entregado</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Delivery Estimate -->
+                            <div style="background-color: #eff6ff; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
+                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
+                                    <span style="font-size: 20px;">🚚</span>
+                                    <strong style="color: #1e40af; font-size: 16px;">Entrega Estimada</strong>
+                                </div>
+                                <p style="margin: 0 0 0 32px; color: #1e40af; font-size: 14px;">
+                                    Tu pedido llegará en <strong>2-5 días laborables</strong>
+                                </p>
+                            </div>
+
+                            <p style="font-size: 14px; color: #6b7280; margin-top: 30px;">
+                                Si tienes alguna pregunta sobre tu envío, no dudes en contactarnos.
+                            </p>
+                        </div>
+                        
+                        <!-- Footer -->
+                        <div style="background-color: #1f2937; padding: 30px; text-align: center;">
+                            <p style="color: #9ca3af; margin: 0; font-size: 14px;">
+                                © 2026 FashionMarket. Todos los derechos reservados.
+                            </p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `
+        });
+
+        console.log('Shipping notification email sent to:', order.customer_email);
+    } catch (error) {
+        console.error('Error sending shipping notification email:', error);
+    }
 }
 
 // =============================================
@@ -672,23 +865,6 @@ export async function getCustomerOrders(customerId: string): Promise<Order[]> {
 
     if (error) throw error;
     return data || [];
-}
-
-/**
- * Get order by ID with items
- */
-export async function getOrderById(orderId: string): Promise<Order | null> {
-    const { data, error } = await supabaseAdmin
-        .from('orders')
-        .select(`
-            *,
-            items:order_items(*)
-        `)
-        .eq('id', orderId)
-        .single();
-
-    if (error) return null;
-    return data;
 }
 
 /**

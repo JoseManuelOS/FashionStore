@@ -1,42 +1,28 @@
 ---
 import PublicLayout from "../../layouts/PublicLayout.astro";
-import { supabase } from "../../lib/supabase";
 
 export const prerender = false;
-
-// Check if user is logged in
-const { cookies } = Astro;
-const accessToken = cookies.get("sb-access-token")?.value;
-const refreshToken = cookies.get("sb-refresh-token")?.value;
-
-let user = null;
-let customerData = null;
-
-if (accessToken && refreshToken) {
-    const { data: { user: authUser } } = await supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken,
-    });
-    
-    if (authUser) {
-        user = authUser;
-        // Get customer data including saved address
-        const { data } = await supabase
-            .from('customers')
-            .select('*')
-            .eq('user_id', authUser.id)
-            .single();
-        
-        customerData = data;
-    }
-}
 ---
 
 <PublicLayout
     title="Checkout - Finalizar Compra"
     description="Completa tu pedido"
 >
-    <section class="py-12 md:py-16 min-h-[70vh]">
+    <!-- Loading state -->
+    <section id="loading-state" class="py-12 md:py-16 min-h-[70vh] flex items-center justify-center">
+        <div class="text-center">
+            <div class="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-br from-neon-cyan to-neon-fuchsia flex items-center justify-center animate-pulse">
+                <svg class="w-8 h-8 text-dark-500 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+            </div>
+            <p class="text-zinc-400">Cargando checkout...</p>
+        </div>
+    </section>
+
+    <!-- Main checkout content -->
+    <section id="checkout-content" class="hidden py-12 md:py-16 min-h-[70vh]">
         <div class="container-custom max-w-4xl">
             <h1 class="text-3xl md:text-4xl font-display font-bold text-white mb-8">
                 Finalizar Compra
@@ -57,8 +43,6 @@ if (accessToken && refreshToken) {
                                 id="email"
                                 name="email"
                                 required
-                                value={user?.email || ''}
-                                readonly={!!user}
                                 class="w-full px-4 py-3 bg-dark-500 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-neon-cyan/50 disabled:opacity-50"
                                 placeholder="tu@email.com"
                             />
@@ -73,7 +57,6 @@ if (accessToken && refreshToken) {
                                 id="phone"
                                 name="phone"
                                 required
-                                value={customerData?.phone || ''}
                                 class="w-full px-4 py-3 bg-dark-500 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-neon-cyan/50"
                                 placeholder="+34 600 000 000"
                             />
@@ -85,25 +68,15 @@ if (accessToken && refreshToken) {
                 <div class="bg-dark-400/50 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
                     <h2 class="font-display text-xl text-white mb-4">Dirección de Envío</h2>
                     
-                    {customerData?.default_address && (
-                        <div class="mb-4">
-                            <label class="flex items-center gap-3 p-4 bg-dark-500 rounded-xl cursor-pointer hover:bg-dark-500/70 transition-colors">
-                                <input
-                                    type="checkbox"
-                                    id="use-saved-address"
-                                    class="w-4 h-4 text-neon-cyan bg-dark-400 border-white/20 rounded focus:ring-neon-cyan/50"
-                                />
-                                <span class="text-zinc-300">
-                                    Usar dirección guardada
-                                </span>
-                            </label>
-                            <div id="saved-address-preview" class="mt-2 ml-7 text-sm text-zinc-400 hidden">
-                                <p>{customerData.default_address.street}</p>
-                                <p>{customerData.default_address.city}, {customerData.default_address.postal_code}</p>
-                                <p>{customerData.default_address.province}, {customerData.default_address.country}</p>
-                            </div>
+                    <!-- Saved addresses container (populated by JS) -->
+                    <div id="saved-addresses-container" class="hidden mb-6">
+                        <label class="block text-sm font-medium text-zinc-300 mb-3">
+                            Direcciones guardadas
+                        </label>
+                        <div id="saved-addresses-list" class="space-y-2">
+                            <!-- Addresses will be inserted here -->
                         </div>
-                    )}
+                    </div>
 
                     <div id="address-fields" class="space-y-4">
                         <div>
@@ -115,7 +88,6 @@ if (accessToken && refreshToken) {
                                 id="full_name"
                                 name="full_name"
                                 required
-                                value={customerData?.full_name || ''}
                                 class="w-full px-4 py-3 bg-dark-500 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-neon-cyan/50"
                                 placeholder="Juan Pérez"
                             />
@@ -190,7 +162,7 @@ if (accessToken && refreshToken) {
                                     required
                                     class="w-full px-4 py-3 bg-dark-500 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-neon-cyan/50"
                                 >
-                                    <option value="ES">España</option>
+                                    <option value="ES" selected>España</option>
                                     <option value="FR">Francia</option>
                                     <option value="IT">Italia</option>
                                     <option value="PT">Portugal</option>
@@ -292,17 +264,18 @@ if (accessToken && refreshToken) {
         </div>
     </section>
 
-    <script define:vars={{ customerData }}>
-        // Discount codes database
-        const DISCOUNT_CODES = {
-            'BIENVENIDO10': { type: 'percentage', value: 10, description: '10% de descuento' },
-            'FASHION15': { type: 'percentage', value: 15, description: '15% de descuento' },
-            'VERANO20': { type: 'percentage', value: 20, description: '20% de descuento' },
-            'PRIMERACOMPRA': { type: 'percentage', value: 25, description: '25% de descuento' },
-            'ENVIOGRATIS': { type: 'fixed', value: 5, description: '€5 de descuento' },
-        };
+    <script>
+        import { createClient } from '@supabase/supabase-js';
+        
+        const supabase = createClient(
+            import.meta.env.PUBLIC_SUPABASE_URL || '',
+            import.meta.env.PUBLIC_SUPABASE_ANON_KEY || ''
+        );
 
         let appliedDiscount = null;
+        let currentUser = null;
+        let customerData = null;
+        let savedAddresses = [];
 
         // Format price
         function formatPrice(price) {
@@ -322,6 +295,114 @@ if (accessToken && refreshToken) {
             }
         }
 
+        // Render saved addresses
+        function renderSavedAddresses() {
+            const container = document.getElementById('saved-addresses-container');
+            const list = document.getElementById('saved-addresses-list');
+            
+            if (!container || !list) return;
+            
+            if (savedAddresses.length === 0) {
+                container.classList.add('hidden');
+                return;
+            }
+
+            container.classList.remove('hidden');
+            
+            let html = savedAddresses.map((address, index) => `
+                <label class="flex items-start gap-3 p-4 bg-dark-500 rounded-xl cursor-pointer hover:bg-dark-500/70 transition-colors border border-transparent has-[:checked]:border-neon-cyan has-[:checked]:bg-neon-cyan/5">
+                    <input
+                        type="radio"
+                        name="saved-address"
+                        value="${address.id}"
+                        data-fullname="${address.full_name}"
+                        data-phone="${address.phone || ''}"
+                        data-street="${address.street}"
+                        data-city="${address.city}"
+                        data-postal="${address.postal_code}"
+                        data-province="${address.province}"
+                        data-country="${address.country}"
+                        class="saved-address-radio w-4 h-4 mt-1 text-neon-cyan bg-dark-400 border-white/20 focus:ring-neon-cyan/50"
+                        ${index === 0 ? 'checked' : ''}
+                    />
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-white font-medium">${address.label}</span>
+                            ${address.is_default ? '<span class="px-2 py-0.5 bg-neon-cyan/20 text-neon-cyan text-xs rounded-full">Predeterminada</span>' : ''}
+                        </div>
+                        <p class="text-zinc-300 text-sm">${address.full_name}</p>
+                        <p class="text-zinc-400 text-sm">
+                            ${address.street}<br/>
+                            ${address.postal_code} ${address.city}, ${address.province}
+                        </p>
+                    </div>
+                </label>
+            `).join('');
+
+            // Add manual option
+            html += `
+                <label class="flex items-center gap-3 p-4 bg-dark-500 rounded-xl cursor-pointer hover:bg-dark-500/70 transition-colors border border-transparent has-[:checked]:border-neon-cyan">
+                    <input
+                        type="radio"
+                        name="saved-address"
+                        value="manual"
+                        id="manual-address-radio"
+                        class="saved-address-radio w-4 h-4 text-neon-cyan bg-dark-400 border-white/20 focus:ring-neon-cyan/50"
+                    />
+                    <span class="text-zinc-300">
+                        Usar una dirección diferente
+                    </span>
+                </label>
+            `;
+
+            list.innerHTML = html;
+
+            // Attach event listeners
+            const radios = list.querySelectorAll('.saved-address-radio');
+            radios.forEach(radio => {
+                radio.addEventListener('change', handleAddressSelection);
+            });
+
+            // Auto-fill first address
+            if (savedAddresses.length > 0) {
+                const firstRadio = radios[0] as HTMLInputElement;
+                if (firstRadio) {
+                    fillAddressFields(firstRadio);
+                }
+            }
+        }
+
+        // Handle address selection
+        function handleAddressSelection(e: Event) {
+            const radio = e.target as HTMLInputElement;
+            fillAddressFields(radio);
+        }
+
+        // Fill address fields from radio data
+        function fillAddressFields(radio: HTMLInputElement) {
+            if (radio.value === 'manual') {
+                // Clear to defaults
+                (document.getElementById('full_name') as HTMLInputElement).value = customerData?.full_name || '';
+                (document.getElementById('phone') as HTMLInputElement).value = customerData?.phone || '';
+                (document.getElementById('street') as HTMLInputElement).value = '';
+                (document.getElementById('city') as HTMLInputElement).value = '';
+                (document.getElementById('postal_code') as HTMLInputElement).value = '';
+                (document.getElementById('province') as HTMLInputElement).value = '';
+                (document.getElementById('country') as HTMLSelectElement).value = 'ES';
+            } else {
+                // Fill from selected address
+                (document.getElementById('full_name') as HTMLInputElement).value = radio.dataset.fullname || '';
+                if (radio.dataset.phone) {
+                    (document.getElementById('phone') as HTMLInputElement).value = radio.dataset.phone;
+                }
+                (document.getElementById('street') as HTMLInputElement).value = radio.dataset.street || '';
+                (document.getElementById('city') as HTMLInputElement).value = radio.dataset.city || '';
+                (document.getElementById('postal_code') as HTMLInputElement).value = radio.dataset.postal || '';
+                (document.getElementById('province') as HTMLInputElement).value = radio.dataset.province || '';
+                (document.getElementById('country') as HTMLSelectElement).value = radio.dataset.country || 'ES';
+            }
+        }
+
         // Calculate discount amount
         function calculateDiscount(subtotal, discount) {
             if (!discount) return 0;
@@ -329,7 +410,7 @@ if (accessToken && refreshToken) {
             if (discount.type === 'percentage') {
                 return (subtotal * discount.value) / 100;
             } else if (discount.type === 'fixed') {
-                return Math.min(discount.value, subtotal); // Don't exceed subtotal
+                return Math.min(discount.value, subtotal);
             }
             return 0;
         }
@@ -352,19 +433,19 @@ if (accessToken && refreshToken) {
             const discount = appliedDiscount ? calculateDiscount(subtotal, appliedDiscount) : 0;
             const total = subtotal - discount;
 
-            subtotalEl.textContent = formatPrice(subtotal);
+            if (subtotalEl) subtotalEl.textContent = formatPrice(subtotal);
             
-            if (discount > 0) {
+            if (discount > 0 && discountRow && discountAmount && discountPercent) {
                 discountRow.classList.remove('hidden');
                 discountAmount.textContent = `-${formatPrice(discount)}`;
                 discountPercent.textContent = appliedDiscount.type === 'percentage' 
                     ? `${appliedDiscount.value}%` 
                     : appliedDiscount.description;
-            } else {
+            } else if (discountRow) {
                 discountRow.classList.add('hidden');
             }
 
-            totalEl.textContent = formatPrice(total);
+            if (totalEl) totalEl.textContent = formatPrice(total);
         }
 
         // Render order summary
@@ -377,82 +458,187 @@ if (accessToken && refreshToken) {
                 return;
             }
 
-            orderItems.innerHTML = cart.map(item => `
-                <div class="flex justify-between text-sm">
-                    <span class="text-zinc-400">${item.name} x${item.quantity} (${item.size})</span>
-                    <span class="text-white">${formatPrice(item.price * item.quantity)}</span>
-                </div>
-            `).join('');
+            if (orderItems) {
+                orderItems.innerHTML = cart.map(item => `
+                    <div class="flex justify-between text-sm">
+                        <span class="text-zinc-400">${item.name} x${item.quantity} (${item.size})</span>
+                        <span class="text-white">${formatPrice(item.price * item.quantity)}</span>
+                    </div>
+                `).join('');
+            }
 
             updateOrderSummary();
         }
 
         // Apply discount code
-        function applyDiscount() {
-            const codeInput = document.getElementById('discount-code');
-            const code = codeInput.value.trim().toUpperCase();
+        async function applyDiscount() {
+            const codeInput = document.getElementById('discount-code') as HTMLInputElement;
+            const code = codeInput?.value.trim().toUpperCase();
             const messageDiv = document.getElementById('discount-message');
             const appliedDiv = document.getElementById('applied-discount');
             const codeDisplay = document.getElementById('discount-code-display');
+            const applyBtn = document.getElementById('apply-discount-btn') as HTMLButtonElement;
 
             if (!code) {
-                messageDiv.textContent = 'Por favor, introduce un código de descuento';
-                messageDiv.className = 'mt-2 text-sm text-red-400';
-                messageDiv.classList.remove('hidden');
+                if (messageDiv) {
+                    messageDiv.textContent = 'Por favor, introduce un código de descuento';
+                    messageDiv.className = 'mt-2 text-sm text-red-400';
+                    messageDiv.classList.remove('hidden');
+                }
                 return;
             }
 
-            const discount = DISCOUNT_CODES[code];
-
-            if (!discount) {
-                messageDiv.textContent = 'Código de descuento inválido';
-                messageDiv.className = 'mt-2 text-sm text-red-400';
-                messageDiv.classList.remove('hidden');
-                return;
+            if (applyBtn) {
+                applyBtn.disabled = true;
+                applyBtn.textContent = '...';
             }
 
-            appliedDiscount = { ...discount, code };
-            codeInput.value = '';
-            messageDiv.classList.add('hidden');
-            appliedDiv.classList.remove('hidden');
-            codeDisplay.textContent = code;
-            
-            updateOrderSummary();
+            try {
+                const emailInput = document.getElementById('email') as HTMLInputElement;
+                const customerEmail = emailInput?.value || null;
+
+                const response = await fetch('/api/discount/validate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code, customerEmail })
+                });
+
+                const result = await response.json();
+
+                if (!result.valid) {
+                    if (messageDiv) {
+                        messageDiv.textContent = result.error || 'Código de descuento inválido';
+                        messageDiv.className = 'mt-2 text-sm text-red-400';
+                        messageDiv.classList.remove('hidden');
+                    }
+                    return;
+                }
+
+                const cart = getCart();
+                const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+                
+                if (result.discount.minPurchase && subtotal < result.discount.minPurchase) {
+                    if (messageDiv) {
+                        messageDiv.textContent = `Este código requiere una compra mínima de ${formatPrice(result.discount.minPurchase)}`;
+                        messageDiv.className = 'mt-2 text-sm text-red-400';
+                        messageDiv.classList.remove('hidden');
+                    }
+                    return;
+                }
+
+                appliedDiscount = {
+                    id: result.discount.id,
+                    code: result.discount.code,
+                    type: result.discount.type,
+                    value: result.discount.value,
+                    description: result.discount.description,
+                    maxDiscount: result.discount.maxDiscount
+                };
+
+                if (codeInput) codeInput.value = '';
+                messageDiv?.classList.add('hidden');
+                appliedDiv?.classList.remove('hidden');
+                if (codeDisplay) codeDisplay.textContent = code;
+                
+                updateOrderSummary();
+            } catch (error) {
+                console.error('Error validating discount:', error);
+                if (messageDiv) {
+                    messageDiv.textContent = 'Error al validar el código. Inténtalo de nuevo.';
+                    messageDiv.className = 'mt-2 text-sm text-red-400';
+                    messageDiv.classList.remove('hidden');
+                }
+            } finally {
+                if (applyBtn) {
+                    applyBtn.disabled = false;
+                    applyBtn.textContent = 'Aplicar';
+                }
+            }
         }
 
         // Remove discount
         function removeDiscount() {
             appliedDiscount = null;
-            document.getElementById('applied-discount').classList.add('hidden');
+            document.getElementById('applied-discount')?.classList.add('hidden');
             updateOrderSummary();
         }
 
-        // Handle saved address checkbox
-        const useSavedCheckbox = document.getElementById('use-saved-address');
-        const savedAddressPreview = document.getElementById('saved-address-preview');
-        const addressFields = document.getElementById('address-fields');
+        // Initialize checkout
+        async function initCheckout() {
+            const loadingState = document.getElementById('loading-state');
+            const checkoutContent = document.getElementById('checkout-content');
 
-        if (useSavedCheckbox && customerData?.default_address) {
-            useSavedCheckbox.addEventListener('change', (e) => {
-                const isChecked = e.target.checked;
-                savedAddressPreview?.classList.toggle('hidden', !isChecked);
+            try {
+                // Get session
+                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
                 
-                if (isChecked) {
-                    // Fill fields with saved address
-                    document.getElementById('street').value = customerData.default_address.street || '';
-                    document.getElementById('city').value = customerData.default_address.city || '';
-                    document.getElementById('postal_code').value = customerData.default_address.postal_code || '';
-                    document.getElementById('province').value = customerData.default_address.province || '';
-                    document.getElementById('country').value = customerData.default_address.country || 'ES';
+                if (session?.user) {
+                    currentUser = session.user;
+                    console.log('✅ User logged in:', currentUser.email);
+
+                    // Set email and make it readonly
+                    const emailInput = document.getElementById('email') as HTMLInputElement;
+                    if (emailInput) {
+                        emailInput.value = currentUser.email || '';
+                        emailInput.readOnly = true;
+                    }
+
+                    // Load customer data
+                    const { data: customer, error: customerError } = await supabase
+                        .from('customers')
+                        .select('*')
+                        .eq('id', currentUser.id)
+                        .single();
+
+                    if (customer) {
+                        customerData = customer;
+                        console.log('✅ Customer data loaded:', customer);
+                        
+                        // Pre-fill phone if available
+                        if (customer.phone) {
+                            const phoneInput = document.getElementById('phone') as HTMLInputElement;
+                            if (phoneInput) phoneInput.value = customer.phone;
+                        }
+                        
+                        // Pre-fill name if available
+                        if (customer.full_name) {
+                            const nameInput = document.getElementById('full_name') as HTMLInputElement;
+                            if (nameInput) nameInput.value = customer.full_name;
+                        }
+                    }
+
+                    // Load saved addresses
+                    const { data: addresses, error: addressError } = await supabase
+                        .from('customer_addresses')
+                        .select('*')
+                        .eq('customer_id', currentUser.id)
+                        .order('is_default', { ascending: false })
+                        .order('created_at', { ascending: false });
+
+                    if (addresses && addresses.length > 0) {
+                        savedAddresses = addresses;
+                        console.log('✅ Saved addresses loaded:', addresses.length);
+                        renderSavedAddresses();
+                    } else {
+                        console.log('ℹ️ No saved addresses found');
+                    }
                 } else {
-                    // Clear fields
-                    document.getElementById('street').value = '';
-                    document.getElementById('city').value = '';
-                    document.getElementById('postal_code').value = '';
-                    document.getElementById('province').value = '';
-                    document.getElementById('country').value = 'ES';
+                    console.log('ℹ️ User not logged in, checkout as guest');
                 }
-            });
+
+                // Show checkout content
+                loadingState?.classList.add('hidden');
+                checkoutContent?.classList.remove('hidden');
+                
+                // Initialize order summary
+                renderOrderSummary();
+
+            } catch (error) {
+                console.error('Error initializing checkout:', error);
+                loadingState?.classList.add('hidden');
+                checkoutContent?.classList.remove('hidden');
+                renderOrderSummary();
+            }
         }
 
         // Handle form submission
@@ -460,13 +646,12 @@ if (accessToken && refreshToken) {
         form?.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const submitBtn = document.getElementById('submit-btn');
+            const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
             const submitText = document.getElementById('submit-text');
             const submitSpinner = document.getElementById('submit-spinner');
 
             try {
-                // Disable button
-                submitBtn.disabled = true;
+                if (submitBtn) submitBtn.disabled = true;
                 submitText?.classList.add('hidden');
                 submitSpinner?.classList.remove('hidden');
 
@@ -476,8 +661,7 @@ if (accessToken && refreshToken) {
                     return;
                 }
 
-                // Get form data
-                const formData = new FormData(form);
+                const formData = new FormData(form as HTMLFormElement);
                 const customerInfo = {
                     email: formData.get('email'),
                     phone: formData.get('phone'),
@@ -491,17 +675,13 @@ if (accessToken && refreshToken) {
                     }
                 };
 
-                // Store customer info for email confirmation after payment
                 sessionStorage.setItem('checkout_email', String(customerInfo.email));
                 sessionStorage.setItem('checkout_name', String(customerInfo.full_name));
                 sessionStorage.setItem('checkout_address', JSON.stringify(customerInfo.address));
 
-                // Create Stripe checkout session
                 const response = await fetch('/api/checkout/create-session', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         items: cart,
                         customerEmail: customerInfo.email,
@@ -512,32 +692,28 @@ if (accessToken && refreshToken) {
                     }),
                 });
 
-                console.log('Response status:', response.status);
                 const data = await response.json();
-                console.log('Response data:', data);
 
                 if (!response.ok) {
                     throw new Error(data.error || 'Error al crear la sesión de pago');
                 }
 
-                // Redirect to Stripe Checkout
                 if (data.url) {
                     window.location.href = data.url;
                 } else {
                     throw new Error('No se recibió URL de checkout');
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Error during checkout:', error);
                 alert(`Error: ${error.message || 'Hubo un error al procesar tu pago. Por favor, intenta de nuevo.'}`);
                 
-                // Re-enable button
-                submitBtn.disabled = false;
+                if (submitBtn) submitBtn.disabled = false;
                 submitText?.classList.remove('hidden');
                 submitSpinner?.classList.add('hidden');
             }
         });
 
-        // Discount code button handlers
+        // Event listeners
         document.getElementById('apply-discount-btn')?.addEventListener('click', applyDiscount);
         document.getElementById('remove-discount-btn')?.addEventListener('click', removeDiscount);
         document.getElementById('discount-code')?.addEventListener('keypress', (e) => {
@@ -548,6 +724,6 @@ if (accessToken && refreshToken) {
         });
 
         // Initialize
-        renderOrderSummary();
+        initCheckout();
     </script>
 </PublicLayout>

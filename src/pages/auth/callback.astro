@@ -30,6 +30,7 @@ export const prerender = false;
   // Handle the OAuth callback
   async function handleCallback() {
     try {
+      // Exchange code for session
       const { data, error } = await supabase.auth.getSession();
       
       if (error) {
@@ -39,6 +40,22 @@ export const prerender = false;
       }
 
       if (data.session) {
+        // Save session to cookies via API
+        const response = await fetch('/api/auth/set-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token,
+          }),
+        });
+
+        if (!response.ok) {
+          console.error('Failed to set session cookies');
+        }
+
         // Successfully authenticated
         window.location.href = '/';
       } else {
@@ -48,6 +65,11 @@ export const prerender = false;
     } catch (err) {
       console.error('Callback error:', err);
       window.location.href = '/auth/login?error=unknown';
+    }
+  }
+
+  handleCallback();
+</script>
     }
   }
 

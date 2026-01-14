@@ -1,7 +1,7 @@
 # 📊 Estado del Proyecto FashionMarket
 
-> **Última actualización:** 13 de enero de 2026  
-> **Hito actual:** Hito 3 - La Tienda Viva (90% completado)
+> **Última actualización:** 14 de enero de 2026  
+> **Hito actual:** Hito 3 - La Tienda Viva (98% completado)
 
 ---
 
@@ -22,7 +22,7 @@
 
 FashionMarket es una tienda online de moda masculina premium construida con tecnologías modernas. El proyecto está en fase avanzada de desarrollo con las funcionalidades core implementadas y funcionando.
 
-### ✅ Completado (90%)
+### ✅ Completado (98%)
 - ✅ Arquitectura base con Astro + Supabase + Stripe
 - ✅ Catálogo de productos con filtros y categorías
 - ✅ Sistema de carrito persistente
@@ -31,11 +31,14 @@ FashionMarket es una tienda online de moda masculina premium construida con tecn
 - ✅ Sistema de autenticación de usuarios
 - ✅ Emails transaccionales (Resend)
 - ✅ Panel admin: productos, pedidos, usuarios, comunicaciones, carrusel
+- ✅ **Webhook de Stripe para confirmación de pagos automática**
+- ✅ **Gestión de envíos (transportista, código seguimiento)**
+- ✅ **Emails automáticos de confirmación y envío**
+- ✅ **Recuperación de contraseña**
+- ✅ **Sistema de códigos promocionales dinámicos (desde BD)**
+- ✅ **Panel admin de códigos promocionales**
 
-### ⚠️ Pendiente (10%)
-- ⏳ Webhook de Stripe para confirmación de pagos
-- ⏳ Código de seguimiento de pedidos
-- ⏳ Sistema de notificaciones al admin
+### ⚠️ Pendiente (2%)
 - ⏳ Mejoras de UX/UI identificadas
 - ⏳ Despliegue a producción (Coolify/VPS)
 
@@ -1194,6 +1197,7 @@ $$ LANGUAGE plpgsql;
 - Deploy: **1-2 días**
 
 **Total:** **7-11 días de desarrollo**
+
 
 ---
 

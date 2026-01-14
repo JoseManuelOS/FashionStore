@@ -1,6 +1,6 @@
 ---
 import AdminLayout from "../../../layouts/AdminLayout.astro";
-import { getOrderById, updateOrderStatus, formatPrice } from "../../../lib/supabase";
+import { getOrderById, updateOrderStatus, updateOrderShipping, formatPrice, supabaseAdmin } from "../../../lib/supabase";
 
 const { id } = Astro.params;
 
@@ -16,23 +16,65 @@ if (!order) {
     return Astro.redirect("/admin/pedidos");
 }
 
-// Handle status update
+// Handle form submissions
 if (Astro.request.method === "POST") {
     const formData = await Astro.request.formData();
-    const newStatus = formData.get("status")?.toString();
+    const action = formData.get("action")?.toString();
     
-    if (newStatus && ['pending', 'paid', 'shipped', 'delivered', 'cancelled'].includes(newStatus)) {
+    // Handle status update
+    if (action === "update_status") {
+        const newStatus = formData.get("status")?.toString();
+        
+        if (newStatus && ['pending', 'paid', 'shipped', 'delivered', 'cancelled'].includes(newStatus)) {
+            try {
+                await updateOrderStatus(id, newStatus as any);
+                order = await getOrderById(id);
+                message = "Estado actualizado correctamente";
+                messageType = "success";
+            } catch (e: any) {
+                message = e.message || "Error al actualizar el estado";
+                messageType = "error";
+            }
+        }
+    }
+    
+    // Handle shipping info update
+    if (action === "update_shipping") {
+        const carrier = formData.get("shipping_carrier")?.toString();
+        const trackingNumber = formData.get("tracking_number")?.toString();
+        const trackingUrl = formData.get("tracking_url")?.toString();
+        const markAsShipped = formData.get("mark_shipped") === "on";
+        
         try {
-            await updateOrderStatus(id, newStatus as any);
+            await updateOrderShipping(id, {
+                shipping_carrier: carrier || null,
+                tracking_number: trackingNumber || null,
+                tracking_url: trackingUrl || null,
+                markAsShipped
+            });
             order = await getOrderById(id);
-            message = "Estado actualizado correctamente";
+            message = markAsShipped ? "Pedido marcado como enviado y cliente notificado" : "Información de envío actualizada";
             messageType = "success";
         } catch (e: any) {
-            message = e.message || "Error al actualizar el estado";
+            message = e.message || "Error al actualizar información de envío";
             messageType = "error";
         }
     }
 }
+
+// Lista de transportistas
+const carriers = [
+    { id: 'seur', name: 'SEUR', trackingBase: 'https://www.seur.com/livetracking/?segOnlineIdentificador=' },
+    { id: 'mrw', name: 'MRW', trackingBase: 'https://www.mrw.es/seguimiento_envios/' },
+    { id: 'correos', name: 'Correos', trackingBase: 'https://www.correos.es/es/es/herramientas/localizador/envios/' },
+    { id: 'gls', name: 'GLS', trackingBase: 'https://www.gls-spain.es/es/ayuda/seguimiento-envio/?match=' },
+    { id: 'ups', name: 'UPS', trackingBase: 'https://www.ups.com/track?tracknum=' },
+    { id: 'dhl', name: 'DHL', trackingBase: 'https://www.dhl.com/es-es/home/tracking.html?tracking-id=' },
+    { id: 'envialia', name: 'Envialia', trackingBase: 'https://www.envialia.com/es/tracking/?id=' },
+    { id: 'nacex', name: 'Nacex', trackingBase: 'https://www.nacex.es/seguimiento-envios/?id=' },
+    { id: 'fedex', name: 'FedEx', trackingBase: 'https://www.fedex.com/fedextrack/?trknbr=' },
+    { id: 'otro', name: 'Otro', trackingBase: '' }
+];
 
 const statusLabels: Record<string, { label: string; color: string; bg: string }> = {
     pending: { label: 'Pendiente', color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200' },
@@ -174,6 +216,7 @@ const currentStatus = statusLabels[order?.status || 'pending'];
                         Actualizar Estado
                     </h2>
                     <form method="POST" class="space-y-4">
+                        <input type="hidden" name="action" value="update_status" />
                         <select
                             name="status"
                             class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
@@ -191,6 +234,109 @@ const currentStatus = statusLabels[order?.status || 'pending'];
                             Actualizar Estado
                         </button>
                     </form>
+                </div>
+
+                <!-- Shipping Info -->
+                <div class="bg-white rounded-2xl border border-zinc-200 p-5">
+                    <h2 class="font-semibold text-zinc-900 mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 16.255V7.5a2.5 2.5 0 015 0v.255M7 21h10a2 2 0 002-2V9.5a2.5 2.5 0 00-2.5-2.5h-9A2.5 2.5 0 005 9.5V19a2 2 0 002 2z" />
+                        </svg>
+                        Información de Envío
+                    </h2>
+                    <form method="POST" class="space-y-4">
+                        <input type="hidden" name="action" value="update_shipping" />
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-zinc-700 mb-1.5">Empresa Transportista</label>
+                            <select
+                                name="shipping_carrier"
+                                id="shipping_carrier"
+                                class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                            >
+                                <option value="">Seleccionar...</option>
+                                {carriers.map((c) => (
+                                    <option 
+                                        value={c.id} 
+                                        selected={order?.shipping_carrier === c.id}
+                                        data-tracking-base={c.trackingBase}
+                                    >
+                                        {c.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-zinc-700 mb-1.5">Código de Seguimiento</label>
+                            <input
+                                type="text"
+                                name="tracking_number"
+                                id="tracking_number"
+                                value={order?.tracking_number || ''}
+                                placeholder="Ej: 1Z999AA10123456784"
+                                class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                            />
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-zinc-700 mb-1.5">URL de Seguimiento</label>
+                            <input
+                                type="url"
+                                name="tracking_url"
+                                id="tracking_url"
+                                value={order?.tracking_url || ''}
+                                placeholder="https://..."
+                                class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                            />
+                            <p class="text-xs text-zinc-500 mt-1">Se genera automáticamente al seleccionar transportista y código</p>
+                        </div>
+
+                        {order?.status === 'paid' && (
+                            <div class="flex items-center gap-3 p-3 bg-cyan-50 rounded-xl border border-cyan-200">
+                                <input
+                                    type="checkbox"
+                                    name="mark_shipped"
+                                    id="mark_shipped"
+                                    class="w-4 h-4 text-cyan-600 bg-white border-zinc-300 rounded focus:ring-cyan-500"
+                                />
+                                <label for="mark_shipped" class="text-sm text-cyan-800">
+                                    Marcar como enviado y notificar al cliente
+                                </label>
+                            </div>
+                        )}
+                        
+                        <button
+                            type="submit"
+                            class="w-full px-4 py-3 bg-cyan-600 text-white font-semibold rounded-xl hover:bg-cyan-700 transition-colors"
+                        >
+                            {order?.status === 'paid' ? 'Guardar y Enviar' : 'Guardar Información'}
+                        </button>
+                    </form>
+                    
+                    {order?.shipped_at && (
+                        <div class="mt-4 p-3 bg-green-50 rounded-xl border border-green-200">
+                            <div class="flex items-center gap-2 text-green-700 text-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                </svg>
+                                <span>Enviado el {formatDate(order.shipped_at)}</span>
+                            </div>
+                            {order.tracking_url && (
+                                <a
+                                    href={order.tracking_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="inline-flex items-center gap-1 mt-2 text-sm text-cyan-600 hover:text-cyan-700"
+                                >
+                                    Ver seguimiento
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                    </svg>
+                                </a>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 <!-- Timeline -->
@@ -218,4 +364,24 @@ const currentStatus = statusLabels[order?.status || 'pending'];
             </div>
         </div>
     </div>
+
+    <script>
+        // Auto-generate tracking URL based on carrier and tracking number
+        const carrierSelect = document.getElementById('shipping_carrier') as HTMLSelectElement;
+        const trackingNumberInput = document.getElementById('tracking_number') as HTMLInputElement;
+        const trackingUrlInput = document.getElementById('tracking_url') as HTMLInputElement;
+
+        function updateTrackingUrl() {
+            const selectedOption = carrierSelect.options[carrierSelect.selectedIndex];
+            const trackingBase = selectedOption?.dataset?.trackingBase || '';
+            const trackingNumber = trackingNumberInput?.value?.trim() || '';
+
+            if (trackingBase && trackingNumber) {
+                trackingUrlInput.value = trackingBase + trackingNumber;
+            }
+        }
+
+        carrierSelect?.addEventListener('change', updateTrackingUrl);
+        trackingNumberInput?.addEventListener('input', updateTrackingUrl);
+    </script>
 </AdminLayout>

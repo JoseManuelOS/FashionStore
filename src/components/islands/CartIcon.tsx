@@ -1,8 +1,14 @@
 import { useStore } from '@nanostores/react';
+import { useEffect, useState } from 'react';
 import { $cartCount } from '../../stores/cart';
 
 export default function CartIcon() {
     const count = useStore($cartCount);
+    const [isHydrated, setIsHydrated] = useState(false);
+
+    useEffect(() => {
+        setIsHydrated(true);
+    }, []);
 
     const handleClick = () => {
         window.dispatchEvent(new CustomEvent('toggle-cart'));
@@ -28,7 +34,7 @@ export default function CartIcon() {
                 />
             </svg>
 
-            {count > 0 && (
+            {isHydrated && count > 0 && (
                 <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1.5 bg-gradient-to-r from-neon-cyan to-neon-fuchsia text-dark-600 text-xs font-bold rounded-full flex items-center justify-center animate-scale-in shadow-glow-cyan">
                     {count}
                 </span>

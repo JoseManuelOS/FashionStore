@@ -200,127 +200,204 @@ export const prerender = false;
                         </form>
                     </div>
 
-                    <!-- Dirección de envío -->
+                    <!-- Direcciones de Envío -->
                     <div class="bg-dark-400/50 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden">
                         <div class="px-6 py-4 border-b border-white/10 bg-white/5">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-xl bg-neon-fuchsia/20 flex items-center justify-center">
-                                    <svg class="w-5 h-5 text-neon-fuchsia" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl bg-neon-fuchsia/20 flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-neon-fuchsia" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-lg font-semibold text-white">Direcciones de Envío</h3>
+                                        <p class="text-sm text-zinc-400">Gestiona tus direcciones guardadas</p>
+                                    </div>
+                                </div>
+                                <button
+                                    id="add-address-btn"
+                                    class="px-4 py-2 bg-gradient-to-r from-neon-fuchsia to-neon-fuchsia-light text-white rounded-xl hover:shadow-lg hover:shadow-neon-fuchsia/25 transition-all duration-200 flex items-center gap-2 text-sm font-medium"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                                     </svg>
-                                </div>
-                                <div>
-                                    <h3 class="text-lg font-semibold text-white">Dirección de Envío</h3>
-                                    <p class="text-sm text-zinc-400">Tu dirección predeterminada para entregas</p>
-                                </div>
+                                    Nueva dirección
+                                </button>
                             </div>
                         </div>
-                        <form id="address-form" class="p-6 space-y-6">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div class="md:col-span-2 space-y-2">
-                                    <label for="street" class="block text-sm font-medium text-zinc-300">
-                                        Calle y número
+                        
+                        <!-- Lista de direcciones -->
+                        <div id="addresses-list" class="p-6 space-y-4">
+                            <div class="text-center py-8 text-zinc-500">
+                                <svg class="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                </svg>
+                                <p>Cargando direcciones...</p>
+                            </div>
+                        </div>
+
+                        <!-- Formulario para añadir/editar dirección (oculto por defecto) -->
+                        <div id="address-form-container" class="hidden border-t border-white/10 p-6">
+                            <form id="address-form" class="space-y-6">
+                                <input type="hidden" id="address-id" name="address_id" />
+                                
+                                <div class="space-y-2">
+                                    <label for="address-label" class="block text-sm font-medium text-zinc-300">
+                                        Etiqueta *
                                     </label>
-                                    <div class="relative">
-                                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                            <svg class="w-5 h-5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
-                                            </svg>
-                                        </div>
+                                    <input
+                                        type="text"
+                                        id="address-label"
+                                        name="label"
+                                        required
+                                        placeholder="Ej: Casa, Trabajo, Casa de mis padres"
+                                        class="w-full px-4 py-3 bg-dark-500 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:border-neon-fuchsia focus:ring-2 focus:ring-neon-fuchsia/20 transition-all duration-200"
+                                    />
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="space-y-2">
+                                        <label for="address-fullname" class="block text-sm font-medium text-zinc-300">
+                                            Nombre completo *
+                                        </label>
                                         <input
                                             type="text"
-                                            id="street"
-                                            name="street"
-                                            placeholder="Ej: Calle Mayor 123, 2º B"
-                                            class="w-full pl-12 pr-4 py-3 bg-dark-500 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:border-neon-fuchsia focus:ring-2 focus:ring-neon-fuchsia/20 transition-all duration-200"
+                                            id="address-fullname"
+                                            name="full_name"
+                                            required
+                                            placeholder="Juan Pérez"
+                                            class="w-full px-4 py-3 bg-dark-500 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:border-neon-fuchsia focus:ring-2 focus:ring-neon-fuchsia/20 transition-all duration-200"
+                                        />
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label for="address-phone" class="block text-sm font-medium text-zinc-300">
+                                            Teléfono
+                                        </label>
+                                        <input
+                                            type="tel"
+                                            id="address-phone"
+                                            name="phone"
+                                            placeholder="+34 600 000 000"
+                                            class="w-full px-4 py-3 bg-dark-500 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:border-neon-fuchsia focus:ring-2 focus:ring-neon-fuchsia/20 transition-all duration-200"
                                         />
                                     </div>
                                 </div>
+
                                 <div class="space-y-2">
-                                    <label for="city" class="block text-sm font-medium text-zinc-300">
-                                        Ciudad
+                                    <label for="address-street" class="block text-sm font-medium text-zinc-300">
+                                        Calle y número *
                                     </label>
                                     <input
                                         type="text"
-                                        id="city"
-                                        name="city"
-                                        placeholder="Ej: Madrid"
+                                        id="address-street"
+                                        name="street"
+                                        required
+                                        placeholder="Calle Mayor 123, 2º B"
                                         class="w-full px-4 py-3 bg-dark-500 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:border-neon-fuchsia focus:ring-2 focus:ring-neon-fuchsia/20 transition-all duration-200"
                                     />
                                 </div>
-                                <div class="space-y-2">
-                                    <label for="postal_code" class="block text-sm font-medium text-zinc-300">
-                                        Código postal
-                                    </label>
-                                    <input
-                                        type="text"
-                                        id="postal_code"
-                                        name="postal_code"
-                                        placeholder="Ej: 28001"
-                                        maxlength="10"
-                                        class="w-full px-4 py-3 bg-dark-500 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:border-neon-fuchsia focus:ring-2 focus:ring-neon-fuchsia/20 transition-all duration-200"
-                                    />
-                                </div>
-                                <div class="space-y-2">
-                                    <label for="province" class="block text-sm font-medium text-zinc-300">
-                                        Provincia
-                                    </label>
-                                    <input
-                                        type="text"
-                                        id="province"
-                                        name="province"
-                                        placeholder="Ej: Madrid"
-                                        class="w-full px-4 py-3 bg-dark-500 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:border-neon-fuchsia focus:ring-2 focus:ring-neon-fuchsia/20 transition-all duration-200"
-                                    />
-                                </div>
-                                <div class="space-y-2">
-                                    <label for="country" class="block text-sm font-medium text-zinc-300">
-                                        País
-                                    </label>
-                                    <select
-                                        id="country"
-                                        name="country"
-                                        class="w-full px-4 py-3 bg-dark-500 border border-white/10 rounded-xl text-white focus:border-neon-fuchsia focus:ring-2 focus:ring-neon-fuchsia/20 transition-all duration-200"
-                                    >
-                                        <option value="España">España</option>
-                                        <option value="Portugal">Portugal</option>
-                                        <option value="Francia">Francia</option>
-                                        <option value="Italia">Italia</option>
-                                        <option value="Alemania">Alemania</option>
-                                        <option value="Reino Unido">Reino Unido</option>
-                                        <option value="Otro">Otro</option>
-                                    </select>
-                                </div>
-                            </div>
-                            
-                            <!-- Preview de la dirección -->
-                            <div id="address-preview" class="hidden p-4 bg-neon-fuchsia/5 border border-neon-fuchsia/20 rounded-xl">
-                                <div class="flex items-start gap-3">
-                                    <svg class="w-5 h-5 text-neon-fuchsia mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                    </svg>
-                                    <div>
-                                        <p class="text-sm font-medium text-white mb-1">Dirección guardada:</p>
-                                        <p id="address-preview-text" class="text-sm text-zinc-400"></p>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="space-y-2">
+                                        <label for="address-city" class="block text-sm font-medium text-zinc-300">
+                                            Ciudad *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            id="address-city"
+                                            name="city"
+                                            required
+                                            placeholder="Madrid"
+                                            class="w-full px-4 py-3 bg-dark-500 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:border-neon-fuchsia focus:ring-2 focus:ring-neon-fuchsia/20 transition-all duration-200"
+                                        />
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label for="address-postal" class="block text-sm font-medium text-zinc-300">
+                                            Código Postal *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            id="address-postal"
+                                            name="postal_code"
+                                            required
+                                            placeholder="28001"
+                                            maxlength="10"
+                                            class="w-full px-4 py-3 bg-dark-500 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:border-neon-fuchsia focus:ring-2 focus:ring-neon-fuchsia/20 transition-all duration-200"
+                                        />
                                     </div>
                                 </div>
-                            </div>
 
-                            <div class="flex justify-end pt-4 border-t border-white/5">
-                                <button
-                                    type="submit"
-                                    id="save-address-btn"
-                                    class="px-6 py-3 bg-gradient-to-r from-neon-fuchsia to-neon-fuchsia-light text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-neon-fuchsia/25 transition-all duration-200 flex items-center gap-2"
-                                >
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                                    </svg>
-                                    Guardar dirección
-                                </button>
-                            </div>
-                        </form>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="space-y-2">
+                                        <label for="address-province" class="block text-sm font-medium text-zinc-300">
+                                            Provincia *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            id="address-province"
+                                            name="province"
+                                            required
+                                            placeholder="Madrid"
+                                            class="w-full px-4 py-3 bg-dark-500 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:border-neon-fuchsia focus:ring-2 focus:ring-neon-fuchsia/20 transition-all duration-200"
+                                        />
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label for="address-country" class="block text-sm font-medium text-zinc-300">
+                                            País *
+                                        </label>
+                                        <select
+                                            id="address-country"
+                                            name="country"
+                                            required
+                                            class="w-full px-4 py-3 bg-dark-500 border border-white/10 rounded-xl text-white focus:border-neon-fuchsia focus:ring-2 focus:ring-neon-fuchsia/20 transition-all duration-200"
+                                        >
+                                            <option value="ES">España</option>
+                                            <option value="PT">Portugal</option>
+                                            <option value="FR">Francia</option>
+                                            <option value="IT">Italia</option>
+                                            <option value="DE">Alemania</option>
+                                            <option value="GB">Reino Unido</option>
+                                            <option value="NL">Países Bajos</option>
+                                            <option value="BE">Bélgica</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center gap-3 p-4 bg-neon-fuchsia/5 border border-neon-fuchsia/20 rounded-xl">
+                                    <input
+                                        type="checkbox"
+                                        id="address-default"
+                                        name="is_default"
+                                        class="w-4 h-4 text-neon-fuchsia bg-dark-500 border-white/20 rounded focus:ring-neon-fuchsia/50"
+                                    />
+                                    <label for="address-default" class="text-sm text-zinc-300">
+                                        Usar como dirección predeterminada
+                                    </label>
+                                </div>
+
+                                <div class="flex gap-3 pt-4 border-t border-white/5">
+                                    <button
+                                        type="button"
+                                        id="cancel-address-btn"
+                                        class="flex-1 px-6 py-3 border border-white/20 text-zinc-300 rounded-xl hover:bg-white/5 transition-all duration-200"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        id="save-address-btn"
+                                        class="flex-1 px-6 py-3 bg-gradient-to-r from-neon-fuchsia to-neon-fuchsia-light text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-neon-fuchsia/25 transition-all duration-200 flex items-center justify-center gap-2"
+                                    >
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                        Guardar dirección
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
 
                     <!-- Zona de sesión -->
@@ -370,13 +447,21 @@ export const prerender = false;
         import.meta.env.PUBLIC_SUPABASE_ANON_KEY || "",
     );
 
-    interface Address {
-        street?: string;
-        city?: string;
-        postal_code?: string;
-        province?: string;
-        country?: string;
+    interface CustomerAddress {
+        id: string;
+        label: string;
+        full_name: string;
+        phone?: string;
+        street: string;
+        city: string;
+        postal_code: string;
+        province: string;
+        country: string;
+        is_default: boolean;
     }
+
+    let currentUserId: string | null = null;
+    let editingAddressId: string | null = null;
 
     // Función para mostrar mensajes toast
     function showToast(type: 'success' | 'error', message: string) {
@@ -398,7 +483,6 @@ export const prerender = false;
             if (errorText) errorText.textContent = message;
         }
 
-        // Ocultar después de 4 segundos
         setTimeout(() => {
             globalMessage?.classList.add('hidden');
             successToast?.classList.add('hidden');
@@ -406,38 +490,201 @@ export const prerender = false;
         }, 4000);
     }
 
-    // Función para actualizar el preview de la dirección
-    function updateAddressPreview() {
-        const street = (document.getElementById('street') as HTMLInputElement)?.value;
-        const city = (document.getElementById('city') as HTMLInputElement)?.value;
-        const postalCode = (document.getElementById('postal_code') as HTMLInputElement)?.value;
-        const province = (document.getElementById('province') as HTMLInputElement)?.value;
-        const country = (document.getElementById('country') as HTMLSelectElement)?.value;
+    // Obtener nombre del país
+    function getCountryName(code: string): string {
+        const countries: Record<string, string> = {
+            'ES': 'España', 'PT': 'Portugal', 'FR': 'Francia',
+            'IT': 'Italia', 'DE': 'Alemania', 'GB': 'Reino Unido',
+            'NL': 'Países Bajos', 'BE': 'Bélgica'
+        };
+        return countries[code] || code;
+    }
 
-        const preview = document.getElementById('address-preview');
-        const previewText = document.getElementById('address-preview-text');
+    // Cargar direcciones
+    async function loadAddresses() {
+        if (!currentUserId) return;
 
-        if (street || city || postalCode || province) {
-            const parts = [street, city, postalCode, province, country].filter(Boolean);
-            if (previewText) previewText.textContent = parts.join(', ');
-            preview?.classList.remove('hidden');
-        } else {
-            preview?.classList.add('hidden');
+        const listEl = document.getElementById('addresses-list');
+        if (!listEl) return;
+
+        try {
+            const { data: addresses, error } = await supabase
+                .from('customer_addresses')
+                .select('*')
+                .eq('customer_id', currentUserId)
+                .order('is_default', { ascending: false })
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            if (!addresses || addresses.length === 0) {
+                listEl.innerHTML = `
+                    <div class="text-center py-8 text-zinc-500">
+                        <svg class="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                        </svg>
+                        <p class="mb-2">No tienes direcciones guardadas</p>
+                        <p class="text-sm">Haz clic en "Nueva dirección" para añadir una</p>
+                    </div>
+                `;
+                return;
+            }
+
+            listEl.innerHTML = addresses.map((addr: any) => `
+                <div class="p-4 bg-dark-500/50 border ${addr.is_default ? 'border-neon-fuchsia/30 bg-neon-fuchsia/5' : 'border-white/10'} rounded-xl hover:border-white/20 transition-all duration-200">
+                    <div class="flex items-start justify-between gap-4">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-2">
+                                <h4 class="text-white font-semibold">${addr.label}</h4>
+                                ${addr.is_default ? '<span class="px-2 py-0.5 bg-neon-fuchsia/20 text-neon-fuchsia text-xs rounded-full">Predeterminada</span>' : ''}
+                            </div>
+                            <p class="text-zinc-300 text-sm mb-1">${addr.full_name}</p>
+                            ${addr.phone ? `<p class="text-zinc-400 text-sm mb-2">${addr.phone}</p>` : ''}
+                            <p class="text-zinc-400 text-sm">
+                                ${addr.street}<br/>
+                                ${addr.postal_code} ${addr.city}, ${addr.province}<br/>
+                                ${getCountryName(addr.country)}
+                            </p>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <button
+                                onclick="window.editAddress('${addr.id}')"
+                                class="p-2 text-neon-cyan hover:bg-neon-cyan/10 rounded-lg transition-colors"
+                                title="Editar"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                            </button>
+                            ${!addr.is_default ? `
+                                <button
+                                    onclick="window.setDefaultAddress('${addr.id}')"
+                                    class="p-2 text-zinc-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                                    title="Marcar como predeterminada"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </button>
+                            ` : ''}
+                            <button
+                                onclick="window.deleteAddress('${addr.id}')"
+                                class="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                                title="Eliminar"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+        } catch (error) {
+            console.error('Error loading addresses:', error);
+            showToast('error', 'Error al cargar las direcciones');
         }
     }
+
+    // Mostrar formulario de dirección
+    function showAddressForm(address?: any) {
+        const formContainer = document.getElementById('address-form-container');
+        const form = document.getElementById('address-form') as HTMLFormElement;
+        
+        if (!formContainer || !form) return;
+
+        // Reset form
+        form.reset();
+        editingAddressId = address?.id || null;
+
+        // Fill form if editing
+        if (address) {
+            (document.getElementById('address-id') as HTMLInputElement).value = address.id;
+            (document.getElementById('address-label') as HTMLInputElement).value = address.label;
+            (document.getElementById('address-fullname') as HTMLInputElement).value = address.full_name;
+            (document.getElementById('address-phone') as HTMLInputElement).value = address.phone || '';
+            (document.getElementById('address-street') as HTMLInputElement).value = address.street;
+            (document.getElementById('address-city') as HTMLInputElement).value = address.city;
+            (document.getElementById('address-postal') as HTMLInputElement).value = address.postal_code;
+            (document.getElementById('address-province') as HTMLInputElement).value = address.province;
+            (document.getElementById('address-country') as HTMLSelectElement).value = address.country;
+            (document.getElementById('address-default') as HTMLInputElement).checked = address.is_default;
+        }
+
+        formContainer.classList.remove('hidden');
+        formContainer.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Ocultar formulario
+    function hideAddressForm() {
+        const formContainer = document.getElementById('address-form-container');
+        const form = document.getElementById('address-form') as HTMLFormElement;
+        
+        if (!formContainer || !form) return;
+
+        formContainer.classList.add('hidden');
+        form.reset();
+        editingAddressId = null;
+    }
+
+    // Funciones globales
+    (window as any).editAddress = async (id: string) => {
+        const { data: address } = await supabase
+            .from('customer_addresses')
+            .select('*')
+            .eq('id', id)
+            .single();
+        
+        if (address) showAddressForm(address);
+    };
+
+    (window as any).setDefaultAddress = async (id: string) => {
+        try {
+            const { error } = await supabase
+                .from('customer_addresses')
+                .update({ is_default: true })
+                .eq('id', id);
+
+            if (error) throw error;
+
+            showToast('success', 'Dirección marcada como predeterminada');
+            await loadAddresses();
+        } catch (error) {
+            console.error('Error setting default:', error);
+            showToast('error', 'Error al cambiar la dirección predeterminada');
+        }
+    };
+
+    (window as any).deleteAddress = async (id: string) => {
+        if (!confirm('¿Estás seguro de que quieres eliminar esta dirección?')) return;
+
+        try {
+            const { error } = await supabase
+                .from('customer_addresses')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+
+            showToast('success', 'Dirección eliminada correctamente');
+            await loadAddresses();
+        } catch (error) {
+            console.error('Error deleting address:', error);
+            showToast('error', 'Error al eliminar la dirección');
+        }
+    };
 
     async function init() {
         const loadingState = document.getElementById("loading-state");
         const mainContent = document.getElementById("main-content");
 
-        // Timeout para evitar quedarse cargando infinitamente
         const timeout = setTimeout(() => {
             loadingState?.classList.add("hidden");
             showToast('error', 'La carga está tardando demasiado. Por favor, recarga la página.');
         }, 10000);
 
         try {
-            // getSession lee de localStorage, no hace llamada de red
             const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
             if (sessionError) {
@@ -454,11 +701,12 @@ export const prerender = false;
             }
 
             const user = session.user;
+            currentUserId = user.id;
             const userName = user.user_metadata?.full_name || user.user_metadata?.name || "Usuario";
             const userEmail = user.email || "";
             const avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture || null;
 
-            // Actualizar UI con datos del usuario
+            // Actualizar UI
             const userNameEl = document.getElementById("user-name");
             const userEmailEl = document.getElementById("user-email");
             const userInitialEl = document.getElementById("user-initial");
@@ -478,10 +726,10 @@ export const prerender = false;
                 }
             }
 
-            // Cargar datos del perfil de la tabla customers
-            const { data: customerData, error: customerError } = await supabase
+            // Cargar teléfono
+            const { data: customerData } = await supabase
                 .from('customers')
-                .select('phone, default_address')
+                .select('phone')
                 .eq('id', user.id)
                 .single();
 
@@ -490,25 +738,10 @@ export const prerender = false;
                 if (phoneInput && customerData.phone) {
                     phoneInput.value = customerData.phone;
                 }
-
-                // Cargar dirección guardada
-                const address = customerData.default_address as Address;
-                if (address) {
-                    const streetInput = document.getElementById('street') as HTMLInputElement;
-                    const cityInput = document.getElementById('city') as HTMLInputElement;
-                    const postalInput = document.getElementById('postal_code') as HTMLInputElement;
-                    const provinceInput = document.getElementById('province') as HTMLInputElement;
-                    const countrySelect = document.getElementById('country') as HTMLSelectElement;
-
-                    if (streetInput && address.street) streetInput.value = address.street;
-                    if (cityInput && address.city) cityInput.value = address.city;
-                    if (postalInput && address.postal_code) postalInput.value = address.postal_code;
-                    if (provinceInput && address.province) provinceInput.value = address.province;
-                    if (countrySelect && address.country) countrySelect.value = address.country;
-
-                    updateAddressPreview();
-                }
             }
+
+            // Cargar direcciones
+            await loadAddresses();
 
             clearTimeout(timeout);
             loadingState?.classList.add("hidden");
@@ -522,14 +755,14 @@ export const prerender = false;
         }
     }
 
-    // Inicializar cuando el DOM esté listo
+    // Inicializar
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
         init();
     }
 
-    // Event listener para cerrar sesión
+    // Cerrar sesión
     document.getElementById("logout-btn")?.addEventListener("click", async () => {
         try {
             await supabase.auth.signOut();
@@ -539,7 +772,7 @@ export const prerender = false;
         }
     });
 
-    // Event listener para guardar información personal
+    // Guardar información personal
     document.getElementById("profile-form")?.addEventListener("submit", async (e) => {
         e.preventDefault();
         const btn = document.getElementById('save-profile-btn') as HTMLButtonElement;
@@ -559,29 +792,26 @@ export const prerender = false;
             const name = formData.get("name") as string;
             const phone = formData.get("phone") as string;
 
-            // Actualizar metadata del usuario
             const { error: authError } = await supabase.auth.updateUser({ 
                 data: { full_name: name } 
             });
 
             if (authError) throw authError;
 
-            // Actualizar tabla customers
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
                 const { error: customerError } = await supabase
                     .from('customers')
-                    .upsert({ 
-                        id: user.id, 
-                        email: user.email,
+                    .update({ 
                         full_name: name,
-                        phone: phone 
-                    }, { onConflict: 'id' });
+                        phone: phone,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', user.id);
 
-                if (customerError) console.error('Error updating customer:', customerError);
+                if (customerError) throw customerError;
             }
 
-            // Actualizar UI
             const userNameEl = document.getElementById("user-name");
             const userInitialEl = document.getElementById("user-initial");
             if (userNameEl) userNameEl.textContent = name;
@@ -597,7 +827,17 @@ export const prerender = false;
         }
     });
 
-    // Event listener para guardar dirección
+    // Añadir nueva dirección
+    document.getElementById("add-address-btn")?.addEventListener("click", () => {
+        showAddressForm();
+    });
+
+    // Cancelar formulario
+    document.getElementById("cancel-address-btn")?.addEventListener("click", () => {
+        hideAddressForm();
+    });
+
+    // Guardar dirección
     document.getElementById("address-form")?.addEventListener("submit", async (e) => {
         e.preventDefault();
         const btn = document.getElementById('save-address-btn') as HTMLButtonElement;
@@ -614,41 +854,56 @@ export const prerender = false;
 
         try {
             const formData = new FormData(e.target as HTMLFormElement);
-            const address: Address = {
+            
+            const addressData = {
+                customer_id: currentUserId,
+                label: formData.get("label") as string,
+                full_name: formData.get("full_name") as string,
+                phone: formData.get("phone") as string || null,
                 street: formData.get("street") as string,
                 city: formData.get("city") as string,
                 postal_code: formData.get("postal_code") as string,
                 province: formData.get("province") as string,
                 country: formData.get("country") as string,
+                is_default: (document.getElementById('address-default') as HTMLInputElement).checked,
             };
 
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error('No user found');
+            if (editingAddressId) {
+                // Update
+                const { error } = await supabase
+                    .from('customer_addresses')
+                    .update(addressData)
+                    .eq('id', editingAddressId);
 
-            const { error } = await supabase
-                .from('customers')
-                .upsert({ 
-                    id: user.id, 
-                    email: user.email,
-                    default_address: address 
-                }, { onConflict: 'id' });
+                if (error) throw error;
+                showToast('success', 'Dirección actualizada correctamente');
+            } else {
+                // Insert
+                console.log('Intentando insertar dirección:', addressData);
+                
+                const { data, error } = await supabase
+                    .from('customer_addresses')
+                    .insert(addressData)
+                    .select();
 
-            if (error) throw error;
+                if (error) {
+                    console.error('Error detallado:', error);
+                    throw error;
+                }
+                
+                console.log('Dirección insertada:', data);
+                showToast('success', 'Dirección añadida correctamente');
+            }
 
-            updateAddressPreview();
-            showToast('success', 'Dirección guardada correctamente');
-        } catch (error) {
+            hideAddressForm();
+            await loadAddresses();
+        } catch (error: any) {
             console.error('Error saving address:', error);
-            showToast('error', 'Error al guardar la dirección');
+            const errorMsg = error?.message || error?.details || 'Error desconocido';
+            showToast('error', `Error al guardar: ${errorMsg}`);
         } finally {
             btn.disabled = false;
             btn.innerHTML = originalText;
         }
-    });
-
-    // Actualizar preview cuando cambien los campos de dirección
-    ['street', 'city', 'postal_code', 'province', 'country'].forEach(fieldId => {
-        document.getElementById(fieldId)?.addEventListener('input', updateAddressPreview);
-        document.getElementById(fieldId)?.addEventListener('change', updateAddressPreview);
     });
 </script>
