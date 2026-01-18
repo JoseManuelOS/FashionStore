@@ -12,6 +12,8 @@ import {
 
 export const prerender = true;
 
+// Fallback slides if no database slides exist
+
 let products: any[] = [];
 let offerProducts: any[] = [];
 let categories: any[] = [];
@@ -33,7 +35,8 @@ try {
 const defaultSlides = [
 	{
 		id: "default-1",
-		image_url: "https://images.unsplash.com/photo-1490578474895-699cd4e2cf59?w=1920&q=80",
+		image_url:
+			"https://images.unsplash.com/photo-1490578474895-699cd4e2cf59?w=1920&q=80",
 		title: "Nueva Colección",
 		subtitle: "Primavera 2026",
 		description: "Descubre las últimas tendencias en moda masculina",
@@ -41,11 +44,14 @@ const defaultSlides = [
 		cta_link: "/productos",
 		duration: 5000,
 		sort_order: 1,
-		is_active: true
+		is_active: true,
+		discount_code: undefined,
+		style_config: undefined,
 	},
 	{
 		id: "default-2",
-		image_url: "https://images.unsplash.com/photo-1507680434567-5739c80be1ac?w=1920&q=80",
+		image_url:
+			"https://images.unsplash.com/photo-1507680434567-5739c80be1ac?w=1920&q=80",
 		title: "Estilo Premium",
 		subtitle: "Elegancia Definida",
 		description: "Prendas de alta calidad para el hombre moderno",
@@ -53,11 +59,13 @@ const defaultSlides = [
 		cta_link: "/categoria/camisas",
 		duration: 5000,
 		sort_order: 2,
-		is_active: true
+		is_active: true,
+		style_config: undefined,
 	},
 	{
 		id: "default-3",
-		image_url: "https://images.unsplash.com/photo-1617137968427-85924c800a22?w=1920&q=80",
+		image_url:
+			"https://images.unsplash.com/photo-1617137968427-85924c800a22?w=1920&q=80",
 		title: "Ofertas Especiales",
 		subtitle: "Hasta 40% Off",
 		description: "Aprovecha nuestros descuentos exclusivos",
@@ -65,8 +73,9 @@ const defaultSlides = [
 		cta_link: "/ofertas",
 		duration: 5000,
 		sort_order: 3,
-		is_active: true
-	}
+		is_active: true,
+		style_config: undefined,
+	},
 ];
 
 // Use database slides or fallback to defaults
@@ -123,64 +132,46 @@ const heroSlides = carouselSlides.length > 0 ? carouselSlides : defaultSlides;
 			padding: 0 5%;
 		}
 
-		.hero-text {
-			max-width: 600px;
-			color: white;
+		/* Responsive Carousel Elements - Use CSS custom properties for positions */
+		.carousel-element {
+			top: var(--desktop-top, 50%);
+			left: var(--desktop-left, 10%);
+			font-size: var(--desktop-font-size, 1rem);
+			max-width: var(--desktop-max-width, auto);
 		}
 
-		.hero-subtitle {
-			font-size: 14px;
-			text-transform: uppercase;
-			letter-spacing: 3px;
-			color: #d4af37;
-			margin-bottom: 16px;
-			font-weight: 500;
+		.carousel-element .hero-title {
+			font-size: var(--desktop-font-size, 3.5rem);
 		}
 
-		.hero-title {
-			font-size: clamp(2.5rem, 6vw, 4.5rem);
-			font-weight: 700;
-			line-height: 1.1;
-			margin-bottom: 20px;
-			font-family: 'Space Grotesk', sans-serif;
+		.carousel-element .hero-subtitle {
+			font-size: var(--desktop-font-size, 1rem);
 		}
 
-		.hero-description {
-			font-size: 18px;
-			color: rgba(255, 255, 255, 0.8);
-			margin-bottom: 32px;
-			line-height: 1.6;
+		.carousel-element .hero-description {
+			font-size: var(--desktop-font-size, 1.125rem);
 		}
 
-		.hero-btn {
-			display: inline-flex;
-			align-items: center;
-			gap: 12px;
-			padding: 16px 40px;
-			background: white;
-			color: #0a0a0f;
-			font-weight: 600;
-			font-size: 14px;
-			text-transform: uppercase;
-			letter-spacing: 1px;
-			text-decoration: none;
-			transition: all 0.3s ease;
-		}
+		/* Mobile responsive overrides */
+		@media (max-width: 768px) {
+			.carousel-element {
+				top: var(--mobile-top, 50%);
+				left: var(--mobile-left, 5%);
+				font-size: var(--mobile-font-size, 0.875rem);
+				max-width: var(--mobile-max-width, 90%);
+			}
 
-		.hero-btn:hover {
-			background: #d4af37;
-			color: white;
-			transform: translateY(-2px);
-		}
+			.carousel-element .hero-title {
+				font-size: var(--mobile-font-size, 2rem);
+			}
 
-		.hero-btn svg {
-			width: 18px;
-			height: 18px;
-			transition: transform 0.3s ease;
-		}
+			.carousel-element .hero-subtitle {
+				font-size: var(--mobile-font-size, 0.875rem);
+			}
 
-		.hero-btn:hover svg {
-			transform: translateX(4px);
+			.carousel-element .hero-description {
+				font-size: var(--mobile-font-size, 0.875rem);
+			}
 		}
 
 		/* Carousel Navigation */
@@ -298,7 +289,11 @@ const heroSlides = carouselSlides.length > 0 ? carouselSlides : defaultSlides;
 		.category-overlay {
 			position: absolute;
 			inset: 0;
-			background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, transparent 60%);
+			background: linear-gradient(
+				to top,
+				rgba(0, 0, 0, 0.8) 0%,
+				transparent 60%
+			);
 		}
 
 		.category-content {
@@ -672,7 +667,8 @@ const heroSlides = carouselSlides.length > 0 ? carouselSlides : defaultSlides;
 				flex-direction: column;
 				height: auto;
 			}
-			.offer-image, .offer-content {
+			.offer-image,
+			.offer-content {
 				width: 100%;
 			}
 			.offer-image {
@@ -709,47 +705,214 @@ const heroSlides = carouselSlides.length > 0 ? carouselSlides : defaultSlides;
 
 	<!-- Hero Carousel -->
 	<section class="hero-carousel" id="hero-carousel">
-		{heroSlides.map((slide, index) => (
-			<div class={`hero-slide ${index === 0 ? 'active' : ''}`} data-slide={index} data-duration={slide.duration}>
-				<img src={slide.image_url} alt={slide.title} />
-				<div class="hero-overlay"></div>
-				<div class="hero-content">
-					<div class="hero-text">
-						<p class="hero-subtitle">{slide.subtitle}</p>
-						<h1 class="hero-title">{slide.title}</h1>
-						<p class="hero-description">{slide.description}</p>
-						<a href={slide.cta_link} class="hero-btn">
-							{slide.cta_text}
-							<svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-							</svg>
-						</a>
+		{
+			heroSlides.map((slide, index) => (
+				<div
+					class={`hero-slide ${index === 0 ? "active" : ""}`}
+					data-slide={index}
+					data-duration={slide.duration}
+				>
+					<img src={slide.image_url} alt={slide.title} />
+					<div class="hero-overlay" />
+					<div class="hero-content">
+						<div class="w-full h-full relative">
+							<!-- Subtitle -->
+							<div
+								class="absolute z-10 carousel-element"
+								data-element="subtitle"
+								style={(() => {
+									const desktop = slide.style_config?.desktop?.subtitle || slide.style_config?.subtitle;
+									const mobile = slide.style_config?.mobile?.subtitle || desktop;
+									const d = desktop || { top: '15%', left: '10%' };
+									const m = mobile || { top: '20%', left: '5%' };
+									return `--desktop-top: ${d.top}; --desktop-left: ${d.left}; --mobile-top: ${m.top}; --mobile-left: ${m.left}; --desktop-font-size: ${d.fontSize || '1rem'}; --mobile-font-size: ${m.fontSize || '0.875rem'}; --desktop-max-width: ${d.maxWidth || 'auto'}; --mobile-max-width: ${m.maxWidth || '90%'};`;
+								})()}
+							>
+								<p 
+									class="hero-subtitle uppercase tracking-[0.2em] font-medium"
+									style={(() => {
+										const cfg = slide.style_config?.desktop?.subtitle || slide.style_config?.subtitle;
+										return `color: ${cfg?.color || '#d4af37'}; text-transform: ${cfg?.textTransform || 'uppercase'};`;
+									})()}
+								>
+									{slide.subtitle}
+								</p>
+							</div>
+
+							<!-- Title -->
+							<div
+								class="absolute z-10 carousel-element"
+								data-element="title"
+								style={(() => {
+									const desktop = slide.style_config?.desktop?.title || slide.style_config?.title;
+									const mobile = slide.style_config?.mobile?.title || desktop;
+									const d = desktop || { top: '25%', left: '10%' };
+									const m = mobile || { top: '28%', left: '5%' };
+									return `--desktop-top: ${d.top}; --desktop-left: ${d.left}; --mobile-top: ${m.top}; --mobile-left: ${m.left}; --desktop-font-size: ${d.fontSize || '3.5rem'}; --mobile-font-size: ${m.fontSize || '2rem'}; --desktop-max-width: ${d.maxWidth || '60%'}; --mobile-max-width: ${m.maxWidth || '90%'};`;
+								})()}
+							>
+								<h1 
+									class="hero-title font-bold leading-tight"
+									style={(() => {
+										const cfg = slide.style_config?.desktop?.title || slide.style_config?.title;
+										return `color: ${cfg?.color || '#ffffff'}; font-weight: ${cfg?.fontWeight || '700'};`;
+									})()}
+								>
+									{slide.title}
+								</h1>
+							</div>
+
+							<!-- Description -->
+							<div
+								class="absolute z-10 carousel-element"
+								data-element="description"
+								style={(() => {
+									const desktop = slide.style_config?.desktop?.description || slide.style_config?.description;
+									const mobile = slide.style_config?.mobile?.description || desktop;
+									const d = desktop || { top: '45%', left: '10%' };
+									const m = mobile || { top: '48%', left: '5%' };
+									return `--desktop-top: ${d.top}; --desktop-left: ${d.left}; --mobile-top: ${m.top}; --mobile-left: ${m.left}; --desktop-font-size: ${d.fontSize || '1.125rem'}; --mobile-font-size: ${m.fontSize || '0.875rem'}; --desktop-max-width: ${d.maxWidth || '40%'}; --mobile-max-width: ${m.maxWidth || '90%'};`;
+								})()}
+							>
+								<p 
+									class="hero-description"
+									style={(() => {
+										const cfg = slide.style_config?.desktop?.description || slide.style_config?.description;
+										return `color: ${cfg?.color || '#e4e4e7'};`;
+									})()}
+								>
+									{slide.description}
+								</p>
+							</div>
+
+							<!-- Discount Code -->
+							{slide.discount_code && (
+								<div
+									class="absolute z-10 carousel-element"
+									data-element="discount"
+									style={(() => {
+										const desktop = slide.style_config?.desktop?.discount || slide.style_config?.discount;
+										const mobile = slide.style_config?.mobile?.discount || desktop;
+										const d = desktop || { top: '60%', left: '10%' };
+										const m = mobile || { top: '62%', left: '5%' };
+										return `--desktop-top: ${d.top}; --desktop-left: ${d.left}; --mobile-top: ${m.top}; --mobile-left: ${m.left};`;
+									})()}
+								>
+									<button
+										class="inline-flex items-center gap-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-lg px-4 py-2 hover:bg-white/20 transition-all cursor-pointer group copy-discount-btn"
+										data-code={slide.discount_code}
+										title="Clic para copiar código"
+									>
+										<span class="text-white/80 text-sm font-medium discount-label">
+											CÓDIGO:
+										</span>
+										<span 
+									class="font-mono font-bold tracking-wider discount-code"
+									style={(() => {
+										const cfg = slide.style_config?.desktop?.discount || slide.style_config?.discount;
+										return `color: ${cfg?.color || '#d4af37'}; font-size: ${cfg?.fontSize || '1.125rem'};`;
+									})()}
+								>
+											{slide.discount_code}
+										</span>
+									</button>
+								</div>
+							)}
+
+							<!-- CTA Button -->
+							<div
+								class="absolute z-10 carousel-element"
+								data-element="cta"
+								style={(() => {
+									const desktop = slide.style_config?.desktop?.cta || slide.style_config?.cta;
+									const mobile = slide.style_config?.mobile?.cta || desktop;
+									const d = desktop || { top: '75%', left: '10%' };
+									const m = mobile || { top: '78%', left: '5%' };
+									return `--desktop-top: ${d.top}; --desktop-left: ${d.left}; --mobile-top: ${m.top}; --mobile-left: ${m.left};`;
+								})()}
+							>
+								<a
+									href={slide.cta_link}
+									class="hero-btn inline-flex items-center gap-2 px-8 py-4 font-semibold hover:opacity-90 transition-all text-sm md:text-base tracking-wide uppercase"
+									style={(() => {
+										const cfg = slide.style_config?.desktop?.cta || slide.style_config?.cta;
+										return `background-color: ${cfg?.bgColor || '#ffffff'}; color: ${cfg?.textColor || '#000000'}; border-radius: ${cfg?.borderRadius || '9999px'};`;
+									})()}
+								>
+									{slide.cta_text}
+									<svg
+										class="w-5 h-5"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M17 8l4 4m0 0l-4 4m4-4H3"
+										></path>
+									</svg>
+								</a>
+							</div>
+
+						</div>
 					</div>
 				</div>
-			</div>
-		))}
+			))
+		}
 
 		<!-- Navigation Dots -->
 		<div class="carousel-nav">
-			{heroSlides.map((_, index) => (
-				<button 
-					class={`carousel-dot ${index === 0 ? 'active' : ''}`} 
-					data-index={index}
-					aria-label={`Slide ${index + 1}`}
-				></button>
-			))}
+			{
+				heroSlides.map((_, index) => (
+					<button
+						class={`carousel-dot ${index === 0 ? "active" : ""}`}
+						data-index={index}
+						aria-label={`Slide ${index + 1}`}
+					/>
+				))
+			}
 		</div>
 
 		<!-- Navigation Arrows -->
 		<div class="carousel-arrows">
-			<button class="carousel-arrow" id="prev-slide" aria-label="Previous slide">
-				<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+			<button
+				class="carousel-arrow"
+				id="prev-slide"
+				aria-label="Previous slide"
+			>
+				<svg
+					width="20"
+					height="20"
+					fill="none"
+					stroke="currentColor"
+					viewBox="0 0 24 24"
+				>
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M15 19l-7-7 7-7"></path>
 				</svg>
 			</button>
-			<button class="carousel-arrow" id="next-slide" aria-label="Next slide">
-				<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+			<button
+				class="carousel-arrow"
+				id="next-slide"
+				aria-label="Next slide"
+			>
+				<svg
+					width="20"
+					height="20"
+					fill="none"
+					stroke="currentColor"
+					viewBox="0 0 24 24"
+				>
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M9 5l7 7-7 7"></path>
 				</svg>
 			</button>
 		</div>
@@ -761,8 +924,19 @@ const heroSlides = carouselSlides.length > 0 ? carouselSlides : defaultSlides;
 			<div class="features-grid">
 				<div class="feature-item">
 					<div class="feature-icon">
-						<svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+						<svg
+							width="28"
+							height="28"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="1.5"
+								d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
+							></path>
 						</svg>
 					</div>
 					<h3 class="feature-title">Envío Gratis</h3>
@@ -770,8 +944,19 @@ const heroSlides = carouselSlides.length > 0 ? carouselSlides : defaultSlides;
 				</div>
 				<div class="feature-item">
 					<div class="feature-icon">
-						<svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+						<svg
+							width="28"
+							height="28"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="1.5"
+								d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+							></path>
 						</svg>
 					</div>
 					<h3 class="feature-title">30 Días</h3>
@@ -779,8 +964,19 @@ const heroSlides = carouselSlides.length > 0 ? carouselSlides : defaultSlides;
 				</div>
 				<div class="feature-item">
 					<div class="feature-icon">
-						<svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+						<svg
+							width="28"
+							height="28"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="1.5"
+								d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+							></path>
 						</svg>
 					</div>
 					<h3 class="feature-title">Pago Seguro</h3>
@@ -788,8 +984,19 @@ const heroSlides = carouselSlides.length > 0 ? carouselSlides : defaultSlides;
 				</div>
 				<div class="feature-item">
 					<div class="feature-icon">
-						<svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+						<svg
+							width="28"
+							height="28"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="1.5"
+								d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"
+							></path>
 						</svg>
 					</div>
 					<h3 class="feature-title">Soporte 24/7</h3>
@@ -805,74 +1012,120 @@ const heroSlides = carouselSlides.length > 0 ? carouselSlides : defaultSlides;
 			<div class="section-header">
 				<p class="section-label">Explora</p>
 				<h2 class="section-title">Nuestras Categorías</h2>
-				<p class="section-description">Encuentra el estilo perfecto para cada ocasión</p>
+				<p class="section-description">
+					Encuentra el estilo perfecto para cada ocasión
+				</p>
 			</div>
 
 			<div class="categories-grid">
-				{categories.length > 0 ? categories.map((category, index) => (
-					<a href={`/categoria/${category.slug}`} class="category-card">
-						<img 
-							src={index === 0 
-								? "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=600&q=80" 
-								: index === 1 
-								? "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=600&q=80"
-								: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=600&q=80"
-							} 
-							alt={category.name} 
-						/>
-						<div class="category-overlay"></div>
-						<div class="category-content">
-							<h3 class="category-name">{category.name}</h3>
-							<span class="category-link">
-								Ver productos
-								<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-								</svg>
-							</span>
+				{
+					categories.length > 0 ? (
+						categories.map((category, index) => (
+							<a
+								href={`/categoria/${category.slug}`}
+								class="category-card"
+							>
+								<img
+									src={
+										index === 0
+											? "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=600&q=80"
+											: index === 1
+												? "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=600&q=80"
+												: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=600&q=80"
+									}
+									alt={category.name}
+								/>
+								<div class="category-overlay" />
+								<div class="category-content">
+									<h3 class="category-name">
+										{category.name}
+									</h3>
+									<span class="category-link">
+										Ver productos
+										<svg
+											width="16"
+											height="16"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M17 8l4 4m0 0l-4 4m4-4H3"
+											/>
+										</svg>
+									</span>
+								</div>
+							</a>
+						))
+					) : (
+						<div style="grid-column: 1/-1; text-align: center; padding: 60px; color: #71717a;">
+							No hay categorías disponibles
 						</div>
-					</a>
-				)) : (
-					<div style="grid-column: 1/-1; text-align: center; padding: 60px; color: #71717a;">
-						No hay categorías disponibles
-					</div>
-				)}
+					)
+				}
 			</div>
 		</div>
 	</section>
 
 	<!-- Offers Section -->
-	{offersEnabled && offerProducts.length > 0 && (
-		<section class="offers-section" id="ofertas">
-			<div class="container-custom">
-				<div class="section-header">
-					<p class="section-label">🔥 Tiempo Limitado</p>
-					<h2 class="section-title">Ofertas Especiales</h2>
-					<p class="section-description">Aprovecha estos descuentos exclusivos</p>
-				</div>
+	{
+		offersEnabled && offerProducts.length > 0 && (
+			<section class="offers-section" id="ofertas">
+				<div class="container-custom">
+					<div class="section-header">
+						<p class="section-label">🔥 Tiempo Limitado</p>
+						<h2 class="section-title">Ofertas Especiales</h2>
+						<p class="section-description">
+							Aprovecha estos descuentos exclusivos
+						</p>
+					</div>
 
-				<div class="offers-grid">
-					{offerProducts.slice(0, 2).map((product) => (
-						<div class="offer-card">
-							<div class="offer-image">
-								<img src={getProductMainImage(product)} alt={product.name} />
+					<div class="offers-grid">
+						{offerProducts.slice(0, 2).map((product) => (
+							<div class="offer-card">
+								<div class="offer-image">
+									<img
+										src={getProductMainImage(product)}
+										alt={product.name}
+									/>
+								</div>
+								<div class="offer-content">
+									<span class="offer-badge">Oferta</span>
+									<h3 class="offer-name">{product.name}</h3>
+									<p class="offer-price">
+										{formatPrice(product.price)}
+									</p>
+									<a
+										href={`/productos/${product.slug}`}
+										class="offer-link"
+									>
+										Comprar ahora
+										<svg
+											width="16"
+											height="16"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M17 8l4 4m0 0l-4 4m4-4H3"
+											/>
+										</svg>
+									</a>
+								</div>
 							</div>
-							<div class="offer-content">
-								<span class="offer-badge">Oferta</span>
-								<h3 class="offer-name">{product.name}</h3>
-								<p class="offer-price">{formatPrice(product.price)}</p>
-								<a href={`/productos/${product.slug}`} class="offer-link">
-									Comprar ahora
-									<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-									</svg>
-								</a>
-							</div>
-						</div>
-					))}
+						))}
+					</div>
 				</div>
-			</div>
-		</section>
-	)}
+			</section>
+		)
+	}
 
 	<!-- Products Section -->
 	<section class="products-section">
@@ -880,44 +1133,78 @@ const heroSlides = carouselSlides.length > 0 ? carouselSlides : defaultSlides;
 			<div class="section-header">
 				<p class="section-label">Lo Nuevo</p>
 				<h2 class="section-title">Productos Destacados</h2>
-				<p class="section-description">Descubre nuestra selección de prendas premium</p>
+				<p class="section-description">
+					Descubre nuestra selección de prendas premium
+				</p>
 			</div>
 
-			{products.length > 0 ? (
-				<div class="products-grid">
-					{products.map((product, index) => (
-						<div class="product-card-new">
-							<a href={`/productos/${product.slug}`}>
-								<div class="product-image-container">
-									<img src={getProductMainImage(product)} alt={product.name} loading="lazy" />
-									{product.is_offer && <span class="product-badge badge-sale">Oferta</span>}
-									{!product.is_offer && index < 2 && <span class="product-badge badge-new">Nuevo</span>}
-									<div class="product-quick-view">
-										<span class="quick-view-btn">Ver producto</span>
+			{
+				products.length > 0 ? (
+					<div class="products-grid">
+						{products.map((product, index) => (
+							<div class="product-card-new">
+								<a href={`/productos/${product.slug}`}>
+									<div class="product-image-container">
+										<img
+											src={getProductMainImage(product)}
+											alt={product.name}
+											loading="lazy"
+										/>
+										{product.is_offer && (
+											<span class="product-badge badge-sale">
+												Oferta
+											</span>
+										)}
+										{!product.is_offer && index < 2 && (
+											<span class="product-badge badge-new">
+												Nuevo
+											</span>
+										)}
+										<div class="product-quick-view">
+											<span class="quick-view-btn">
+												Ver producto
+											</span>
+										</div>
 									</div>
-								</div>
-								<div class="product-info">
-									{product.category && (
-										<p class="product-category">{product.category.name}</p>
-									)}
-									<h3 class="product-name">{product.name}</h3>
-									<p class="product-price">{formatPrice(product.price)}</p>
-								</div>
-							</a>
-						</div>
-					))}
-				</div>
-			) : (
-				<div style="text-align: center; padding: 60px; color: #71717a;">
-					No hay productos disponibles
-				</div>
-			)}
+									<div class="product-info">
+										{product.category && (
+											<p class="product-category">
+												{product.category.name}
+											</p>
+										)}
+										<h3 class="product-name">
+											{product.name}
+										</h3>
+										<p class="product-price">
+											{formatPrice(product.price)}
+										</p>
+									</div>
+								</a>
+							</div>
+						))}
+					</div>
+				) : (
+					<div style="text-align: center; padding: 60px; color: #71717a;">
+						No hay productos disponibles
+					</div>
+				)
+			}
 
 			<div class="view-all-container">
 				<a href="/productos" class="view-all-link">
 					Ver todos los productos
-					<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+					<svg
+						width="16"
+						height="16"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
 					</svg>
 				</a>
 			</div>
@@ -926,15 +1213,31 @@ const heroSlides = carouselSlides.length > 0 ? carouselSlides : defaultSlides;
 
 	<!-- CTA Banner -->
 	<section class="cta-banner">
-		<img src="https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=1920&q=80" alt="Nueva colección" />
+		<img
+			src="https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=1920&q=80"
+			alt="Nueva colección"
+		/>
 		<div class="cta-overlay">
 			<div class="cta-content">
 				<h2 class="cta-title">Suscríbete y Obtén 10% Off</h2>
-				<p class="cta-text">Únete a nuestra newsletter y recibe un descuento exclusivo en tu primera compra</p>
+				<p class="cta-text">
+					Únete a nuestra newsletter y recibe un descuento exclusivo
+					en tu primera compra
+				</p>
 				<a href="/auth/registro" class="cta-btn">
 					Crear cuenta
-					<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+					<svg
+						width="18"
+						height="18"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
 					</svg>
 				</a>
 			</div>
@@ -943,11 +1246,13 @@ const heroSlides = carouselSlides.length > 0 ? carouselSlides : defaultSlides;
 
 	<script>
 		// Hero Carousel Logic
-		document.addEventListener('DOMContentLoaded', () => {
-			const slides = document.querySelectorAll('.hero-slide') as NodeListOf<HTMLElement>;
-			const dots = document.querySelectorAll('.carousel-dot');
-			const prevBtn = document.getElementById('prev-slide');
-			const nextBtn = document.getElementById('next-slide');
+		document.addEventListener("DOMContentLoaded", () => {
+			const slides = document.querySelectorAll(
+				".hero-slide",
+			) as NodeListOf<HTMLElement>;
+			const dots = document.querySelectorAll(".carousel-dot");
+			const prevBtn = document.getElementById("prev-slide");
+			const nextBtn = document.getElementById("next-slide");
 			let currentSlide = 0;
 			let autoplayTimeout: ReturnType<typeof setTimeout>;
 
@@ -960,10 +1265,10 @@ const heroSlides = carouselSlides.length > 0 ? carouselSlides : defaultSlides;
 
 			function goToSlide(index: number) {
 				slides.forEach((slide, i) => {
-					slide.classList.toggle('active', i === index);
+					slide.classList.toggle("active", i === index);
 				});
 				dots.forEach((dot, i) => {
-					dot.classList.toggle('active', i === index);
+					dot.classList.toggle("active", i === index);
 				});
 				currentSlide = index;
 			}
@@ -997,20 +1302,20 @@ const heroSlides = carouselSlides.length > 0 ? carouselSlides : defaultSlides;
 
 			// Event Listeners
 			dots.forEach((dot, index) => {
-				dot.addEventListener('click', () => {
+				dot.addEventListener("click", () => {
 					stopAutoplay();
 					goToSlide(index);
 					startAutoplay();
 				});
 			});
 
-			prevBtn?.addEventListener('click', () => {
+			prevBtn?.addEventListener("click", () => {
 				stopAutoplay();
 				prevSlide();
 				startAutoplay();
 			});
 
-			nextBtn?.addEventListener('click', () => {
+			nextBtn?.addEventListener("click", () => {
 				stopAutoplay();
 				nextSlide();
 				startAutoplay();
@@ -1020,33 +1325,91 @@ const heroSlides = carouselSlides.length > 0 ? carouselSlides : defaultSlides;
 			let touchStartX = 0;
 			let touchEndX = 0;
 
-			const carousel = document.getElementById('hero-carousel');
-			
-			carousel?.addEventListener('touchstart', (e) => {
-				touchStartX = e.changedTouches[0].screenX;
-			}, { passive: true });
+			const carousel = document.getElementById("hero-carousel");
 
-			carousel?.addEventListener('touchend', (e) => {
-				touchEndX = e.changedTouches[0].screenX;
-				const diff = touchStartX - touchEndX;
-				
-				if (Math.abs(diff) > 50) {
-					stopAutoplay();
-					if (diff > 0) {
-						nextSlide();
-					} else {
-						prevSlide();
+			carousel?.addEventListener(
+				"touchstart",
+				(e) => {
+					touchStartX = e.changedTouches[0].screenX;
+				},
+				{ passive: true },
+			);
+
+			carousel?.addEventListener(
+				"touchend",
+				(e) => {
+					touchEndX = e.changedTouches[0].screenX;
+					const diff = touchStartX - touchEndX;
+
+					if (Math.abs(diff) > 50) {
+						stopAutoplay();
+						if (diff > 0) {
+							nextSlide();
+						} else {
+							prevSlide();
+						}
+						startAutoplay();
 					}
-					startAutoplay();
-				}
-			}, { passive: true });
+				},
+				{ passive: true },
+			);
 
 			// Pause on hover
-			carousel?.addEventListener('mouseenter', stopAutoplay);
-			carousel?.addEventListener('mouseleave', startAutoplay);
+			carousel?.addEventListener("mouseenter", stopAutoplay);
+			carousel?.addEventListener("mouseleave", startAutoplay);
 
 			// Start autoplay
 			startAutoplay();
 		});
 	</script>
 </PublicLayout>
+
+<script>
+	document.addEventListener("astro:page-load", () => {
+		initCopyButtons();
+	});
+
+	// Fallback for non-view-transitions
+	document.addEventListener("DOMContentLoaded", () => {
+		initCopyButtons();
+	});
+
+	function initCopyButtons() {
+		const buttons = document.querySelectorAll(".copy-discount-btn");
+
+		buttons.forEach((btn) => {
+			btn.addEventListener("click", async () => {
+				const code = btn.getAttribute("data-code");
+				if (!code) return;
+
+				try {
+					await navigator.clipboard.writeText(code);
+
+					// Visual feedback
+					const label = btn.querySelector(".discount-label");
+					if (label) {
+						const originalText = label.textContent;
+						label.textContent = "¡COPIADO!";
+						label.classList.add("text-green-400");
+						
+						btn.classList.add(
+							"bg-green-500/20",
+							"border-green-500/50",
+						);
+
+						setTimeout(() => {
+							label.textContent = originalText;
+							label.classList.remove("text-green-400");
+							btn.classList.remove(
+								"bg-green-500/20",
+								"border-green-500/50",
+							);
+						}, 2000);
+					}
+				} catch (err) {
+					console.error("Failed to copy:", err);
+				}
+			});
+		});
+	}
+</script>

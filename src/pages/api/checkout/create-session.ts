@@ -12,18 +12,18 @@ const stripe = new Stripe(import.meta.env.STRIPE_SECRET_KEY, {
 
 export const POST: APIRoute = async ({ request }) => {
     console.log('=== INICIO DE CHECKOUT ===');
-    
+
     try {
         const body = await request.json();
         console.log('Body recibido:', JSON.stringify(body, null, 2));
-        
-        const { items, customerEmail, customerPhone, customerName, shippingAddress, discount } = body;
+
+        const { items, customerEmail, customerPhone, customerName, shippingAddress, discount, shippingMethodId, shippingCost } = body;
 
         if (!items || items.length === 0) {
             console.error('Carrito vacío');
             return new Response(
                 JSON.stringify({ error: 'El carrito está vacío' }),
-                { 
+                {
                     status: 400,
                     headers: { 'Content-Type': 'application/json' }
                 }
@@ -39,7 +39,7 @@ export const POST: APIRoute = async ({ request }) => {
         const lineItems = items.map((item: any) => {
             const unitAmount = Math.round(item.price * 100);
             console.log(`Item: ${item.name}, Price: ${item.price}€ -> ${unitAmount} centavos`);
-            
+
             return {
                 price_data: {
                     currency: 'eur',
@@ -73,7 +73,7 @@ export const POST: APIRoute = async ({ request }) => {
             // Calculate discount for Stripe
             const subtotal = items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
             let discountAmount = 0;
-            
+
             if (discount.type === 'percentage') {
                 discountAmount = Math.round((subtotal * discount.value) / 100 * 100); // Convert to cents
             } else if (discount.type === 'fixed') {
@@ -84,7 +84,7 @@ export const POST: APIRoute = async ({ request }) => {
                 console.log(`Aplicando descuento: ${discount.code} - ${discountAmount} centavos`);
                 sessionConfig.discounts = [{
                     coupon: await stripe.coupons.create(
-                        discount.type === 'percentage' 
+                        discount.type === 'percentage'
                             ? {
                                 percent_off: discount.value,
                                 duration: 'once',
@@ -135,6 +135,9 @@ export const POST: APIRoute = async ({ request }) => {
             sessionConfig.metadata = {
                 customer_phone: customerPhone,
                 customer_name: customerName,
+                shipping_address: shippingAddress ? JSON.stringify(shippingAddress) : null,
+                shipping_method_id: shippingMethodId ? String(shippingMethodId) : null,
+                shipping_cost: shippingCost ? String(shippingCost) : '0',
             };
         } else {
             console.log('Stripe recogerá dirección de envío');
@@ -142,21 +145,30 @@ export const POST: APIRoute = async ({ request }) => {
                 allowed_countries: ['ES', 'FR', 'IT', 'PT', 'DE', 'NL', 'BE'],
             };
             sessionConfig.billing_address_collection = 'required';
+
+            // Still pass metadata if we have partial info, or at least pass the address if we have it but not phone/name?
+            // Actually the frontend always sends all of them if form is filled.
+            if (shippingAddress) {
+                sessionConfig.metadata = {
+                    ...sessionConfig.metadata,
+                    shipping_address: JSON.stringify(shippingAddress)
+                };
+            }
         }
 
         console.log('Creando sesión de Stripe...');
-        
+
         // Crear sesión de Stripe Checkout
         const session = await stripe.checkout.sessions.create(sessionConfig);
 
         console.log('Sesión creada exitosamente:', session.id);
 
         return new Response(
-            JSON.stringify({ 
+            JSON.stringify({
                 sessionId: session.id,
-                url: session.url 
+                url: session.url
             }),
-            { 
+            {
                 status: 200,
                 headers: {
                     'Content-Type': 'application/json'
@@ -168,13 +180,13 @@ export const POST: APIRoute = async ({ request }) => {
         console.error('Tipo de error:', error.constructor.name);
         console.error('Mensaje:', error.message);
         console.error('Stack:', error.stack);
-        
+
         return new Response(
-            JSON.stringify({ 
+            JSON.stringify({
                 error: error.message || 'Error desconocido al crear la sesión de pago',
                 type: error.type || 'unknown'
             }),
-            { 
+            {
                 status: 500,
                 headers: {
                     'Content-Type': 'application/json'

@@ -1,6 +1,7 @@
 ---
 import AdminLayout from "../../../layouts/AdminLayout.astro";
-import { supabaseAdmin, getCategories, getProductStockBySize, updateProductStockBulk, initProductStock } from "../../../lib/supabase";
+import { supabaseAdmin, getCategories, getProductVariants, updateProductVariants, initProductStock, type ProductVariant } from "../../../lib/supabase";
+import ProductImagesUploader from "../../../components/islands/ProductImagesUploader";
 import { slugify } from "../../../lib/utils";
 
 export const prerender = false;
@@ -23,18 +24,25 @@ if (!product) {
     return Astro.redirect("/admin/productos");
 }
 
-try {
-    stockBySize = await getProductStockBySize(id!);
-    if (Object.keys(stockBySize).length === 0 && product.sizes?.length > 0) {
-        await initProductStock(id!, product.sizes);
-        stockBySize = product.sizes.reduce((acc: Record<string, number>, size: string) => {
-            acc[size] = 0;
-            return acc;
-        }, {});
+    try {
+        const variants = await getProductVariants(id!);
+        // Initialize with 0/null for new sizes if not present
+        stockBySize = {};
+        // Storing full variant data in a map for easy access
+        // We'll use a new variable for this
+    } catch (e) {
+        console.error('Error obteniendo variantes:', e);
     }
 } catch (e) {
-    console.error('Error obteniendo stock por talla:', e);
+    console.error('Error initializing data:', e);
 }
+
+// Prepare variants data for the UI
+const variants = await getProductVariants(id!);
+const variantsMap = variants.reduce((acc, v) => {
+    acc[v.size] = v;
+    return acc;
+}, {} as Record<string, ProductVariant>);
 
 productImages = (product.images || []).sort((a: any, b: any) => a.order - b.order);
 const categories = await getCategories();
@@ -52,13 +60,20 @@ if (Astro.request.method === "POST") {
         const is_offer = formData.get("is_offer") === "on";
         const active = formData.get("active") === "on";
 
-        const newStockBySize: Record<string, number> = {};
+        const variantsData: Record<string, { stock: number; price: number | null; is_offer: boolean }> = {};
         for (const size of sizes) {
-            const stockValue = formData.get(`stock_${size}`) as string;
-            newStockBySize[size] = parseInt(stockValue) || 0;
+            const stockValue = parseInt(formData.get(`stock_${size}`) as string) || 0;
+            const priceValue = formData.get(`price_${size}`) ? parseFloat(formData.get(`price_${size}`) as string) : null;
+            const isOfferValue = formData.get(`is_offer_${size}`) === "on";
+            
+            variantsData[size] = {
+                stock: stockValue,
+                price: priceValue,
+                is_offer: isOfferValue
+            };
         }
 
-        const totalStock = Object.values(newStockBySize).reduce((sum, qty) => sum + qty, 0);
+        const totalStock = Object.values(variantsData).reduce((sum, v) => sum + v.stock, 0);
 
         const imagesRaw = formData.get("images") as string;
         const newImageUrls = imagesRaw ? imagesRaw.split(",").map(url => url.trim()).filter(Boolean) : [];
@@ -71,16 +86,22 @@ if (Astro.request.method === "POST") {
         if (updateError) {
             error = "Error al actualizar el producto: " + updateError.message;
         } else {
-            await updateProductStockBulk(id!, newStockBySize);
+            await updateProductVariants(id!, variantsData);
 
-            if (newImageUrls.length > 0) {
+            if (newImageUrls.length > 0 || productImages.length > 0) {
+                 // Always update images if field is present (even if empty to clear)
+                 // But wait, the uploader always sends the current state. 
+                 // If the user didn't touch it, it will send existing images.
+                 // So we can safely delete and re-insert.
                 await supabaseAdmin.from("product_images").delete().eq("product_id", id);
-                const imageRecords = newImageUrls.map((url, index) => ({
-                    product_id: id,
-                    image_url: url,
-                    order: index,
-                }));
-                await supabaseAdmin.from("product_images").insert(imageRecords);
+                if (newImageUrls.length > 0) {
+                    const imageRecords = newImageUrls.map((url, index) => ({
+                        product_id: id,
+                        image_url: url,
+                        order: index,
+                    }));
+                    await supabaseAdmin.from("product_images").insert(imageRecords);
+                }
             }
 
             return Astro.redirect("/admin/productos?updated=true");
@@ -91,7 +112,7 @@ if (Astro.request.method === "POST") {
     }
 }
 
-const currentImageUrls = productImages.map((img: any) => img.image_url).join(", ");
+const currentImageUrls = productImages.map((img: any) => img.image_url);
 ---
 
 <AdminLayout title={`Editar: ${product.name}`}>
@@ -350,13 +371,72 @@ const currentImageUrls = productImages.map((img: any) => img.image_url).join(", 
         }
         
         .error-message {
-            padding: 12px 16px;
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            border-radius: 8px;
-            color: #dc2626;
-            font-size: 14px;
             margin-bottom: 24px;
+        }
+
+        .variants-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .variant-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .variant-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .variant-size {
+            font-weight: 700;
+            font-size: 16px;
+            color: #1e293b;
+            background: #fff;
+            padding: 2px 8px;
+            border-radius: 4px;
+            border: 1px solid #cbd5e1;
+        }
+
+        .variant-offer-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .variant-offer-toggle input {
+            accent-color: #18181b;
+        }
+
+        .variant-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .variant-input-group label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            color: #64748b;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+
+        .variant-price-preview {
+            font-size: 12px;
+            color: #059669;
+            margin-top: 8px;
+            font-weight: 500;
         }
     </style>
 
@@ -369,19 +449,7 @@ const currentImageUrls = productImages.map((img: any) => img.image_url).join(", 
 
     {error && <div class="error-message">{error}</div>}
 
-    {productImages.length > 0 && (
-        <div class="images-preview">
-            <div class="images-title">Imágenes actuales</div>
-            <div class="images-grid">
-                {productImages.map((img: any, idx: number) => (
-                    <div class="image-thumb">
-                        <img src={img.image_url} alt={`${product.name} - ${idx + 1}`} />
-                        <span class="image-number">{idx + 1}</span>
-                    </div>
-                ))}
-            </div>
-        </div>
-    )}
+    {/* Image preview handled by React component now */}
 
     <form method="POST" class="form-card">
         <div class="form-section">
@@ -423,13 +491,36 @@ const currentImageUrls = productImages.map((img: any) => img.image_url).join(", 
                 </div>
                 <div class="form-group">
                     <label class="form-label">Stock por talla</label>
-                    <div class="stock-grid">
-                        {product.sizes?.map((size: string) => (
-                            <div class="stock-item">
-                                <div class="stock-label">{size}</div>
-                                <input type="number" name={`stock_${size}`} min="0" value={stockBySize[size] ?? 0} class="stock-input" />
-                            </div>
-                        ))}
+                    <div class="variants-stack">
+                        {product.sizes?.map((size: string) => {
+                            const variant = variantsMap[size] || {};
+                            return (
+                                <div class="variant-card">
+                                    <div class="variant-header">
+                                        <div class="variant-size">{size}</div>
+                                        <label class="variant-offer-toggle">
+                                            <input type="checkbox" name={`is_offer_${size}`} checked={variant.is_offer} />
+                                            <span>Oferta</span>
+                                        </label>
+                                    </div>
+                                    <div class="variant-inputs">
+                                        <div class="variant-input-group">
+                                            <label>Stock</label>
+                                            <input type="number" name={`stock_${size}`} min="0" value={variant.stock ?? 0} class="stock-input" />
+                                        </div>
+                                        <div class="variant-input-group">
+                                            <label>Precio (€)</label>
+                                            <input type="number" name={`price_${size}`} min="0" step="0.01" value={variant.price ?? ''} placeholder="Heredar" class="stock-input" />
+                                        </div>
+                                    </div>
+                                    {variant.price && (
+                                        <div class="variant-price-preview">
+                                            Precio final: {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(variant.price)}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                     <span class="form-hint">El stock total se calculará automáticamente</span>
                 </div>
@@ -439,9 +530,13 @@ const currentImageUrls = productImages.map((img: any) => img.image_url).join(", 
         <div class="form-section">
             <div class="section-title">Imágenes</div>
             <div class="form-group">
-                <label class="form-label" for="images">URLs de imágenes</label>
-                <textarea id="images" name="images" class="form-input" placeholder="Deja vacío para mantener las actuales">{currentImageUrls}</textarea>
-                <span class="form-hint">Separadas por coma. Si modificas, se reemplazarán todas las imágenes.</span>
+                <label class="form-label" for="images">Galería de Imágenes</label>
+                <ProductImagesUploader 
+                    client:load 
+                    initialImages={currentImageUrls} 
+                    inputName="images" 
+                />
+                <span class="form-hint">Arrastra para reordenar. Haz clic en 'Eliminar' para quitar una imagen.</span>
             </div>
         </div>
 

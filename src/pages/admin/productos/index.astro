@@ -1,60 +1,75 @@
 ---
-import AdminLayout from '../../../layouts/AdminLayout.astro';
-import { supabaseAdmin, formatPrice } from '../../../lib/supabase';
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { supabaseAdmin, formatPrice } from "../../../lib/supabase";
 
 export const prerender = false;
 
 const { data: products } = await supabaseAdmin
-  .from('products')
-  .select(`
+    .from("products")
+    .select(
+        `
     *,
     category:categories(name, slug),
     images:product_images(id, image_url, order)
-  `)
-  .order('created_at', { ascending: false });
+  `,
+    )
+    .order("created_at", { ascending: false });
 
-if (Astro.request.method === 'POST') {
-  const formData = await Astro.request.formData();
-  const action = formData.get('action');
-  const id = formData.get('id') as string;
+if (Astro.request.method === "POST") {
+    const formData = await Astro.request.formData();
+    const action = formData.get("action");
+    const id = formData.get("id") as string;
 
-  if (action === 'delete' && id) {
-    await supabaseAdmin.from('product_images').delete().eq('product_id', id);
-    await supabaseAdmin.from('products').delete().eq('id', id);
-    return Astro.redirect('/admin/productos?deleted=true');
-  }
-
-  if (action === 'toggle_offer' && id) {
-    const currentProduct = products?.find(p => p.id === id);
-    if (currentProduct) {
-      await supabaseAdmin
-        .from('products')
-        .update({ is_offer: !currentProduct.is_offer })
-        .eq('id', id);
-      return Astro.redirect('/admin/productos');
+    if (action === "delete" && id) {
+        await supabaseAdmin
+            .from("product_images")
+            .delete()
+            .eq("product_id", id);
+        await supabaseAdmin.from("products").delete().eq("id", id);
+        return Astro.redirect("/admin/productos?deleted=true");
     }
-  }
+
+    if (action === "toggle_offer" && id) {
+        const currentProduct = products?.find((p) => p.id === id);
+        if (currentProduct) {
+            await supabaseAdmin
+                .from("products")
+                .update({ is_offer: !currentProduct.is_offer })
+                .eq("id", id);
+            return Astro.redirect("/admin/productos");
+        }
+    }
 }
 
 const urlParams = Astro.url.searchParams;
-const showNotification = urlParams.get('deleted') || urlParams.get('created') || urlParams.get('updated');
-const notificationMessage = urlParams.get('deleted') ? 'Producto eliminado' : 
-                           urlParams.get('created') ? 'Producto creado' : 
-                           urlParams.get('updated') ? 'Producto actualizado' : '';
+const showNotification =
+    urlParams.get("deleted") ||
+    urlParams.get("created") ||
+    urlParams.get("updated");
+const notificationMessage = urlParams.get("deleted")
+    ? "Producto eliminado"
+    : urlParams.get("created")
+      ? "Producto creado"
+      : urlParams.get("updated")
+        ? "Producto actualizado"
+        : "";
 
 // Función helper para obtener el estado del stock
 function getStockStatus(stock: number): string {
-    if (stock === 0) return 'red';
-    if (stock <= 5) return 'yellow';
-    return 'green';
+    if (stock === 0) return "red";
+    if (stock <= 5) return "yellow";
+    return "green";
 }
 
 // Preparar productos con datos pre-calculados
-const productsWithData = products?.map(product => ({
-    ...product,
-    mainImage: product.images?.sort((a: any, b: any) => a.order - b.order)[0]?.image_url,
-    stockStatus: getStockStatus(product.stock)
-})) || [];
+const productsWithData =
+    products?.map((product) => ({
+        ...product,
+        mainImage: product.images?.sort(
+            (a: any, b: any) => a.order - b.order,
+        )[0]?.image_url,
+        stockStatus: getStockStatus(product.stock),
+    })) || [];
 ---
 
 <AdminLayout title="Productos">
@@ -65,13 +80,13 @@ const productsWithData = products?.map(product => ({
             align-items: center;
             margin-bottom: 24px;
         }
-        
+
         .page-subtitle {
             font-size: 14px;
             color: #71717a;
             margin-top: 4px;
         }
-        
+
         .btn-primary {
             display: inline-flex;
             align-items: center;
@@ -85,16 +100,16 @@ const productsWithData = products?.map(product => ({
             text-decoration: none;
             transition: background 0.15s;
         }
-        
+
         .btn-primary:hover {
             background: #27272a;
         }
-        
+
         .btn-primary svg {
             width: 18px;
             height: 18px;
         }
-        
+
         .notification {
             display: flex;
             align-items: center;
@@ -107,19 +122,19 @@ const productsWithData = products?.map(product => ({
             font-size: 14px;
             margin-bottom: 24px;
         }
-        
+
         .table-container {
             background: #fff;
             border: 1px solid #e4e4e7;
             border-radius: 12px;
             overflow: hidden;
         }
-        
+
         .data-table {
             width: 100%;
             border-collapse: collapse;
         }
-        
+
         .data-table th {
             text-align: left;
             padding: 12px 20px;
@@ -131,27 +146,27 @@ const productsWithData = products?.map(product => ({
             background: #fafafa;
             border-bottom: 1px solid #e4e4e7;
         }
-        
+
         .data-table td {
             padding: 16px 20px;
             border-bottom: 1px solid #f4f4f5;
             vertical-align: middle;
         }
-        
+
         .data-table tr:last-child td {
             border-bottom: none;
         }
-        
+
         .data-table tr:hover td {
             background: #fafafa;
         }
-        
+
         .product-cell {
             display: flex;
             align-items: center;
             gap: 12px;
         }
-        
+
         .product-image {
             width: 48px;
             height: 56px;
@@ -160,58 +175,64 @@ const productsWithData = products?.map(product => ({
             overflow: hidden;
             flex-shrink: 0;
         }
-        
+
         .product-image img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
-        
+
         .product-name {
             font-size: 14px;
             font-weight: 500;
             color: #18181b;
         }
-        
+
         .product-images-count {
             font-size: 12px;
             color: #a1a1aa;
         }
-        
+
         .category-text {
             font-size: 14px;
             color: #52525b;
         }
-        
+
         .price-text {
             font-size: 14px;
             font-weight: 600;
             color: #18181b;
         }
-        
+
         .stock-badge {
             display: inline-flex;
             align-items: center;
             gap: 6px;
             font-size: 13px;
         }
-        
+
         .stock-dot {
             width: 6px;
             height: 6px;
             border-radius: 50%;
         }
-        
-        .stock-dot.green { background: #22c55e; }
-        .stock-dot.yellow { background: #f59e0b; }
-        .stock-dot.red { background: #ef4444; }
-        
+
+        .stock-dot.green {
+            background: #22c55e;
+        }
+        .stock-dot.yellow {
+            background: #f59e0b;
+        }
+        .stock-dot.red {
+            background: #ef4444;
+        }
+
         .status-badges {
             display: flex;
             flex-wrap: wrap;
             gap: 6px;
         }
-        
+
         .badge {
             display: inline-flex;
             padding: 4px 10px;
@@ -219,28 +240,28 @@ const productsWithData = products?.map(product => ({
             font-size: 11px;
             font-weight: 500;
         }
-        
+
         .badge.active {
             background: #f0fdf4;
             color: #166534;
         }
-        
+
         .badge.inactive {
             background: #f4f4f5;
             color: #71717a;
         }
-        
+
         .badge.offer {
             background: #fef2f2;
             color: #dc2626;
         }
-        
+
         .actions {
             display: flex;
             align-items: center;
             gap: 4px;
         }
-        
+
         .action-btn {
             padding: 8px;
             border-radius: 6px;
@@ -250,37 +271,37 @@ const productsWithData = products?.map(product => ({
             cursor: pointer;
             transition: all 0.15s;
         }
-        
+
         .action-btn:hover {
             background: #f4f4f5;
             color: #18181b;
         }
-        
+
         .action-btn.danger:hover {
             background: #fef2f2;
             color: #dc2626;
         }
-        
+
         .action-btn svg {
             width: 16px;
             height: 16px;
         }
-        
+
         .empty-state {
             padding: 60px 20px;
             text-align: center;
         }
-        
+
         .empty-state p {
             color: #71717a;
             font-size: 14px;
         }
-        
+
         .empty-state a {
             color: #18181b;
             font-weight: 500;
         }
-        
+
         /* Modal */
         .modal-overlay {
             position: fixed;
@@ -295,12 +316,12 @@ const productsWithData = products?.map(product => ({
             visibility: hidden;
             transition: all 0.2s;
         }
-        
+
         .modal-overlay.active {
             opacity: 1;
             visibility: visible;
         }
-        
+
         .modal {
             background: #fff;
             border-radius: 12px;
@@ -308,25 +329,25 @@ const productsWithData = products?.map(product => ({
             max-width: 400px;
             width: 100%;
         }
-        
+
         .modal-title {
             font-size: 16px;
             font-weight: 600;
             color: #18181b;
             margin-bottom: 8px;
         }
-        
+
         .modal-text {
             font-size: 14px;
             color: #52525b;
             margin-bottom: 24px;
         }
-        
+
         .modal-actions {
             display: flex;
             gap: 12px;
         }
-        
+
         .modal-btn {
             flex: 1;
             padding: 10px;
@@ -336,44 +357,96 @@ const productsWithData = products?.map(product => ({
             cursor: pointer;
             transition: all 0.15s;
         }
-        
+
         .modal-btn.cancel {
             background: #fff;
             border: 1px solid #e4e4e7;
             color: #52525b;
         }
-        
+
         .modal-btn.cancel:hover {
             background: #f4f4f5;
         }
-        
+
         .modal-btn.danger {
             background: #dc2626;
             border: none;
             color: #fff;
         }
-        
+
         .modal-btn.danger:hover {
             background: #b91c1c;
         }
+        .modal-btn.danger:hover {
+            background: #b91c1c;
+        }
+
+        .search-bar {
+            position: relative;
+            margin-bottom: 24px;
+        }
+
+        .search-bar svg {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            color: #a1a1aa;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 12px 12px 40px;
+            border: 1px solid #e4e4e7;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #18181b;
+            transition: border-color 0.15s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #18181b;
+        }
     </style>
 
-    {showNotification && (
-        <div class="notification">
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg>
-            {notificationMessage}
-        </div>
-    )}
+    {
+        showNotification && (
+            <div class="notification">
+                <svg
+                    width="16"
+                    height="16"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M5 13l4 4L19 7"
+                    />
+                </svg>
+                {notificationMessage}
+            </div>
+        )
+    }
 
     <div class="page-header">
         <div>
-            <div class="page-subtitle">{products?.length || 0} productos registrados</div>
+            <div class="page-subtitle">
+                {products?.length || 0} productos registrados
+            </div>
         </div>
         <a href="/admin/productos/nuevo" class="btn-primary">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 4v16m8-8H4"></path>
             </svg>
             Nuevo Producto
         </a>
@@ -392,14 +465,18 @@ const productsWithData = products?.map(product => ({
                 </tr>
             </thead>
             <tbody>
-                {productsWithData.length > 0 ? 
-                    productsWithData.map((product) => (
-                        <tr>
+                {
+                    productsWithData.length > 0 ? (
+                        productsWithData.map((product) => (
+                            <tr>
                                 <td>
                                     <div class="product-cell">
                                         <div class="product-image">
                                             {product.mainImage ? (
-                                                <img src={product.mainImage} alt={product.name} />
+                                                <img
+                                                    src={product.mainImage}
+                                                    alt={product.name}
+                                                />
                                             ) : (
                                                 <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #a1a1aa; font-size: 10px;">
                                                     IMG
@@ -407,69 +484,148 @@ const productsWithData = products?.map(product => ({
                                             )}
                                         </div>
                                         <div>
-                                            <div class="product-name">{product.name}</div>
-                                            <div class="product-images-count">{product.images?.length || 0} imagen(es)</div>
+                                            <div class="product-name">
+                                                {product.name}
+                                            </div>
+                                            <div class="product-images-count">
+                                                {product.images?.length || 0}{" "}
+                                                imagen(es)
+                                            </div>
                                         </div>
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="category-text">{product.category?.name || '—'}</span>
+                                    <span class="category-text">
+                                        {product.category?.name || "—"}
+                                    </span>
                                 </td>
                                 <td>
-                                    <span class="price-text">{formatPrice(product.price)}</span>
+                                    <span class="price-text">
+                                        {formatPrice(product.price)}
+                                    </span>
                                 </td>
                                 <td>
                                     <span class="stock-badge">
-                                        <span class={`stock-dot ${product.stockStatus}`}></span>
+                                        <span
+                                            class={`stock-dot ${product.stockStatus}`}
+                                        />
                                         {product.stock}
                                     </span>
                                 </td>
                                 <td>
                                     <div class="status-badges">
-                                        <span class={`badge ${product.active ? 'active' : 'inactive'}`}>
-                                            {product.active ? 'Activo' : 'Inactivo'}
+                                        <span
+                                            class={`badge ${product.active ? "active" : "inactive"}`}
+                                        >
+                                            {product.active
+                                                ? "Activo"
+                                                : "Inactivo"}
                                         </span>
-                                        {product.is_offer && <span class="badge offer">Oferta</span>}
+                                        {product.is_offer && (
+                                            <span class="badge offer">
+                                                Oferta
+                                            </span>
+                                        )}
                                     </div>
                                 </td>
                                 <td>
                                     <div class="actions">
-                                        <a href={`/admin/productos/${product.id}`} class="action-btn" title="Editar">
-                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        <a
+                                            href={`/admin/productos/${product.id}`}
+                                            class="action-btn"
+                                            title="Editar"
+                                        >
+                                            <svg
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="2"
+                                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                                />
                                             </svg>
                                         </a>
-                                        <form method="POST" style="display: inline;">
-                                            <input type="hidden" name="action" value="toggle_offer" />
-                                            <input type="hidden" name="id" value={product.id} />
-                                            <button type="submit" class="action-btn" title={product.is_offer ? 'Quitar oferta' : 'Marcar como oferta'}>
-                                                <svg fill={product.is_offer ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+                                        <form
+                                            method="POST"
+                                            style="display: inline;"
+                                        >
+                                            <input
+                                                type="hidden"
+                                                name="action"
+                                                value="toggle_offer"
+                                            />
+                                            <input
+                                                type="hidden"
+                                                name="id"
+                                                value={product.id}
+                                            />
+                                            <button
+                                                type="submit"
+                                                class="action-btn"
+                                                title={
+                                                    product.is_offer
+                                                        ? "Quitar oferta"
+                                                        : "Marcar como oferta"
+                                                }
+                                            >
+                                                <svg
+                                                    fill={
+                                                        product.is_offer
+                                                            ? "currentColor"
+                                                            : "none"
+                                                    }
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"
+                                                    />
                                                 </svg>
                                             </button>
                                         </form>
-                                        <button 
-                                            class="action-btn danger delete-btn" 
-                                            data-id={product.id} 
+                                        <button
+                                            class="action-btn danger delete-btn"
+                                            data-id={product.id}
                                             data-name={product.name}
                                             title="Eliminar"
                                         >
-                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            <svg
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="2"
+                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                />
                                             </svg>
                                         </button>
                                     </div>
                                 </td>
                             </tr>
-                    ))
-                 : 
-                    <tr>
-                        <td colspan={6}>
-                            <div class="empty-state">
-                                <p>No hay productos. <a href="/admin/productos/nuevo">Crea el primero →</a></p>
-                            </div>
-                        </td>
-                    </tr>
+                        ))
+                    ) : (
+                        <tr>
+                            <td colspan={6}>
+                                <div class="empty-state">
+                                    <p>
+                                        No hay productos.{" "}
+                                        <a href="/admin/productos/nuevo">
+                                            Crea el primero →
+                                        </a>
+                                    </p>
+                                </div>
+                            </td>
+                        </tr>
+                    )
                 }
             </tbody>
         </table>
@@ -480,42 +636,53 @@ const productsWithData = products?.map(product => ({
         <div class="modal">
             <div class="modal-title">Eliminar Producto</div>
             <p class="modal-text">
-                ¿Estás seguro de eliminar <strong id="product-name"></strong>? Esta acción no se puede deshacer.
+                ¿Estás seguro de eliminar <strong id="product-name"></strong>?
+                Esta acción no se puede deshacer.
             </p>
             <form method="POST">
                 <input type="hidden" name="action" value="delete" />
                 <input type="hidden" name="id" id="delete-id" />
                 <div class="modal-actions">
-                    <button type="button" id="cancel-delete" class="modal-btn cancel">Cancelar</button>
-                    <button type="submit" class="modal-btn danger">Eliminar</button>
+                    <button
+                        type="button"
+                        id="cancel-delete"
+                        class="modal-btn cancel">Cancelar</button
+                    >
+                    <button type="submit" class="modal-btn danger"
+                        >Eliminar</button
+                    >
                 </div>
             </form>
         </div>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const modal = document.getElementById('delete-modal');
-            const productName = document.getElementById('product-name');
-            const deleteId = document.getElementById('delete-id') as HTMLInputElement;
+        document.addEventListener("DOMContentLoaded", () => {
+            const modal = document.getElementById("delete-modal");
+            const productName = document.getElementById("product-name");
+            const deleteId = document.getElementById(
+                "delete-id",
+            ) as HTMLInputElement;
 
-            document.querySelectorAll('.delete-btn').forEach((btn) => {
-                btn.addEventListener('click', () => {
+            document.querySelectorAll(".delete-btn").forEach((btn) => {
+                btn.addEventListener("click", () => {
                     const id = (btn as HTMLElement).dataset.id;
                     const name = (btn as HTMLElement).dataset.name;
                     if (id && name && productName && deleteId && modal) {
                         productName.textContent = name;
                         deleteId.value = id;
-                        modal.classList.add('active');
+                        modal.classList.add("active");
                     }
                 });
             });
 
-            const closeModal = () => modal?.classList.remove('active');
-            modal?.addEventListener('click', (e) => {
+            const closeModal = () => modal?.classList.remove("active");
+            modal?.addEventListener("click", (e) => {
                 if (e.target === modal) closeModal();
             });
-            document.getElementById('cancel-delete')?.addEventListener('click', closeModal);
+            document
+                .getElementById("cancel-delete")
+                ?.addEventListener("click", closeModal);
         });
     </script>
 </AdminLayout>

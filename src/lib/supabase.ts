@@ -58,26 +58,44 @@ export interface Product {
     stock_by_size?: Record<string, number>;
 }
 
-export interface ProductStock {
+export interface ProductVariant {
     id: string;
     product_id: string;
     size: string;
-    quantity: number;
+    stock: number;
+    price: number | null;
+    is_offer: boolean;
+    sku?: string;
     created_at: string;
-    updated_at: string;
+    updated_at?: string;
+}
+
+// Alias for backward compatibility if needed, though we should transition to ProductVariant
+export type ProductStock = ProductVariant;
+
+export interface ShippingMethod {
+    id: number;
+    name: string;
+    description: string | null;
+    price: number;
+    estimated_days: string | null;
+    is_active: boolean;
+    created_at: string;
 }
 
 export interface Order {
-    id: string;
+    id: string; // UUID - kept for compatibility with existing data
+    order_number: number;
     total_price: number;
     status: 'pending' | 'paid' | 'shipped' | 'delivered' | 'cancelled';
     customer_email: string | null;
     customer_name: string | null;
     shipping_address: string | null;
+    shipping_method_id: number | null;
     // Campos de Stripe
     stripe_session_id?: string | null;
     stripe_payment_intent?: string | null;
-    // Campos de envío
+    // Campos de envio
     shipping_carrier?: string | null;
     tracking_number?: string | null;
     tracking_url?: string | null;
@@ -88,6 +106,7 @@ export interface Order {
     updated_at: string;
     // Joined
     items?: OrderItem[];
+    shipping_method?: ShippingMethod;
 }
 
 export interface OrderItem {
@@ -330,12 +349,12 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
 
 export async function updateOrderStatus(orderId: string, status: Order['status']) {
     const updateData: any = { status };
-    
+
     // Si se marca como entregado, guardar la fecha
     if (status === 'delivered') {
         updateData.delivered_at = new Date().toISOString();
     }
-    
+
     const { error } = await supabaseAdmin
         .from('orders')
         .update(updateData)
@@ -415,7 +434,7 @@ async function sendShippingNotificationEmail(order: Order) {
                         <div style="background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%); padding: 40px 20px; text-align: center;">
                             <div style="font-size: 60px; margin-bottom: 15px;">📦</div>
                             <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">¡Tu pedido está en camino!</h1>
-                            <p style="color: #ffffff; margin: 10px 0 0 0; opacity: 0.9;">Pedido #${order.id.slice(0, 8)}</p>
+                            <p style="color: #ffffff; margin: 10px 0 0 0; opacity: 0.9;">Pedido #${order.order_number || order.id}</p>
                         </div>
                         
                         <!-- Content -->
@@ -539,30 +558,24 @@ export async function updateSetting(key: string, value: any) {
 }
 
 // =============================================
-// PRODUCT STOCK (Por Talla)
+// PRODUCT VARIANTS (Stock & Prices)
 // =============================================
 
 /**
  * Obtener todo el stock de un producto por tallas
+ * @deprecated Use getProductVariants instead
  */
-export async function getProductStock(productId: string): Promise<ProductStock[]> {
-    const { data, error } = await supabase
-        .from('product_stock')
-        .select('*')
-        .eq('product_id', productId)
-        .order('size');
-
-    if (error) throw error;
-    return data || [];
+export async function getProductStock(productId: string): Promise<ProductVariant[]> {
+    return getProductVariants(productId);
 }
 
 /**
  * Obtener stock de un producto como objeto { talla: cantidad }
  */
 export async function getProductStockBySize(productId: string): Promise<Record<string, number>> {
-    const stock = await getProductStock(productId);
+    const stock = await getProductVariants(productId);
     return stock.reduce((acc, item) => {
-        acc[item.size] = item.quantity;
+        acc[item.size] = item.stock;
         return acc;
     }, {} as Record<string, number>);
 }
@@ -572,14 +585,14 @@ export async function getProductStockBySize(productId: string): Promise<Record<s
  */
 export async function getStockForSize(productId: string, size: string): Promise<number> {
     const { data, error } = await supabase
-        .from('product_stock')
-        .select('quantity')
+        .from('product_variants')
+        .select('stock')
         .eq('product_id', productId)
         .eq('size', size)
         .single();
 
     if (error) return 0;
-    return data?.quantity || 0;
+    return data?.stock || 0;
 }
 
 /**
@@ -587,11 +600,11 @@ export async function getStockForSize(productId: string, size: string): Promise<
  */
 export async function updateStockForSize(productId: string, size: string, quantity: number): Promise<void> {
     const { error } = await supabaseAdmin
-        .from('product_stock')
+        .from('product_variants')
         .upsert({
             product_id: productId,
             size: size,
-            quantity: quantity,
+            stock: quantity,
             updated_at: new Date().toISOString()
         }, {
             onConflict: 'product_id,size'
@@ -603,17 +616,68 @@ export async function updateStockForSize(productId: string, size: string, quanti
 /**
  * Actualizar stock de múltiples tallas a la vez
  */
-export async function updateProductStockBulk(productId: string, stockBySize: Record<string, number>): Promise<void> {
-    const updates = Object.entries(stockBySize).map(([size, quantity]) => ({
+/**
+ * Obtener variantes de un producto (stock, precio, oferta)
+ */
+export async function getProductVariants(productId: string): Promise<ProductVariant[]> {
+    const { data, error } = await supabase
+        .from('product_variants')
+        .select('*')
+        .eq('product_id', productId)
+        .order('size');
+
+    if (error) throw error;
+    return data || [];
+}
+
+/**
+ * Actualizar variantes de un producto (stock, precio, oferta)
+ */
+export async function updateProductVariants(
+    productId: string,
+    variantsData: Record<string, { stock: number; price: number | null; is_offer: boolean }>
+): Promise<void> {
+    const upsertData = Object.entries(variantsData).map(([size, data]) => ({
         product_id: productId,
         size,
-        quantity,
+        stock: data.stock,
+        price: data.price,
+        is_offer: data.is_offer,
         updated_at: new Date().toISOString()
     }));
 
     const { error } = await supabaseAdmin
-        .from('product_stock')
-        .upsert(updates, {
+        .from('product_variants')
+        .upsert(upsertData, {
+            onConflict: 'product_id,size'
+        });
+
+    if (error) throw error;
+}
+
+/**
+ * Legacy: Update stock only (adapts to new table structure)
+ */
+export async function updateProductStockBulk(productId: string, stockBySize: Record<string, number>): Promise<void> {
+    // Fetch existing variants to preserve price/offer
+    const existing = await getProductVariants(productId);
+    const existingMap = new Map(existing.map(v => [v.size, v]));
+
+    const upsertData = Object.entries(stockBySize).map(([size, quantity]) => {
+        const current = existingMap.get(size);
+        return {
+            product_id: productId,
+            size,
+            stock: quantity,
+            price: current?.price || null,
+            is_offer: current?.is_offer || false,
+            updated_at: new Date().toISOString()
+        };
+    });
+
+    const { error } = await supabaseAdmin
+        .from('product_variants')
+        .upsert(upsertData, {
             onConflict: 'product_id,size'
         });
 
@@ -623,15 +687,20 @@ export async function updateProductStockBulk(productId: string, stockBySize: Rec
 /**
  * Inicializar stock para un producto nuevo (todas las tallas a 0)
  */
+/**
+ * Inicializar stock para un producto nuevo (todas las tallas a 0)
+ */
 export async function initProductStock(productId: string, sizes: string[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL']): Promise<void> {
     const stockEntries = sizes.map(size => ({
         product_id: productId,
         size,
-        quantity: 0
+        stock: 0,
+        price: null,
+        is_offer: false
     }));
 
     const { error } = await supabaseAdmin
-        .from('product_stock')
+        .from('product_variants')
         .upsert(stockEntries, {
             onConflict: 'product_id,size',
             ignoreDuplicates: true
@@ -646,15 +715,15 @@ export async function initProductStock(productId: string, sizes: string[] = ['XS
 export async function decrementStock(productId: string, size: string, quantity: number = 1): Promise<boolean> {
     // Primero verificar si hay suficiente stock
     const currentStock = await getStockForSize(productId, size);
-    
+
     if (currentStock < quantity) {
         return false; // No hay suficiente stock
     }
 
     const { error } = await supabaseAdmin
-        .from('product_stock')
-        .update({ 
-            quantity: currentStock - quantity,
+        .from('product_variants')
+        .update({
+            stock: currentStock - quantity,
             updated_at: new Date().toISOString()
         })
         .eq('product_id', productId)
@@ -664,7 +733,7 @@ export async function decrementStock(productId: string, size: string, quantity: 
         console.error('Error decrementando stock:', error);
         return false;
     }
-    
+
     return true;
 }
 
@@ -672,8 +741,8 @@ export async function decrementStock(productId: string, size: string, quantity: 
  * Obtener stock total de un producto (suma de todas las tallas)
  */
 export async function getTotalStock(productId: string): Promise<number> {
-    const stock = await getProductStock(productId);
-    return stock.reduce((total, item) => total + item.quantity, 0);
+    const stock = await getProductVariants(productId);
+    return stock.reduce((total, item) => total + item.stock, 0);
 }
 
 /**
@@ -707,6 +776,8 @@ export interface CarouselSlide {
     duration: number;
     sort_order: number;
     is_active: boolean;
+    discount_code?: string | null;
+    style_config?: any; // JSONB storage for positioning
     created_at: string;
     updated_at: string;
 }
@@ -758,7 +829,11 @@ export async function getCarouselSlideById(id: string): Promise<CarouselSlide | 
 export async function createCarouselSlide(slide: Omit<CarouselSlide, 'id' | 'created_at' | 'updated_at'>): Promise<CarouselSlide> {
     const { data, error } = await supabaseAdmin
         .from('carousel_slides')
-        .insert(slide)
+        .insert({
+            ...slide,
+            discount_code: slide.discount_code,
+            style_config: slide.style_config || {}
+        })
         .select()
         .single();
 
@@ -888,4 +963,187 @@ export async function getOrdersStats() {
     };
 
     return stats;
+}
+
+export interface Facturacion {
+    id: number;
+    order_id: string;
+    invoice_number: string;
+    customer_name: string | null;
+    customer_email: string | null;
+    shipping_address: string | null;
+    items: {
+        product_name: string;
+        quantity: number;
+        size: string | null;
+        price: number;
+        total: number;
+    }[];
+    subtotal: number;
+    iva_amount: number;
+    shipping_cost: number;
+    total: number;
+    created_at: string;
+    // Joined data from orders table (optional, for display)
+    orders?: {
+        order_number: number;
+        customer_email: string;
+        customer_name: string;
+        total_price: number;
+    };
+}
+
+/**
+ * Generate next invoice number in format YYYY-XXXXXX
+ */
+async function generateInvoiceNumber(): Promise<string> {
+    const year = new Date().getFullYear().toString();
+
+    // Get the max invoice number for this year
+    const { data } = await supabaseAdmin
+        .from('facturacion')
+        .select('invoice_number')
+        .like('invoice_number', `${year}-%`)
+        .order('invoice_number', { ascending: false })
+        .limit(1);
+
+    let nextSeq = 1;
+    if (data && data.length > 0 && data[0].invoice_number) {
+        const parts = data[0].invoice_number.split('-');
+        if (parts.length === 2) {
+            nextSeq = parseInt(parts[1], 10) + 1;
+        }
+    }
+
+    return `${year}-${nextSeq.toString().padStart(6, '0')}`;
+}
+
+/**
+ * Create a new facturacion entry for an order with complete invoice data
+ */
+export async function createFacturacion(orderId: string): Promise<Facturacion> {
+    // Fetch order with items
+    const { data: order, error: orderError } = await supabaseAdmin
+        .from('orders')
+        .select(`
+            *,
+            items:order_items(*)
+        `)
+        .eq('id', orderId)
+        .single();
+
+    if (orderError || !order) {
+        throw new Error(`Order not found: ${orderId}`);
+    }
+
+    // Generate invoice number
+    const invoiceNumber = await generateInvoiceNumber();
+
+    // Calculate totals
+    const items = (order.items || []).map((item: any) => ({
+        product_name: item.product_name,
+        quantity: item.quantity,
+        size: item.size,
+        price: item.price_at_purchase,
+        total: item.price_at_purchase * item.quantity
+    }));
+
+    const subtotal = items.reduce((sum: number, item: any) => sum + item.total, 0);
+    const total = order.total_price;
+    // IVA is already included in prices, calculate base amount
+    const baseImponible = subtotal / 1.21;
+    const ivaAmount = subtotal - baseImponible;
+
+    const { data, error } = await supabaseAdmin
+        .from('facturacion')
+        .insert({
+            order_id: orderId,
+            invoice_number: invoiceNumber,
+            customer_name: order.customer_name,
+            customer_email: order.customer_email,
+            shipping_address: order.shipping_address,
+            items: items,
+            subtotal: subtotal,
+            iva_amount: ivaAmount,
+            shipping_cost: 0, // Free shipping
+            total: total
+        })
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data;
+}
+
+/**
+ * Get facturacion by Order ID
+ */
+export async function getFacturacionByOrderId(orderId: string): Promise<Facturacion | null> {
+    const { data, error } = await supabaseAdmin
+        .from('facturacion')
+        .select('*, orders(order_number, customer_email, customer_name, total_price)')
+        .eq('order_id', orderId)
+        .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+}
+
+/**
+ * Get facturacion by ID
+ */
+export async function getFacturacionById(id: number): Promise<Facturacion | null> {
+    const { data, error } = await supabaseAdmin
+        .from('facturacion')
+        .select('*, orders(order_number, customer_email, customer_name, total_price)')
+        .eq('id', id)
+        .single();
+
+    if (error) return null;
+    return data;
+}
+
+/**
+ * Get all facturacion entries (for Admin)
+ */
+export async function getAllFacturacion(): Promise<Facturacion[]> {
+    const { data, error } = await supabaseAdmin
+        .from('facturacion')
+        .select('*, orders(order_number, customer_email, customer_name, total_price)')
+        .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+}
+
+// =============================================
+// SHIPPING METHODS
+// =============================================
+
+/**
+ * Get all active shipping methods
+ */
+export async function getShippingMethods(): Promise<ShippingMethod[]> {
+    const { data, error } = await supabase
+        .from('shipping_methods')
+        .select('*')
+        .eq('is_active', true)
+        .order('price', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+}
+
+/**
+ * Get shipping method by ID
+ */
+export async function getShippingMethodById(id: number): Promise<ShippingMethod | null> {
+    const { data, error } = await supabase
+        .from('shipping_methods')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+    if (error) return null;
+    return data;
 }

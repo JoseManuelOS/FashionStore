@@ -1,7 +1,18 @@
 ---
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import CarouselImageUploader from "../../../components/islands/CarouselImageUploader";
-import { getCarouselSlideById, updateCarouselSlide } from "../../../lib/supabase";
+import {
+    getCarouselSlideById,
+    updateCarouselSlide,
+    supabaseAdmin,
+} from "../../../lib/supabase";
+
+// Fetch active discount codes
+const { data: discountCodes } = await supabaseAdmin
+    .from("discount_codes")
+    .select("code, description, discount_type, discount_value")
+    .eq("active", true)
+    .order("code");
 
 const { id } = Astro.params;
 
@@ -19,16 +30,27 @@ let error = "";
 
 if (Astro.request.method === "POST") {
     const formData = await Astro.request.formData();
-    
+
     const title = formData.get("title")?.toString() || "";
     const subtitle = formData.get("subtitle")?.toString() || "";
     const description = formData.get("description")?.toString() || "";
     const image_url = formData.get("image_url")?.toString() || slide.image_url;
     const cta_text = formData.get("cta_text")?.toString() || "Ver más";
     const cta_link = formData.get("cta_link")?.toString() || "/productos";
+    const discount_code = formData.get("discount_code")?.toString() || "";
     const duration = parseInt(formData.get("duration")?.toString() || "5000");
     const sort_order = parseInt(formData.get("sort_order")?.toString() || "0");
     const is_active = formData.get("is_active") === "true";
+    const style_config_raw = formData.get("style_config")?.toString();
+    let style_config = {};
+
+    try {
+        if (style_config_raw) {
+            style_config = JSON.parse(style_config_raw);
+        }
+    } catch (e) {
+        console.error("Error parsing style_config", e);
+    }
 
     if (!title || !image_url) {
         error = "El título y la imagen son obligatorios";
@@ -41,9 +63,11 @@ if (Astro.request.method === "POST") {
                 image_url,
                 cta_text,
                 cta_link,
+                discount_code: discount_code || null,
                 duration,
                 sort_order,
-                is_active
+                is_active,
+                style_config,
             });
             return Astro.redirect("/admin/carrusel?saved=true");
         } catch (e: any) {
@@ -54,223 +78,797 @@ if (Astro.request.method === "POST") {
 ---
 
 <AdminLayout title={`Editar Slide: ${slide.title}`}>
-    <div class="max-w-3xl">
+    <div class="w-full max-w-[1800px] mx-auto px-4">
         <!-- Header -->
-        <div class="flex items-center gap-4 mb-8">
+        <div class="flex items-center gap-4 mb-6">
             <a
                 href="/admin/carrusel"
                 class="p-2 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors"
             >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                <svg
+                    class="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M15 19l-7-7 7-7"></path>
                 </svg>
             </a>
             <div>
                 <h1 class="text-2xl font-bold text-zinc-900">Editar Slide</h1>
-                <p class="text-zinc-500 mt-0.5">Modifica la configuración de esta slide del carrusel</p>
+                <p class="text-zinc-500 mt-0.5">
+                    Modifica la configuración de esta slide del carrusel
+                </p>
             </div>
         </div>
 
-        {error && (
-            <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
-                {error}
-            </div>
-        )}
-
-        <form method="POST" class="space-y-6">
-            <!-- Image Section -->
-            <div class="bg-white rounded-2xl border border-zinc-200 p-6">
-                <h2 class="text-base font-semibold text-zinc-900 flex items-center gap-2 mb-5">
-                    <svg class="w-5 h-5 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    Imagen de la Slide
-                </h2>
-                
-                <div>
-                    <label class="block text-sm font-medium text-zinc-700 mb-2">
-                        Imagen del carrusel <span class="text-red-500">*</span>
-                    </label>
-                    <CarouselImageUploader
-                        client:load
-                        inputName="image_url"
-                        initialImage={slide.image_url}
-                    />
+        {
+            error && (
+                <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+                    {error}
                 </div>
+            )
+        }
+
+        <!-- Preview Header Bar -->
+        <div
+            class="bg-white rounded-xl border border-zinc-200 p-3 mb-4 flex items-center justify-between gap-4"
+        >
+            <div class="flex items-center gap-4 flex-1">
+                <div
+                    class="w-32 h-20 rounded-lg overflow-hidden border border-zinc-200 flex-shrink-0 relative"
+                >
+                    <img
+                        id="thumbnail-preview"
+                        src={slide.image_url}
+                        class="w-full h-full object-cover"
+                        alt="Preview"
+                    />
+                    <div
+                        class="absolute inset-0 bg-gradient-to-r from-black/40 to-transparent"
+                    >
+                    </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-zinc-900 truncate">
+                        {slide.title}
+                    </p>
+                    <p class="text-xs text-zinc-500">
+                        Clic en "Ver Vista Previa" para editar posiciones
+                    </p>
+                </div>
+            </div>
+            <button
+                type="button"
+                id="open-preview-modal"
+                class="px-4 py-2 bg-gradient-to-r from-purple-600 to-cyan-600 text-white text-sm font-semibold rounded-lg hover:from-purple-700 hover:to-cyan-700 transition-all flex items-center gap-2"
+            >
+                <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                    ></path>
+                </svg>
+                Ver Vista Previa
+            </button>
+        </div>
+
+        <!-- Preview Modal -->
+        <div id="preview-modal" class="fixed inset-0 z-50 hidden">
+            <div
+                class="absolute inset-0 bg-black/80 backdrop-blur-md"
+                id="preview-modal-backdrop"
+            >
+            </div>
+            <div
+                class="relative z-10 flex flex-col items-center justify-center min-h-screen p-6"
+            >
+                <button
+                    type="button"
+                    id="close-preview-modal"
+                    class="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all"
+                >
+                    <svg
+                        class="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+
+                <div class="mb-4 flex items-center gap-4">
+                    <div
+                        class="flex bg-white/10 backdrop-blur-sm p-1 rounded-lg gap-1"
+                    >
+                        <button
+                            type="button"
+                            id="view-desktop"
+                            class="p-2 rounded-md bg-white/20 text-white transition-all"
+                            title="Vista Desktop"
+                        >
+                            <svg
+                                class="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                                ></path>
+                            </svg>
+                        </button>
+                        <button
+                            type="button"
+                            id="view-mobile"
+                            class="p-2 rounded-md text-white/60 hover:text-white transition-all"
+                            title="Vista Mobile"
+                        >
+                            <svg
+                                class="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
+                                ></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <span class="text-white/70 text-sm"
+                        >Arrastra cada elemento para posicionarlo</span
+                    >
+                </div>
+
+                <div
+                    id="preview-wrapper"
+                    class="relative w-full transition-all duration-300 ease-in-out bg-black overflow-hidden shadow-2xl rounded-xl"
+                    style="max-width: 95vw;"
+                >
+                    <!-- Simulated header bar to match web proportions -->
+                    <div
+                        id="simulated-header"
+                        class="h-14 bg-zinc-900/90 flex items-center px-6 border-b border-white/10"
+                    >
+                        <span class="text-white/50 text-sm font-medium"
+                            >📍 Header simulado</span
+                        >
+                    </div>
+                    <div
+                        id="preview-container"
+                        class="relative w-full select-none"
+                        style="height: 70vh; max-height: 700px; min-height: 400px;"
+                    >
+                        <img
+                            id="preview-image"
+                            src={slide.image_url}
+                            class="w-full h-full object-cover"
+                            alt="Preview"
+                        />
+                        <div class="absolute inset-0" style="z-index: 10;">
+                            <!-- Subtitle -->
+                            <div
+                                id="preview-subtitle-container"
+                                class="draggable-item resizable-item absolute cursor-move rounded border-2 border-transparent hover:border-cyan-400/50 transition-all group z-20"
+                                data-key="subtitle"
+                                style={(() => {
+                                    const cfg =
+                                        slide.style_config?.desktop?.subtitle ||
+                                        slide.style_config?.subtitle;
+                                    return cfg
+                                        ? `top: ${cfg.top}; left: ${cfg.left};`
+                                        : "top: 15%; left: 10%;";
+                                })()}
+                            >
+                                <p
+                                    id="preview-subtitle"
+                                    class="hero-subtitle pointer-events-none text-[#d4af37] uppercase tracking-[0.2em] font-medium"
+                                >
+                                    {slide.subtitle}
+                                </p>
+                                <div class="resize-handle resize-handle-se">
+                                </div>
+                            </div>
+
+                            <!-- Title -->
+                            <div
+                                id="preview-title-container"
+                                class="draggable-item resizable-item absolute cursor-move rounded border-2 border-transparent hover:border-cyan-400/50 transition-all group z-20"
+                                data-key="title"
+                                style={(() => {
+                                    const cfg =
+                                        slide.style_config?.desktop?.title ||
+                                        slide.style_config?.title;
+                                    return cfg
+                                        ? `top: ${cfg.top}; left: ${cfg.left}; max-width: ${cfg.maxWidth || "60%"};`
+                                        : "top: 25%; left: 10%; max-width: 60%;";
+                                })()}
+                            >
+                                <h1
+                                    id="preview-title"
+                                    class="hero-title pointer-events-none font-bold text-white leading-tight"
+                                >
+                                    {slide.title}
+                                </h1>
+                                <div class="resize-handle resize-handle-se">
+                                </div>
+                            </div>
+
+                            <!-- Description -->
+                            <div
+                                id="preview-description-container"
+                                class="draggable-item resizable-item absolute cursor-move rounded border-2 border-transparent hover:border-cyan-400/50 transition-all group z-20"
+                                data-key="description"
+                                style={(() => {
+                                    const cfg =
+                                        slide.style_config?.desktop
+                                            ?.description ||
+                                        slide.style_config?.description;
+                                    return cfg
+                                        ? `top: ${cfg.top}; left: ${cfg.left}; max-width: ${cfg.maxWidth || "40%"};`
+                                        : "top: 45%; left: 10%; max-width: 40%;";
+                                })()}
+                            >
+                                <p
+                                    id="preview-description"
+                                    class="hero-description pointer-events-none text-zinc-200"
+                                >
+                                    {slide.description}
+                                </p>
+                                <div class="resize-handle resize-handle-se">
+                                </div>
+                            </div>
+
+                            <!-- Discount -->
+                            <div
+                                id="preview-discount-container"
+                                class={`draggable-item resizable-item absolute cursor-move rounded border-2 border-transparent hover:border-cyan-400/50 transition-all group z-20 ${!slide.discount_code ? "hidden" : ""}`}
+                                data-key="discount"
+                                style={(() => {
+                                    const cfg =
+                                        slide.style_config?.desktop?.discount ||
+                                        slide.style_config?.discount;
+                                    return cfg
+                                        ? `top: ${cfg.top}; left: ${cfg.left};`
+                                        : "top: 60%; left: 10%;";
+                                })()}
+                            >
+                                <div
+                                    class="inline-flex items-center gap-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-lg px-4 py-2 pointer-events-none"
+                                >
+                                    <span
+                                        class="text-white/80 text-sm font-medium"
+                                        >CÓDIGO:</span
+                                    >
+                                    <span
+                                        id="preview-discount-code"
+                                        class="text-[#d4af37] font-mono font-bold tracking-wider text-lg"
+                                        >{slide.discount_code}</span
+                                    >
+                                </div>
+
+                                <div class="resize-handle resize-handle-se">
+                                </div>
+                            </div>
+
+                            <!-- CTA -->
+                            <div
+                                id="preview-cta-container"
+                                class="draggable-item resizable-item absolute cursor-move rounded border-2 border-transparent hover:border-cyan-400/50 transition-all group z-20"
+                                data-key="cta"
+                                style={(() => {
+                                    const cfg =
+                                        slide.style_config?.desktop?.cta ||
+                                        slide.style_config?.cta;
+                                    return cfg
+                                        ? `top: ${cfg.top}; left: ${cfg.left};`
+                                        : "top: 75%; left: 10%;";
+                                })()}
+                            >
+                                <span
+                                    id="preview-cta"
+                                    class="hero-btn pointer-events-none inline-flex items-center gap-2 px-6 py-3 bg-white text-black font-semibold rounded-full"
+                                >
+                                    <span id="preview-cta-text-inner"
+                                        >{slide.cta_text}</span
+                                    >
+                                    <svg
+                                        class="w-5 h-5"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
+                                    </svg>
+                                </span>
+                                <div class="resize-handle resize-handle-se">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Form -->
+        <form method="POST" class="space-y-4">
+            <input
+                type="hidden"
+                name="style_config"
+                id="style_config"
+                value={JSON.stringify(slide.style_config || {})}
+            />
+
+            <!-- Image Section -->
+            <div class="bg-white rounded-xl border border-zinc-200 p-4">
+                <h2
+                    class="text-sm font-semibold text-zinc-900 flex items-center gap-2 mb-3"
+                >
+                    <svg
+                        class="w-5 h-5 text-cyan-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        ></path>
+                    </svg>
+                    Imagen
+                </h2>
+                <CarouselImageUploader
+                    client:load
+                    inputName="image_url"
+                    initialImage={slide.image_url}
+                />
             </div>
 
             <!-- Content Section -->
-            <div class="bg-white rounded-2xl border border-zinc-200 p-6">
-                <h2 class="text-base font-semibold text-zinc-900 flex items-center gap-2 mb-5">
-                    <svg class="w-5 h-5 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            <div class="bg-white rounded-xl border border-zinc-200 p-4">
+                <h2
+                    class="text-sm font-semibold text-zinc-900 flex items-center gap-2 mb-3"
+                >
+                    <svg
+                        class="w-5 h-5 text-cyan-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                        ></path>
                     </svg>
                     Contenido
                 </h2>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div>
-                        <label for="title" class="block text-sm font-medium text-zinc-700 mb-2">
-                            Título <span class="text-red-500">*</span>
-                        </label>
-                        <input
-                            type="text"
-                            id="title"
-                            name="title"
-                            required
-                            value={slide.title}
-                            placeholder="Nueva Colección"
-                            class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
-                        />
+                <!-- Title -->
+                <div class="mb-3">
+                    <div class="flex items-center justify-between mb-1">
+                        <label
+                            for="title"
+                            class="text-sm font-medium text-zinc-700"
+                            >Título <span class="text-red-500">*</span></label
+                        >
+                        <div class="flex items-center gap-1">
+                            <div
+                                class="flex items-center border border-zinc-200 rounded bg-zinc-50"
+                            >
+                                <input
+                                    type="number"
+                                    id="style-title-size"
+                                    value="56"
+                                    min="12"
+                                    max="120"
+                                    step="2"
+                                    class="w-10 px-1 py-0.5 text-xs text-center bg-transparent border-none focus:outline-none"
+                                />
+                                <span class="text-[9px] text-zinc-400 pr-1"
+                                    >px</span
+                                >
+                            </div>
+                            <button
+                                type="button"
+                                id="style-title-bold"
+                                class="w-6 h-6 flex items-center justify-center bg-zinc-900 text-white rounded text-xs font-bold hover:bg-zinc-700"
+                                title="Bold">B</button
+                            >
+                            <input
+                                type="color"
+                                id="style-title-color"
+                                value="#ffffff"
+                                class="w-6 h-6 rounded-full border border-zinc-200 cursor-pointer"
+                            />
+                        </div>
                     </div>
-
-                    <div>
-                        <label for="subtitle" class="block text-sm font-medium text-zinc-700 mb-2">
-                            Subtítulo
-                        </label>
-                        <input
-                            type="text"
-                            id="subtitle"
-                            name="subtitle"
-                            value={slide.subtitle || ""}
-                            placeholder="Primavera 2026"
-                            class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
-                        />
-                    </div>
+                    <input
+                        type="text"
+                        id="title"
+                        name="title"
+                        required
+                        value={slide.title}
+                        placeholder="Nueva Colección"
+                        class="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20 transition-all"
+                        oninput="document.getElementById('preview-title').textContent = this.value"
+                    />
                 </div>
 
-                <div class="mt-5">
-                    <label for="description" class="block text-sm font-medium text-zinc-700 mb-2">
-                        Descripción
-                    </label>
+                <!-- Subtitle -->
+                <div class="mb-3">
+                    <div class="flex items-center justify-between mb-1">
+                        <label
+                            for="subtitle"
+                            class="text-sm font-medium text-zinc-700"
+                            >Subtítulo</label
+                        >
+                        <div class="flex items-center gap-1">
+                            <div
+                                class="flex items-center border border-zinc-200 rounded bg-zinc-50"
+                            >
+                                <input
+                                    type="number"
+                                    id="style-subtitle-size"
+                                    value="16"
+                                    min="10"
+                                    max="48"
+                                    step="1"
+                                    class="w-10 px-1 py-0.5 text-xs text-center bg-transparent border-none focus:outline-none"
+                                />
+                                <span class="text-[9px] text-zinc-400 pr-1"
+                                    >px</span
+                                >
+                            </div>
+                            <button
+                                type="button"
+                                id="style-subtitle-uppercase-btn"
+                                class="w-6 h-6 flex items-center justify-center bg-zinc-900 text-white rounded text-[9px] font-bold hover:bg-zinc-700"
+                                title="Mayúsculas">AA</button
+                            >
+                            <input
+                                type="hidden"
+                                id="style-subtitle-uppercase"
+                                value="true"
+                            />
+                            <input
+                                type="color"
+                                id="style-subtitle-color"
+                                value="#d4af37"
+                                class="w-6 h-6 rounded-full border border-zinc-200 cursor-pointer"
+                            />
+                        </div>
+                    </div>
+                    <input
+                        type="text"
+                        id="subtitle"
+                        name="subtitle"
+                        value={slide.subtitle || ""}
+                        placeholder="Primavera 2026"
+                        class="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20 transition-all"
+                        oninput="document.getElementById('preview-subtitle').textContent = this.value"
+                    />
+                </div>
+
+                <!-- Discount Code -->
+                <div class="mb-3">
+                    <div class="flex items-center justify-between mb-1">
+                        <label
+                            for="discount_code"
+                            class="text-sm font-medium text-zinc-700"
+                            >Código de Descuento</label
+                        >
+                        <div class="flex items-center gap-1">
+                            <div
+                                class="flex items-center border border-zinc-200 rounded bg-zinc-50"
+                            >
+                                <input
+                                    type="number"
+                                    id="style-discount-size"
+                                    value="18"
+                                    min="12"
+                                    max="36"
+                                    step="1"
+                                    class="w-10 px-1 py-0.5 text-xs text-center bg-transparent border-none focus:outline-none"
+                                />
+                                <span class="text-[9px] text-zinc-400 pr-1"
+                                    >px</span
+                                >
+                            </div>
+                            <input
+                                type="color"
+                                id="style-discount-color"
+                                value="#d4af37"
+                                class="w-6 h-6 rounded-full border border-zinc-200 cursor-pointer"
+                            />
+                        </div>
+                    </div>
+                    <select
+                        id="discount_code"
+                        name="discount_code"
+                        class="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20 transition-all"
+                        onchange="const el = document.getElementById('preview-discount-container'); const code = document.getElementById('preview-discount-code'); if(this.value){ el.classList.remove('hidden'); code.textContent = this.value; } else { el.classList.add('hidden'); }"
+                    >
+                        <option value="">Sin código de descuento</option>
+                        {
+                            discountCodes?.map((dc) => (
+                                <option
+                                    value={dc.code}
+                                    selected={slide.discount_code === dc.code}
+                                >
+                                    {dc.code} (
+                                    {dc.discount_type === "percentage"
+                                        ? `${dc.discount_value}%`
+                                        : `${dc.discount_value}€`}
+                                    )
+                                </option>
+                            ))
+                        }
+                    </select>
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label
+                            for="description"
+                            class="text-sm font-medium text-zinc-700"
+                            >Descripción</label
+                        >
+                        <div class="flex items-center gap-1">
+                            <div
+                                class="flex items-center border border-zinc-200 rounded bg-zinc-50"
+                            >
+                                <input
+                                    type="number"
+                                    id="style-desc-size"
+                                    value="18"
+                                    min="10"
+                                    max="36"
+                                    step="1"
+                                    class="w-10 px-1 py-0.5 text-xs text-center bg-transparent border-none focus:outline-none"
+                                />
+                                <span class="text-[9px] text-zinc-400 pr-1"
+                                    >px</span
+                                >
+                            </div>
+                            <input
+                                type="color"
+                                id="style-desc-color"
+                                value="#e4e4e7"
+                                class="w-6 h-6 rounded-full border border-zinc-200 cursor-pointer"
+                            />
+                        </div>
+                    </div>
                     <textarea
                         id="description"
                         name="description"
-                        rows={3}
-                        placeholder="Descubre las últimas tendencias en moda masculina"
-                        class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all resize-none"
-                    >{slide.description || ""}</textarea>
+                        rows={2}
+                        placeholder="Descubre las últimas tendencias"
+                        class="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20 transition-all resize-none"
+                        oninput="document.getElementById('preview-description').textContent = this.value"
+                        >{slide.description || ""}</textarea
+                    >
                 </div>
             </div>
 
             <!-- CTA Section -->
-            <div class="bg-white rounded-2xl border border-zinc-200 p-6">
-                <h2 class="text-base font-semibold text-zinc-900 flex items-center gap-2 mb-5">
-                    <svg class="w-5 h-5 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+            <div class="bg-white rounded-xl border border-zinc-200 p-4">
+                <h2
+                    class="text-sm font-semibold text-zinc-900 flex items-center gap-2 mb-3"
+                >
+                    <svg
+                        class="w-5 h-5 text-cyan-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5"></path>
                     </svg>
-                    Botón de Acción (CTA)
+                    Botón CTA
                 </h2>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div class="grid grid-cols-2 gap-3 mb-3">
                     <div>
-                        <label for="cta_text" class="block text-sm font-medium text-zinc-700 mb-2">
-                            Texto del botón
-                        </label>
+                        <label
+                            for="cta_text"
+                            class="block text-sm font-medium text-zinc-700 mb-1"
+                            >Texto</label
+                        >
                         <input
                             type="text"
                             id="cta_text"
                             name="cta_text"
                             value={slide.cta_text}
                             placeholder="Explorar"
-                            class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                            class="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20"
+                            oninput="document.getElementById('preview-cta-text-inner').textContent = this.value"
                         />
                     </div>
-
                     <div>
-                        <label for="cta_link" class="block text-sm font-medium text-zinc-700 mb-2">
-                            Enlace del botón
-                        </label>
+                        <label
+                            for="cta_link"
+                            class="block text-sm font-medium text-zinc-700 mb-1"
+                            >Enlace</label
+                        >
                         <input
                             type="text"
                             id="cta_link"
                             name="cta_link"
                             value={slide.cta_link}
                             placeholder="/productos"
-                            class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                            class="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20"
                         />
                     </div>
+                </div>
+                <div class="flex items-center gap-3 p-2 bg-zinc-50 rounded-lg">
+                    <span class="text-xs font-medium text-zinc-600"
+                        >Estilos:</span
+                    >
+                    <div class="flex items-center gap-1">
+                        <input
+                            type="color"
+                            id="style-btn-bg"
+                            value="#ffffff"
+                            class="w-6 h-6 rounded-full border border-zinc-200 cursor-pointer"
+                            title="Fondo"
+                        />
+                        <span class="text-[9px] text-zinc-400">Fondo</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <input
+                            type="color"
+                            id="style-btn-text"
+                            value="#000000"
+                            class="w-6 h-6 rounded-full border border-zinc-200 cursor-pointer"
+                            title="Texto"
+                        />
+                        <span class="text-[9px] text-zinc-400">Texto</span>
+                    </div>
+                    <select
+                        id="style-btn-radius"
+                        class="h-7 px-2 text-xs bg-white border border-zinc-200 rounded focus:border-cyan-500"
+                    >
+                        <option value="0">▢ Cuadrado</option>
+                        <option value="0.5rem">◢ Redondeado</option>
+                        <option value="9999px" selected>◯ Píldora</option>
+                    </select>
                 </div>
             </div>
 
             <!-- Config Section -->
-            <div class="bg-white rounded-2xl border border-zinc-200 p-6">
-                <h2 class="text-base font-semibold text-zinc-900 flex items-center gap-2 mb-5">
-                    <svg class="w-5 h-5 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <div class="bg-white rounded-xl border border-zinc-200 p-4">
+                <h2
+                    class="text-sm font-semibold text-zinc-900 flex items-center gap-2 mb-3"
+                >
+                    <svg
+                        class="w-5 h-5 text-cyan-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                        ></path>
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                     </svg>
                     Configuración
                 </h2>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div class="grid grid-cols-3 gap-3">
                     <div>
-                        <label for="duration" class="block text-sm font-medium text-zinc-700 mb-2">
-                            Duración (ms)
-                        </label>
-                        <div class="relative">
-                            <input
-                                type="number"
-                                id="duration"
-                                name="duration"
-                                value={slide.duration}
-                                min="1000"
-                                max="30000"
-                                step="500"
-                                class="w-full px-4 py-3 pr-12 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
-                            />
-                            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 text-sm">ms</span>
-                        </div>
-                        <p class="text-xs text-zinc-500 mt-1.5">{slide.duration / 1000} segundos</p>
+                        <label
+                            for="duration"
+                            class="block text-sm font-medium text-zinc-700 mb-1"
+                            >Duración (ms)</label
+                        >
+                        <input
+                            type="number"
+                            id="duration"
+                            name="duration"
+                            value={slide.duration}
+                            min="1000"
+                            step="500"
+                            class="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20"
+                        />
                     </div>
-
                     <div>
-                        <label for="sort_order" class="block text-sm font-medium text-zinc-700 mb-2">
-                            Orden
-                        </label>
+                        <label
+                            for="sort_order"
+                            class="block text-sm font-medium text-zinc-700 mb-1"
+                            >Orden</label
+                        >
                         <input
                             type="number"
                             id="sort_order"
                             name="sort_order"
                             value={slide.sort_order}
                             min="0"
-                            class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                            class="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20"
                         />
-                        <p class="text-xs text-zinc-500 mt-1.5">Menor número = primero</p>
                     </div>
-
                     <div>
-                        <label class="block text-sm font-medium text-zinc-700 mb-2">
-                            Estado
-                        </label>
-                        <label class="flex items-center gap-3 px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl cursor-pointer hover:border-cyan-500 transition-colors">
+                        <label
+                            class="block text-sm font-medium text-zinc-700 mb-1"
+                            >Estado</label
+                        >
+                        <label
+                            class="flex items-center gap-2 px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg cursor-pointer hover:border-cyan-500 transition-colors"
+                        >
                             <input
                                 type="checkbox"
                                 name="is_active"
                                 value="true"
                                 checked={slide.is_active}
-                                class="w-5 h-5 rounded border-zinc-300 text-cyan-600 focus:ring-cyan-500"
+                                class="w-4 h-4 text-cyan-600 border-zinc-300 rounded focus:ring-cyan-500"
                             />
-                            <span class="text-zinc-700">Activa</span>
+                            <span class="text-sm text-zinc-900">Activo</span>
                         </label>
                     </div>
                 </div>
             </div>
 
-            <!-- Actions -->
-            <div class="flex items-center justify-end gap-4 pt-4">
-                <a
-                    href="/admin/carrusel"
-                    class="px-6 py-3 text-zinc-500 hover:text-zinc-900 transition-colors"
-                >
-                    Cancelar
-                </a>
+            <!-- Submit -->
+            <div class="flex justify-end">
                 <button
                     type="submit"
                     class="px-6 py-3 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all hover:-translate-y-0.5 flex items-center gap-2"
                 >
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    <svg
+                        class="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M5 13l4 4L19 7"></path>
                     </svg>
                     Guardar Cambios
                 </button>
@@ -278,3 +876,642 @@ if (Astro.request.method === "POST") {
         </form>
     </div>
 </AdminLayout>
+
+<style>
+    #preview-container .hero-title {
+        font-size: 3.5rem;
+        font-weight: 700;
+        line-height: 1.1;
+        color: white;
+    }
+    #preview-container .hero-subtitle {
+        color: #d4af37;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        font-weight: 500;
+        font-size: 1rem;
+    }
+    #preview-container .hero-description {
+        color: rgb(228 228 231);
+        font-size: 1.125rem;
+        line-height: 1.6;
+    }
+    #preview-container .hero-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 1rem 2rem;
+        background: white;
+        color: black;
+        font-weight: 600;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+    #preview-container::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+            to right,
+            rgba(0, 0, 0, 0.7) 0%,
+            rgba(0, 0, 0, 0.4) 50%,
+            rgba(0, 0, 0, 0.2) 100%
+        );
+        z-index: 1;
+        pointer-events: none;
+    }
+    input[type="color"] {
+        -webkit-appearance: none;
+        appearance: none;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+    }
+    input[type="color"]::-webkit-color-swatch-wrapper {
+        padding: 0;
+        border-radius: 50%;
+    }
+    input[type="color"]::-webkit-color-swatch {
+        border: 2px solid #e4e4e7;
+        border-radius: 50%;
+    }
+    .draggable-item {
+        z-index: 20 !important;
+    }
+    .resize-handle {
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        background: #22d3ee;
+        border: 2px solid white;
+        border-radius: 2px;
+        opacity: 0;
+        transition: opacity 0.2s;
+        z-index: 30;
+    }
+    .draggable-item:hover .resize-handle,
+    .draggable-item.active .resize-handle {
+        opacity: 1;
+    }
+    .resize-handle-se {
+        bottom: -6px;
+        right: -6px;
+        cursor: se-resize;
+    }
+    .draggable-item.active {
+        border-color: #22d3ee !important;
+        background: rgba(34, 211, 238, 0.1);
+    }
+    #preview-wrapper.mobile-view .hero-title {
+        font-size: 2rem !important;
+    }
+    #preview-wrapper.mobile-view .hero-subtitle {
+        font-size: 0.875rem !important;
+    }
+    #preview-wrapper.mobile-view .hero-description {
+        font-size: 0.875rem !important;
+    }
+</style>
+
+<script>
+    // ===== Modal Controls =====
+    const previewModal = document.getElementById(
+        "preview-modal",
+    ) as HTMLElement;
+    const openPreviewBtn = document.getElementById("open-preview-modal");
+    const closePreviewBtn = document.getElementById("close-preview-modal");
+    const previewModalBackdrop = document.getElementById(
+        "preview-modal-backdrop",
+    );
+
+    const viewDesktop = document.getElementById("view-desktop");
+    const viewMobile = document.getElementById("view-mobile");
+    const previewWrapper = document.getElementById(
+        "preview-wrapper",
+    ) as HTMLElement;
+    const container = document.getElementById(
+        "preview-container",
+    ) as HTMLElement;
+    const styleInput = document.getElementById(
+        "style_config",
+    ) as HTMLInputElement;
+
+    let currentView: "desktop" | "mobile" = "desktop";
+    let activeDraggable: HTMLElement | null = null;
+    let isResizing = false;
+    let currentX = 0,
+        currentY = 0,
+        initialX = 0,
+        initialY = 0,
+        xOffset = 0,
+        yOffset = 0;
+    let initialWidth = 0;
+
+    interface ElementConfig {
+        top?: string;
+        left?: string;
+        fontSize?: string;
+        maxWidth?: string;
+        color?: string;
+        fontWeight?: string;
+        textTransform?: string;
+        bgColor?: string;
+        textColor?: string;
+        borderRadius?: string;
+    }
+    interface ViewConfig {
+        title?: ElementConfig;
+        subtitle?: ElementConfig;
+        description?: ElementConfig;
+        cta?: ElementConfig;
+        discount?: ElementConfig;
+    }
+    interface StyleConfig {
+        desktop?: ViewConfig;
+        mobile?: ViewConfig;
+    }
+
+    let currentConfig: StyleConfig = {};
+    try {
+        currentConfig = JSON.parse(styleInput?.value || "{}");
+        if (!currentConfig.desktop && !currentConfig.mobile) {
+            const legacy = { ...currentConfig };
+            currentConfig = {
+                desktop: legacy as ViewConfig,
+                mobile: legacy as ViewConfig,
+            };
+        }
+    } catch (e) {
+        currentConfig = { desktop: {}, mobile: {} };
+    }
+
+    function openPreviewModal() {
+        if (previewModal) {
+            previewModal.classList.remove("hidden");
+            document.body.style.overflow = "hidden";
+            applyConfigToView();
+        }
+    }
+    function closePreviewModal() {
+        if (previewModal) {
+            previewModal.classList.add("hidden");
+            document.body.style.overflow = "";
+        }
+    }
+
+    openPreviewBtn?.addEventListener("click", openPreviewModal);
+    closePreviewBtn?.addEventListener("click", closePreviewModal);
+    previewModalBackdrop?.addEventListener("click", closePreviewModal);
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && !previewModal?.classList.contains("hidden"))
+            closePreviewModal();
+    });
+
+    function switchView(view: "desktop" | "mobile") {
+        currentView = view;
+        const simulatedHeader = document.getElementById("simulated-header");
+        if (previewWrapper && container) {
+            if (view === "desktop") {
+                previewWrapper.style.maxWidth = "95vw";
+                container.style.aspectRatio = "";
+                container.style.height = "70vh";
+                container.style.maxHeight = "700px";
+                container.style.minHeight = "400px";
+                previewWrapper.classList.remove("mobile-view");
+                if (simulatedHeader) simulatedHeader.style.display = "flex";
+            } else {
+                previewWrapper.style.maxWidth = "375px";
+                container.style.height = "";
+                container.style.maxHeight = "";
+                container.style.minHeight = "";
+                container.style.aspectRatio = "9/16";
+                previewWrapper.classList.add("mobile-view");
+                if (simulatedHeader) simulatedHeader.style.display = "none";
+            }
+        }
+
+        if (view === "desktop") {
+            viewDesktop?.classList.add("bg-white/20");
+            viewDesktop?.classList.remove("text-white/60");
+            viewMobile?.classList.remove("bg-white/20");
+            viewMobile?.classList.add("text-white/60");
+        } else {
+            viewMobile?.classList.add("bg-white/20");
+            viewMobile?.classList.remove("text-white/60");
+            viewDesktop?.classList.remove("bg-white/20");
+            viewDesktop?.classList.add("text-white/60");
+        }
+        applyConfigToView();
+    }
+
+    viewDesktop?.addEventListener("click", () => switchView("desktop"));
+    viewMobile?.addEventListener("click", () => switchView("mobile"));
+
+    function applyConfigToView() {
+        const viewConfig = currentConfig[currentView] || {};
+        const draggables = document.querySelectorAll(
+            ".draggable-item",
+        ) as NodeListOf<HTMLElement>;
+        draggables.forEach((el) => {
+            const key = el.dataset.key as keyof ViewConfig;
+            const cfg = viewConfig[key];
+            el.style.transform = "";
+            if (cfg) {
+                el.style.top = cfg.top || "";
+                el.style.left = cfg.left || "";
+                if (cfg.fontSize) el.style.fontSize = cfg.fontSize;
+                if (cfg.maxWidth) el.style.maxWidth = cfg.maxWidth;
+            }
+        });
+    }
+
+    if (container) {
+        container.addEventListener("mousedown", dragStart);
+        container.addEventListener("mouseup", dragEnd);
+        container.addEventListener("mousemove", drag);
+        container.addEventListener("mouseleave", dragEnd);
+    }
+
+    function dragStart(e: MouseEvent) {
+        const target = e.target as HTMLElement;
+        if (target.classList.contains("resize-handle")) {
+            isResizing = true;
+            activeDraggable = target.closest(".draggable-item") as HTMLElement;
+            if (activeDraggable) {
+                activeDraggable.classList.add("active");
+                const rect = activeDraggable.getBoundingClientRect();
+                initialWidth = rect.width;
+                initialX = e.clientX;
+            }
+            return;
+        }
+        const draggable = target.closest(".draggable-item") as HTMLElement;
+        if (draggable) {
+            activeDraggable = draggable;
+            activeDraggable.classList.add("active");
+            const style = window.getComputedStyle(activeDraggable);
+            const matrix = new WebKitCSSMatrix(style.transform);
+            xOffset = matrix.m41;
+            yOffset = matrix.m42;
+            initialX = e.clientX - xOffset;
+            initialY = e.clientY - yOffset;
+        }
+    }
+
+    function dragEnd(e: MouseEvent) {
+        if (!activeDraggable) return;
+        activeDraggable.classList.remove("active");
+        updateConfig(activeDraggable);
+        initialX = currentX;
+        initialY = currentY;
+        activeDraggable = null;
+        isResizing = false;
+    }
+
+    function drag(e: MouseEvent) {
+        if (!activeDraggable || !container) return;
+        e.preventDefault();
+        if (isResizing) {
+            const deltaX = e.clientX - initialX;
+            const containerRect = container.getBoundingClientRect();
+            const newWidthPercent =
+                ((initialWidth + deltaX) / containerRect.width) * 100;
+            const clampedWidth = Math.max(10, Math.min(90, newWidthPercent));
+            activeDraggable.style.maxWidth = `${clampedWidth.toFixed(1)}%`;
+        } else {
+            currentX = e.clientX - initialX;
+            currentY = e.clientY - initialY;
+            activeDraggable.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
+        }
+    }
+
+    function updateConfig(element: HTMLElement) {
+        if (!container || !styleInput) return;
+        const rect = container.getBoundingClientRect();
+        const dragRect = element.getBoundingClientRect();
+        const key = element.dataset.key as keyof ViewConfig;
+        const topPercent = ((dragRect.top - rect.top) / rect.height) * 100;
+        const leftPercent = ((dragRect.left - rect.left) / rect.width) * 100;
+        const clampedTop = Math.max(0, Math.min(95, topPercent));
+        const clampedLeft = Math.max(0, Math.min(95, leftPercent));
+        const computedStyle = window.getComputedStyle(element);
+        const fontSize = element.style.fontSize || computedStyle.fontSize;
+        const maxWidth = element.style.maxWidth || computedStyle.maxWidth;
+        if (!currentConfig[currentView]) currentConfig[currentView] = {};
+        currentConfig[currentView]![key] = {
+            ...currentConfig[currentView]?.[key],
+            top: `${clampedTop.toFixed(2)}%`,
+            left: `${clampedLeft.toFixed(2)}%`,
+            fontSize: fontSize,
+            maxWidth: maxWidth.includes("%")
+                ? maxWidth
+                : currentConfig[currentView]?.[key]?.maxWidth,
+        };
+        styleInput.value = JSON.stringify(currentConfig);
+    }
+
+    // ===== Image Sync =====
+    const thumbnailPreview = document.getElementById(
+        "thumbnail-preview",
+    ) as HTMLImageElement;
+    const previewImage = document.getElementById(
+        "preview-image",
+    ) as HTMLImageElement;
+    const imageInput = document.querySelector(
+        'input[name="image_url"]',
+    ) as HTMLInputElement;
+    if (imageInput) {
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (
+                    mutation.type === "attributes" &&
+                    mutation.attributeName === "value"
+                ) {
+                    const newUrl = imageInput.value;
+                    if (newUrl && thumbnailPreview)
+                        thumbnailPreview.src = newUrl;
+                    if (newUrl && previewImage) previewImage.src = newUrl;
+                }
+            });
+        });
+        observer.observe(imageInput, { attributes: true });
+    }
+
+    // ===== Style Controls =====
+    const styleTitleSize = document.getElementById(
+        "style-title-size",
+    ) as HTMLInputElement;
+    const styleTitleColor = document.getElementById(
+        "style-title-color",
+    ) as HTMLInputElement;
+    const styleTitleBold = document.getElementById(
+        "style-title-bold",
+    ) as HTMLButtonElement;
+    const styleSubtitleSize = document.getElementById(
+        "style-subtitle-size",
+    ) as HTMLInputElement;
+    const styleSubtitleColor = document.getElementById(
+        "style-subtitle-color",
+    ) as HTMLInputElement;
+    const styleSubtitleUppercaseBtn = document.getElementById(
+        "style-subtitle-uppercase-btn",
+    ) as HTMLButtonElement;
+    const styleDescSize = document.getElementById(
+        "style-desc-size",
+    ) as HTMLInputElement;
+    const styleDescColor = document.getElementById(
+        "style-desc-color",
+    ) as HTMLInputElement;
+    const styleDiscountSize = document.getElementById(
+        "style-discount-size",
+    ) as HTMLInputElement;
+    const styleDiscountColor = document.getElementById(
+        "style-discount-color",
+    ) as HTMLInputElement;
+    const styleBtnBg = document.getElementById(
+        "style-btn-bg",
+    ) as HTMLInputElement;
+    const styleBtnText = document.getElementById(
+        "style-btn-text",
+    ) as HTMLInputElement;
+    const styleBtnRadius = document.getElementById(
+        "style-btn-radius",
+    ) as HTMLSelectElement;
+
+    const previewTitle = document.getElementById(
+        "preview-title",
+    ) as HTMLElement;
+    const previewSubtitle = document.getElementById(
+        "preview-subtitle",
+    ) as HTMLElement;
+    const previewDescription = document.getElementById(
+        "preview-description",
+    ) as HTMLElement;
+    const previewCtaBtn = document.querySelector(
+        "#preview-cta-container .hero-btn",
+    ) as HTMLElement;
+
+    let isTitleBold = true;
+    let isSubtitleUppercase = true;
+
+    styleTitleBold?.addEventListener("click", () => {
+        isTitleBold = !isTitleBold;
+        styleTitleBold.classList.toggle("bg-zinc-900", isTitleBold);
+        styleTitleBold.classList.toggle("bg-zinc-300", !isTitleBold);
+        styleTitleBold.classList.toggle("text-white", isTitleBold);
+        styleTitleBold.classList.toggle("text-zinc-600", !isTitleBold);
+        updateStyleConfig();
+        updatePreviewStyles();
+    });
+    styleSubtitleUppercaseBtn?.addEventListener("click", () => {
+        isSubtitleUppercase = !isSubtitleUppercase;
+        styleSubtitleUppercaseBtn.classList.toggle(
+            "bg-zinc-900",
+            isSubtitleUppercase,
+        );
+        styleSubtitleUppercaseBtn.classList.toggle(
+            "bg-zinc-300",
+            !isSubtitleUppercase,
+        );
+        styleSubtitleUppercaseBtn.classList.toggle(
+            "text-white",
+            isSubtitleUppercase,
+        );
+        styleSubtitleUppercaseBtn.classList.toggle(
+            "text-zinc-600",
+            !isSubtitleUppercase,
+        );
+        updateStyleConfig();
+        updatePreviewStyles();
+    });
+
+    [
+        styleTitleSize,
+        styleTitleColor,
+        styleSubtitleSize,
+        styleSubtitleColor,
+        styleDescSize,
+        styleDescColor,
+        styleDiscountSize,
+        styleDiscountColor,
+        styleBtnBg,
+        styleBtnText,
+        styleBtnRadius,
+    ].forEach((el) => {
+        el?.addEventListener("input", () => {
+            updateStyleConfig();
+            updatePreviewStyles();
+        });
+    });
+
+    function updatePreviewStyles() {
+        if (previewTitle) {
+            previewTitle.style.fontSize =
+                (styleTitleSize?.value || "56") + "px";
+            previewTitle.style.color = styleTitleColor?.value || "#ffffff";
+            previewTitle.style.fontWeight = isTitleBold ? "700" : "400";
+        }
+        if (previewSubtitle) {
+            previewSubtitle.style.fontSize =
+                (styleSubtitleSize?.value || "16") + "px";
+            previewSubtitle.style.color =
+                styleSubtitleColor?.value || "#d4af37";
+            previewSubtitle.style.textTransform = isSubtitleUppercase
+                ? "uppercase"
+                : "none";
+        }
+        if (previewDescription) {
+            previewDescription.style.fontSize =
+                (styleDescSize?.value || "18") + "px";
+            previewDescription.style.color = styleDescColor?.value || "#e4e4e7";
+        }
+        const previewDiscountCode = document.getElementById(
+            "preview-discount-code",
+        );
+        if (previewDiscountCode) {
+            previewDiscountCode.style.fontSize =
+                (styleDiscountSize?.value || "18") + "px";
+            previewDiscountCode.style.color =
+                styleDiscountColor?.value || "#d4af37";
+        }
+        if (previewCtaBtn) {
+            previewCtaBtn.style.backgroundColor =
+                styleBtnBg?.value || "#ffffff";
+            previewCtaBtn.style.color = styleBtnText?.value || "#000000";
+            previewCtaBtn.style.borderRadius =
+                styleBtnRadius?.value || "9999px";
+        }
+    }
+
+    function updateStyleConfig() {
+        const view = currentView;
+        if (!currentConfig[view]) currentConfig[view] = {};
+        currentConfig[view]!.title = {
+            ...currentConfig[view]?.title,
+            fontSize: (styleTitleSize?.value || "56") + "px",
+            color: styleTitleColor?.value,
+            fontWeight: isTitleBold ? "700" : "400",
+        };
+        currentConfig[view]!.subtitle = {
+            ...currentConfig[view]?.subtitle,
+            fontSize: (styleSubtitleSize?.value || "16") + "px",
+            color: styleSubtitleColor?.value,
+            textTransform: isSubtitleUppercase ? "uppercase" : "none",
+        };
+        currentConfig[view]!.description = {
+            ...currentConfig[view]?.description,
+            fontSize: (styleDescSize?.value || "18") + "px",
+            color: styleDescColor?.value,
+        };
+        currentConfig[view]!.discount = {
+            ...currentConfig[view]?.discount,
+            fontSize: (styleDiscountSize?.value || "18") + "px",
+            color: styleDiscountColor?.value,
+        };
+        currentConfig[view]!.cta = {
+            ...currentConfig[view]?.cta,
+            bgColor: styleBtnBg?.value,
+            textColor: styleBtnText?.value,
+            borderRadius: styleBtnRadius?.value,
+        };
+        if (styleInput) styleInput.value = JSON.stringify(currentConfig);
+    }
+
+    function loadStyleControls() {
+        const config =
+            currentConfig[currentView] || currentConfig.desktop || {};
+        if (config.title?.fontSize && styleTitleSize) {
+            const size =
+                parseInt(
+                    config.title.fontSize.replace("px", "").replace("rem", ""),
+                ) || 56;
+            styleTitleSize.value = String(size > 10 ? size : 56);
+        }
+        if (config.title?.color && styleTitleColor)
+            styleTitleColor.value = config.title.color;
+        if (config.title?.fontWeight) {
+            isTitleBold =
+                config.title.fontWeight === "700" ||
+                config.title.fontWeight === "800";
+            if (styleTitleBold) {
+                styleTitleBold.classList.toggle("bg-zinc-900", isTitleBold);
+                styleTitleBold.classList.toggle("bg-zinc-300", !isTitleBold);
+                styleTitleBold.classList.toggle("text-white", isTitleBold);
+                styleTitleBold.classList.toggle("text-zinc-600", !isTitleBold);
+            }
+        }
+        if (config.subtitle?.fontSize && styleSubtitleSize) {
+            const size =
+                parseInt(
+                    config.subtitle.fontSize
+                        .replace("px", "")
+                        .replace("rem", ""),
+                ) || 16;
+            styleSubtitleSize.value = String(size > 5 ? size : 16);
+        }
+        if (config.subtitle?.color && styleSubtitleColor)
+            styleSubtitleColor.value = config.subtitle.color;
+        if (config.subtitle?.textTransform !== undefined) {
+            isSubtitleUppercase = config.subtitle.textTransform === "uppercase";
+            if (styleSubtitleUppercaseBtn) {
+                styleSubtitleUppercaseBtn.classList.toggle(
+                    "bg-zinc-900",
+                    isSubtitleUppercase,
+                );
+                styleSubtitleUppercaseBtn.classList.toggle(
+                    "bg-zinc-300",
+                    !isSubtitleUppercase,
+                );
+                styleSubtitleUppercaseBtn.classList.toggle(
+                    "text-white",
+                    isSubtitleUppercase,
+                );
+                styleSubtitleUppercaseBtn.classList.toggle(
+                    "text-zinc-600",
+                    !isSubtitleUppercase,
+                );
+            }
+        }
+        if (config.description?.fontSize && styleDescSize) {
+            const size =
+                parseInt(
+                    config.description.fontSize
+                        .replace("px", "")
+                        .replace("rem", ""),
+                ) || 18;
+            styleDescSize.value = String(size > 5 ? size : 18);
+        }
+        if (config.description?.color && styleDescColor)
+            styleDescColor.value = config.description.color;
+        if (config.discount?.fontSize && styleDiscountSize) {
+            const size =
+                parseInt(
+                    config.discount.fontSize
+                        .replace("px", "")
+                        .replace("rem", ""),
+                ) || 18;
+            styleDiscountSize.value = String(size > 5 ? size : 18);
+        }
+        if (config.discount?.color && styleDiscountColor)
+            styleDiscountColor.value = config.discount.color;
+        if (config.cta?.bgColor && styleBtnBg)
+            styleBtnBg.value = config.cta.bgColor;
+        if (config.cta?.textColor && styleBtnText)
+            styleBtnText.value = config.cta.textColor;
+        if (config.cta?.borderRadius && styleBtnRadius)
+            styleBtnRadius.value = config.cta.borderRadius;
+        updatePreviewStyles();
+    }
+
+    loadStyleControls();
+    applyConfigToView();
+
+    // Ensure style_config is updated before form submission
+    const form = document.querySelector('form[method="POST"]');
+    form?.addEventListener("submit", () => {
+        updateStyleConfig();
+    });
+</script>

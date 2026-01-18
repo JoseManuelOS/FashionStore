@@ -18,13 +18,31 @@ const sessionId = url.searchParams.get("session_id");
             >
                 <!-- Loading State -->
                 <div id="loading-state">
-                    <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-neon-cyan to-neon-fuchsia flex items-center justify-center animate-pulse">
-                        <svg class="w-12 h-12 text-dark-500 animate-spin" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    <div
+                        class="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-neon-cyan to-neon-fuchsia flex items-center justify-center animate-pulse"
+                    >
+                        <svg
+                            class="w-12 h-12 text-dark-500 animate-spin"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                        >
+                            <circle
+                                class="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                stroke-width="4"></circle>
+                            <path
+                                class="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                            ></path>
                         </svg>
                     </div>
-                    <h1 class="text-2xl font-display font-bold text-white mb-4">Procesando tu pedido...</h1>
+                    <h1 class="text-2xl font-display font-bold text-white mb-4">
+                        Procesando tu pedido...
+                    </h1>
                     <p class="text-zinc-400">Por favor espera un momento</p>
                 </div>
 
@@ -55,12 +73,16 @@ const sessionId = url.searchParams.get("session_id");
                     <p class="text-lg text-zinc-300 mb-2">
                         Tu pedido ha sido procesado correctamente
                     </p>
-                    <p id="order-number" class="text-neon-cyan font-medium mb-8"></p>
+                    <p
+                        id="order-number"
+                        class="text-neon-cyan font-medium mb-8"
+                    >
+                    </p>
 
                     <div class="bg-dark-500/50 rounded-xl p-6 mb-8">
                         <p class="text-zinc-400 mb-4">
-                            Recibirás un correo electrónico con los detalles de tu
-                            pedido y el seguimiento de envío.
+                            Recibirás un correo electrónico con los detalles de
+                            tu pedido y el seguimiento de envío.
                         </p>
                         <p class="text-zinc-400">
                             Si tienes alguna pregunta, no dudes en contactarnos.
@@ -85,14 +107,34 @@ const sessionId = url.searchParams.get("session_id");
 
                 <!-- Error State -->
                 <div id="error-state" class="hidden">
-                    <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 flex items-center justify-center">
-                        <svg class="w-12 h-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    <div
+                        class="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 flex items-center justify-center"
+                    >
+                        <svg
+                            class="w-12 h-12 text-white"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                            ></path>
                         </svg>
                     </div>
-                    <h1 class="text-2xl font-display font-bold text-white mb-4">Pago Procesado</h1>
-                    <p class="text-zinc-400 mb-8">Tu pago se ha realizado, pero hubo un problema al crear el pedido. Por favor contacta con soporte.</p>
-                    <a href="/" class="px-8 py-4 bg-gradient-to-r from-neon-cyan to-neon-cyan-light text-dark-500 font-semibold rounded-xl">
+                    <h1 class="text-2xl font-display font-bold text-white mb-4">
+                        Pago Procesado
+                    </h1>
+                    <p class="text-zinc-400 mb-8">
+                        Tu pago se ha realizado, pero hubo un problema al crear
+                        el pedido. Por favor contacta con soporte.
+                    </p>
+                    <a
+                        href="/"
+                        class="px-8 py-4 bg-gradient-to-r from-neon-cyan to-neon-cyan-light text-dark-500 font-semibold rounded-xl"
+                    >
                         Volver al Inicio
                     </a>
                 </div>
@@ -102,63 +144,67 @@ const sessionId = url.searchParams.get("session_id");
 
     <script define:vars={{ sessionId }}>
         async function processOrder() {
-            const loadingState = document.getElementById('loading-state');
-            const successState = document.getElementById('success-state');
-            const errorState = document.getElementById('error-state');
-            const orderNumberEl = document.getElementById('order-number');
+            const loadingState = document.getElementById("loading-state");
+            const successState = document.getElementById("success-state");
+            const errorState = document.getElementById("error-state");
+            const orderNumberEl = document.getElementById("order-number");
 
             try {
                 // Clear cart first
                 localStorage.removeItem("fashionmarket-cart");
-                sessionStorage.removeItem('checkout_email');
-                sessionStorage.removeItem('checkout_name');
-                sessionStorage.removeItem('checkout_address');
+                sessionStorage.removeItem("checkout_email");
+                sessionStorage.removeItem("checkout_name");
+                sessionStorage.removeItem("checkout_address");
                 window.dispatchEvent(new CustomEvent("cart-updated"));
 
                 if (!sessionId) {
-                    throw new Error('No session ID');
+                    throw new Error("No session ID");
                 }
 
                 // Check if we already processed this session
-                const processedSessions = JSON.parse(localStorage.getItem('processed-sessions') || '[]');
+                const processedSessions = JSON.parse(
+                    localStorage.getItem("processed-sessions") || "[]",
+                );
                 if (processedSessions.includes(sessionId)) {
-                    console.log('Session already processed, showing success');
-                    loadingState?.classList.add('hidden');
-                    successState?.classList.remove('hidden');
+                    console.log("Session already processed, showing success");
+                    loadingState?.classList.add("hidden");
+                    successState?.classList.remove("hidden");
                     return;
                 }
 
                 // Call API to verify payment and create order if not exists
-                const response = await fetch('/api/checkout/verify-session', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sessionId })
+                const response = await fetch("/api/checkout/verify-session", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ sessionId }),
                 });
 
                 const result = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(result.error || 'Error verifying session');
+                    throw new Error(result.error || "Error verifying session");
                 }
 
                 // Mark session as processed
                 processedSessions.push(sessionId);
-                localStorage.setItem('processed-sessions', JSON.stringify(processedSessions.slice(-10))); // Keep last 10
+                localStorage.setItem(
+                    "processed-sessions",
+                    JSON.stringify(processedSessions.slice(-10)),
+                ); // Keep last 10
 
                 // Show success
-                loadingState?.classList.add('hidden');
-                successState?.classList.remove('hidden');
-                
-                if (orderNumberEl && result.orderId) {
-                    orderNumberEl.textContent = `Pedido #${result.orderId.slice(0, 8).toUpperCase()}`;
-                }
+                loadingState?.classList.add("hidden");
+                successState?.classList.remove("hidden");
 
+                if (orderNumberEl && result.orderId) {
+                    orderNumberEl.textContent = `Pedido #${result.orderNumber ? result.orderNumber : result.orderId.slice(0, 8).toUpperCase()}`;
+                }
             } catch (error) {
-                console.error('Error processing order:', error);
-                loadingState?.classList.add('hidden');
-                
+                console.error("Error processing order:", error);
+                loadingState?.classList.add("hidden");
+
                 // Show error state
-                errorState?.classList.remove('hidden');
+                errorState?.classList.remove("hidden");
             }
         }
 

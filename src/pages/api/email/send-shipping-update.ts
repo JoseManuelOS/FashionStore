@@ -6,12 +6,12 @@ const resend = new Resend(import.meta.env.RESEND_API_KEY);
 export const POST: APIRoute = async ({ request }) => {
     try {
         const body = await request.json();
-        const { to, customerName, orderId, trackingNumber, trackingUrl, carrierName } = body;
+        const { to, customerName, orderId, trackingNumber, trackingUrl, carrierName, orderNumber } = body;
 
         if (!to || !orderId || !trackingNumber) {
             return new Response(
                 JSON.stringify({ error: 'Faltan datos requeridos (to, orderId, trackingNumber)' }),
-                { 
+                {
                     status: 400,
                     headers: { 'Content-Type': 'application/json' }
                 }
@@ -29,8 +29,8 @@ export const POST: APIRoute = async ({ request }) => {
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 </head>
-                <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #0f172a;">
-                    <div style="max-width: 600px; margin: 0 auto; background-color: #1e293b;">
+                <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #0a0a0f;">
+                    <div style="max-width: 600px; margin: 0 auto; background-color: #0f0f1a;">
                         <!-- Header -->
                         <div style="background: linear-gradient(135deg, #0891b2 0%, #06b6d4 50%, #22d3ee 100%); padding: 48px 32px; text-align: center;">
                             <div style="width: 80px; height: 80px; margin: 0 auto 20px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
@@ -42,7 +42,7 @@ export const POST: APIRoute = async ({ request }) => {
                                 </svg>
                             </div>
                             <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">Tu pedido está en camino</h1>
-                            <p style="color: rgba(255,255,255,0.9); margin: 12px 0 0 0; font-size: 16px;">Pedido #${orderId.slice(0, 8).toUpperCase()}</p>
+                            <p style="color: rgba(255,255,255,0.9); margin: 12px 0 0 0; font-size: 16px;">Pedido #${orderNumber ? orderNumber : orderId.slice(0, 8).toUpperCase()}</p>
                         </div>
                         
                         <!-- Content -->
@@ -51,15 +51,15 @@ export const POST: APIRoute = async ({ request }) => {
                                 Hola <strong style="color: #22d3ee;">${customerName || 'Cliente'}</strong>,
                             </p>
                             
-                            <p style="font-size: 16px; margin: 0 0 32px 0; color: #94a3b8;">
+                            <p style="font-size: 16px; margin: 0 0 32px 0; color: #a1a1aa;">
                                 Buenas noticias. Tu pedido ha sido enviado y está en camino hacia ti.
                             </p>
                             
                             <!-- Tracking Card -->
-                            <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border: 1px solid #334155; border-radius: 16px; padding: 28px; margin-bottom: 24px;">
-                                <h2 style="font-size: 14px; color: #94a3b8; margin: 0 0 20px 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Información de seguimiento</h2>
+                            <div style="background: linear-gradient(135deg, #0a0a0f 0%, #0f0f1a 100%); border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; margin-bottom: 24px;">
+                                <h2 style="font-size: 14px; color: #a1a1aa; margin: 0 0 20px 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Información de seguimiento</h2>
                                 
-                                <div style="display: flex; align-items: center; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #334155;">
+                                <div style="display: flex; align-items: center; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #2a2a3e;">
                                     <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #06b6d4, #0891b2); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 16px;">
                                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                                             <rect x="1" y="3" width="15" height="13" rx="2" ry="2"></rect>
@@ -69,7 +69,7 @@ export const POST: APIRoute = async ({ request }) => {
                                         </svg>
                                     </div>
                                     <div>
-                                        <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">Transportista</div>
+                                        <div style="font-size: 12px; color: #71717a; margin-bottom: 4px;">Transportista</div>
                                         <div style="font-size: 16px; color: #f1f5f9; font-weight: 600;">${carrierName || 'Transportista'}</div>
                                     </div>
                                 </div>
@@ -82,7 +82,7 @@ export const POST: APIRoute = async ({ request }) => {
                                         </svg>
                                     </div>
                                     <div>
-                                        <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">Código de seguimiento</div>
+                                        <div style="font-size: 12px; color: #71717a; margin-bottom: 4px;">Código de seguimiento</div>
                                         <div style="font-size: 16px; color: #22d3ee; font-weight: 600; font-family: 'SF Mono', Monaco, monospace;">${trackingNumber}</div>
                                     </div>
                                 </div>
@@ -97,8 +97,8 @@ export const POST: APIRoute = async ({ request }) => {
                             ` : ''}
 
                             <!-- Progress Bar -->
-                            <div style="background: #0f172a; border: 1px solid #334155; border-radius: 16px; padding: 28px; margin-bottom: 24px;">
-                                <h3 style="font-size: 14px; color: #94a3b8; margin: 0 0 24px 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Estado del pedido</h3>
+                            <div style="background: #0a0a0f; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; margin-bottom: 24px;">
+                                <h3 style="font-size: 14px; color: #a1a1aa; margin: 0 0 24px 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Estado del pedido</h3>
                                 
                                 <table width="100%" cellpadding="0" cellspacing="0" border="0">
                                     <tr>
@@ -124,8 +124,8 @@ export const POST: APIRoute = async ({ request }) => {
                                             </div>
                                         </td>
                                         <td width="25%" align="center" style="padding-bottom: 8px;">
-                                            <div style="width: 36px; height: 36px; border-radius: 50%; background: #334155; margin: 0 auto;">
-                                                <table width="100%" height="100%"><tr><td align="center" valign="middle" style="color: #64748b; font-weight: 600; font-size: 14px;">4</td></tr></table>
+                                            <div style="width: 36px; height: 36px; border-radius: 50%; background: #2a2a3e; margin: 0 auto;">
+                                                <table width="100%" height="100%"><tr><td align="center" valign="middle" style="color: #71717a; font-weight: 600; font-size: 14px;">4</td></tr></table>
                                             </div>
                                         </td>
                                     </tr>
@@ -133,13 +133,13 @@ export const POST: APIRoute = async ({ request }) => {
                                         <td align="center" style="font-size: 11px; color: #22d3ee; font-weight: 500;">Confirmado</td>
                                         <td align="center" style="font-size: 11px; color: #22d3ee; font-weight: 500;">Preparado</td>
                                         <td align="center" style="font-size: 11px; color: #22d3ee; font-weight: 500;">Enviado</td>
-                                        <td align="center" style="font-size: 11px; color: #64748b;">Entregado</td>
+                                        <td align="center" style="font-size: 11px; color: #71717a;">Entregado</td>
                                     </tr>
                                 </table>
                             </div>
 
                             <!-- Delivery Estimate -->
-                            <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border: 1px solid #334155; border-radius: 16px; padding: 24px; margin-bottom: 24px;">
+                            <div style="background: linear-gradient(135deg, #0a0a0f 0%, #0f0f1a 100%); border: 1px solid #2a2a3e; border-radius: 16px; padding: 24px; margin-bottom: 24px;">
                                 <div style="display: flex; align-items: center;">
                                     <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-right: 16px;">
                                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
@@ -148,20 +148,20 @@ export const POST: APIRoute = async ({ request }) => {
                                         </svg>
                                     </div>
                                     <div>
-                                        <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">Entrega estimada</div>
+                                        <div style="font-size: 12px; color: #71717a; margin-bottom: 4px;">Entrega estimada</div>
                                         <div style="font-size: 18px; color: #10b981; font-weight: 700;">2-5 días laborables</div>
                                     </div>
                                 </div>
                             </div>
 
-                            <p style="font-size: 14px; color: #64748b; margin: 24px 0 0 0; text-align: center;">
+                            <p style="font-size: 14px; color: #71717a; margin: 24px 0 0 0; text-align: center;">
                                 ¿Tienes alguna pregunta? Responde a este correo y te ayudaremos.
                             </p>
                         </div>
                         
                         <!-- Footer -->
-                        <div style="background-color: #0f172a; padding: 32px; text-align: center; border-top: 1px solid #334155;">
-                            <p style="color: #64748b; margin: 0; font-size: 13px;">
+                        <div style="background-color: #0a0a0f; padding: 32px; text-align: center; border-top: 1px solid #2a2a3e;">
+                            <p style="color: #71717a; margin: 0; font-size: 13px;">
                                 © ${new Date().getFullYear()} FashionMarket. Todos los derechos reservados.
                             </p>
                         </div>
@@ -175,7 +175,7 @@ export const POST: APIRoute = async ({ request }) => {
             console.error('Error sending shipping update email:', error);
             return new Response(
                 JSON.stringify({ error: error.message }),
-                { 
+                {
                     status: 500,
                     headers: { 'Content-Type': 'application/json' }
                 }
@@ -184,7 +184,7 @@ export const POST: APIRoute = async ({ request }) => {
 
         return new Response(
             JSON.stringify({ success: true, id: data?.id }),
-            { 
+            {
                 status: 200,
                 headers: { 'Content-Type': 'application/json' }
             }
@@ -193,7 +193,7 @@ export const POST: APIRoute = async ({ request }) => {
         console.error('Error:', error);
         return new Response(
             JSON.stringify({ error: error.message || 'Error desconocido' }),
-            { 
+            {
                 status: 500,
                 headers: { 'Content-Type': 'application/json' }
             }

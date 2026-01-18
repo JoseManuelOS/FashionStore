@@ -98,7 +98,7 @@ export const POST: APIRoute = async ({ request }) => {
                 .select('id')
                 .eq('email', customerEmail)
                 .single();
-            
+
             if (customer) {
                 customerId = customer.id;
 
@@ -193,38 +193,34 @@ export const POST: APIRoute = async ({ request }) => {
                 await resend.emails.send({
                     from: 'FashionMarket <onboarding@resend.dev>',
                     to: customerEmail,
-                    subject: `✨ Confirmación de pedido #${order.id.slice(0, 8).toUpperCase()}`,
+                    subject: `✨ Confirmación de pedido #${order.order_number ? order.order_number : order.id.slice(0, 8).toUpperCase()}`,
                     html: `
                         <!DOCTYPE html>
                         <html>
                         <head>
-                            <meta charset="utf-8">
+                            <meta charset="UTF-8">
                             <meta name="viewport" content="width=device-width, initial-scale=1.0">
                         </head>
-                        <body style="margin: 0; padding: 0; background-color: #0a0a0f; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-                            <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+                        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #0f172a;">
+                            <div style="max-width: 600px; margin: 0 auto; background-color: #1e293b;">
                                 <!-- Header -->
-                                <div style="text-align: center; margin-bottom: 40px;">
-                                    <h1 style="font-size: 28px; margin: 0; background: linear-gradient(135deg, #00d4ff, #ff00ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">FashionMarket</h1>
+                                <div style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); padding: 48px 32px; text-align: center;">
+                                    <div style="background: rgba(255, 255, 255, 0.2); width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
+                                        <span style="font-size: 32px;">✨</span>
+                                    </div>
+                                    <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">¡Pedido Confirmado!</h1>
+                                    <p style="color: #ffffff; margin: 8px 0 0 0; font-size: 16px; opacity: 0.9;">Gracias por tu compra</p>
+                                    <div style="margin-top: 24px; background: rgba(255, 255, 255, 0.1); display: inline-block; padding: 8px 16px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.2);">
+                                        <p style="color: #ffffff; font-size: 14px; font-weight: 500; margin: 0; text-transform: uppercase; letter-spacing: 1px;">Referencia del pedido</p>
+                                        <p style="color: #ffffff; font-size: 18px; font-weight: 700; margin: 4px 0 0;">#${order.order_number ? order.order_number : order.id.slice(0, 8).toUpperCase()}</p>
+                                    </div>
                                 </div>
-                                
-                                <!-- Success Icon -->
-                                <div style="text-align: center; margin-bottom: 30px;">
-                                    <div style="display: inline-block; width: 80px; height: 80px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 50%; line-height: 80px; font-size: 40px;">✓</div>
-                                </div>
-                                
-                                <!-- Title -->
-                                <div style="text-align: center; margin-bottom: 30px;">
-                                    <h2 style="color: #fff; font-size: 24px; margin: 0 0 10px;">¡Gracias por tu compra!</h2>
-                                    <p style="color: #888; margin: 0;">Tu pedido ha sido confirmado</p>
-                                </div>
-                                
                                 <!-- Order Info Card -->
                                 <div style="background: #1a1a2e; border: 1px solid #333; border-radius: 16px; padding: 24px; margin-bottom: 24px;">
                                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #333; padding-bottom: 16px;">
                                         <div>
                                             <p style="color: #888; font-size: 12px; margin: 0;">Número de pedido</p>
-                                            <p style="color: #00d4ff; font-size: 18px; font-weight: 700; margin: 4px 0 0;">#${order.id.slice(0, 8).toUpperCase()}</p>
+                                            <p style="color: #00d4ff; font-size: 18px; font-weight: 700; margin: 4px 0 0;">#${order.order_number ? order.order_number : order.id.slice(0, 8).toUpperCase()}</p>
                                         </div>
                                         <div style="text-align: right;">
                                             <p style="color: #888; font-size: 12px; margin: 0;">Total</p>
