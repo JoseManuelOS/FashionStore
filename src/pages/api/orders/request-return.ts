@@ -109,10 +109,15 @@ export const POST: APIRoute = async ({ request }) => {
                     <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f3f4f6;">
                         <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
                             <!-- Header -->
-                            <div style="background: linear-gradient(135deg, #ef4444 0%, #f97316 100%); padding: 40px 20px; text-align: center;">
-                                <div style="font-size: 60px; margin-bottom: 15px;">📦</div>
+                            <div style="background: linear-gradient(135deg, #d946ef 0%, #a21caf 100%); padding: 40px 20px; text-align: center;">
+                                <div style="width: 60px; height: 60px; background: rgba(255,255,255,0.2); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 15px;">
+                                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                        <polyline points="9 11 12 14 22 4"></polyline>
+                                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                                    </svg>
+                                </div>
                                 <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">Solicitud de Devolución</h1>
-                                <p style="color: #ffffff; margin: 10px 0 0 0; opacity: 0.9;">Pedido #${order.order_number || order.id}</p>
+                                <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">Pedido #${order.order_number || order.id}</p>
                             </div>
                             
                             <!-- Content -->

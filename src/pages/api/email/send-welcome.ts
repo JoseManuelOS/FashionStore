@@ -11,7 +11,7 @@ export const POST: APIRoute = async ({ request }) => {
         if (!to || !name) {
             return new Response(
                 JSON.stringify({ error: 'Faltan datos requeridos' }),
-                { 
+                {
                     status: 400,
                     headers: { 'Content-Type': 'application/json' }
                 }
@@ -21,7 +21,7 @@ export const POST: APIRoute = async ({ request }) => {
         const { data, error } = await resend.emails.send({
             from: 'FashionMarket <onboarding@resend.dev>',
             to: [to],
-            subject: '👋 ¡Bienvenido a FashionMarket!',
+            subject: 'Bienvenido a FashionMarket - Tu cuenta ha sido creada',
             html: `
                 <!DOCTYPE html>
                 <html>
@@ -112,7 +112,7 @@ export const POST: APIRoute = async ({ request }) => {
             console.error('Error enviando correo de bienvenida:', error);
             return new Response(
                 JSON.stringify({ error: 'Error al enviar el correo' }),
-                { 
+                {
                     status: 500,
                     headers: { 'Content-Type': 'application/json' }
                 }
@@ -123,7 +123,7 @@ export const POST: APIRoute = async ({ request }) => {
 
         return new Response(
             JSON.stringify({ success: true, messageId: data?.id }),
-            { 
+            {
                 status: 200,
                 headers: { 'Content-Type': 'application/json' }
             }
@@ -132,7 +132,7 @@ export const POST: APIRoute = async ({ request }) => {
         console.error('Error en send-welcome:', error);
         return new Response(
             JSON.stringify({ error: error.message }),
-            { 
+            {
                 status: 500,
                 headers: { 'Content-Type': 'application/json' }
             }

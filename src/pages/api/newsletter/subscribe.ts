@@ -100,7 +100,7 @@ export const POST: APIRoute = async ({ request }) => {
             await resend.emails.send({
                 from: 'FashionMarket <onboarding@resend.dev>',
                 to: [normalizedEmail],
-                subject: '🎉 ¡Bienvenido a FashionMarket! Tu código de descuento',
+                subject: 'Bienvenido a FashionMarket - Tu código de descuento exclusivo',
                 html: `
                     <!DOCTYPE html>
                     <html>
@@ -136,18 +136,18 @@ export const POST: APIRoute = async ({ request }) => {
                             
                             <!-- Benefits -->
                             <div style="background-color: #f9fafb; padding: 30px;">
-                                <h3 style="margin: 0 0 20px 0; color: #1f2937; font-size: 18px; text-align: center;">¿Qué recibirás?</h3>
+                                <h3 style="margin: 0 0 20px 0; color: #1f2937; font-size: 18px; text-align: center;">Como suscriptor recibirás</h3>
                                 <div style="display: flex; flex-direction: column; gap: 12px;">
                                     <div style="display: flex; align-items: center; gap: 12px;">
-                                        <span style="font-size: 20px;">🎁</span>
+                                        <span style="width: 24px; height: 24px; background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold;">✓</span>
                                         <span style="color: #4b5563;">Ofertas exclusivas para suscriptores</span>
                                     </div>
                                     <div style="display: flex; align-items: center; gap: 12px;">
-                                        <span style="font-size: 20px;">👗</span>
+                                        <span style="width: 24px; height: 24px; background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold;">✓</span>
                                         <span style="color: #4b5563;">Acceso anticipado a nuevas colecciones</span>
                                     </div>
                                     <div style="display: flex; align-items: center; gap: 12px;">
-                                        <span style="font-size: 20px;">💡</span>
+                                        <span style="width: 24px; height: 24px; background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold;">✓</span>
                                         <span style="color: #4b5563;">Consejos de estilo y tendencias</span>
                                     </div>
                                 </div>
