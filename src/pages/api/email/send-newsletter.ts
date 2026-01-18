@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { Resend } from 'resend';
-import { getNewsletterSubscribers } from '../../../lib/supabase';
+import { getAllEmailRecipients } from '../../../lib/supabase';
 
 const resend = new Resend(import.meta.env.RESEND_API_KEY);
 
@@ -12,20 +12,20 @@ export const POST: APIRoute = async ({ request }) => {
         if (!subject || !content) {
             return new Response(
                 JSON.stringify({ error: 'Faltan asunto o contenido del email' }),
-                { 
+                {
                     status: 400,
                     headers: { 'Content-Type': 'application/json' }
                 }
             );
         }
 
-        // Obtener suscriptores del newsletter
-        const subscribers = await getNewsletterSubscribers();
+        // Obtener todos los suscriptores (combina newsletter_subscribers + customers con newsletter=true)
+        const subscribers = await getAllEmailRecipients();
 
         if (subscribers.length === 0) {
             return new Response(
                 JSON.stringify({ error: 'No hay suscriptores en el newsletter' }),
-                { 
+                {
                     status: 400,
                     headers: { 'Content-Type': 'application/json' }
                 }
@@ -37,9 +37,10 @@ export const POST: APIRoute = async ({ request }) => {
         const failedSends: string[] = [];
 
         // Enviar emails uno por uno (o usar batch si tienes plan de pago)
-        for (const email of emails) {
-            const subscriber = subscribers.find(s => s.email === email);
-            const name = subscriber?.full_name || 'Cliente';
+        for (const subscriber of subscribers) {
+            const email = subscriber.email;
+            const name = subscriber.name || 'Cliente';
+
 
             try {
                 const { data, error } = await resend.emails.send({
@@ -106,8 +107,8 @@ ${content}
         }
 
         return new Response(
-            JSON.stringify({ 
-                success: true, 
+            JSON.stringify({
+                success: true,
                 message: `Newsletter enviado correctamente`,
                 stats: {
                     total: emails.length,
@@ -117,7 +118,7 @@ ${content}
                     failedEmails: failedSends
                 }
             }),
-            { 
+            {
                 status: 200,
                 headers: { 'Content-Type': 'application/json' }
             }
@@ -127,7 +128,7 @@ ${content}
         console.error('Error en send-newsletter:', error);
         return new Response(
             JSON.stringify({ error: 'Error interno del servidor' }),
-            { 
+            {
                 status: 500,
                 headers: { 'Content-Type': 'application/json' }
             }

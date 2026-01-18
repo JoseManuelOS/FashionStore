@@ -926,6 +926,82 @@ export async function getNewsletterSubscribers(): Promise<Customer[]> {
 }
 
 /**
+ * Newsletter subscriber interface (independent table)
+ */
+export interface NewsletterSubscriber {
+    id: string;
+    email: string;
+    name: string | null;
+    subscribed_at: string;
+    source: string;
+    is_active: boolean;
+    promo_code_sent: string | null;
+}
+
+/**
+ * Get subscribers from newsletter_subscribers table
+ */
+export async function getNewsletterSubscribersFromTable(): Promise<NewsletterSubscriber[]> {
+    const { data, error } = await supabaseAdmin
+        .from('newsletter_subscribers')
+        .select('*')
+        .eq('is_active', true)
+        .order('subscribed_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching newsletter_subscribers:', error);
+        return [];
+    }
+    return data || [];
+}
+
+/**
+ * Combined email recipient for newsletter sending
+ */
+export interface EmailRecipient {
+    email: string;
+    name: string | null;
+    source: 'customer' | 'subscriber';
+}
+
+/**
+ * Get ALL email recipients for newsletter (combines both sources, removes duplicates)
+ */
+export async function getAllEmailRecipients(): Promise<EmailRecipient[]> {
+    const recipients: Map<string, EmailRecipient> = new Map();
+
+    // Get subscribers from newsletter_subscribers table
+    const tableSubscribers = await getNewsletterSubscribersFromTable();
+    for (const sub of tableSubscribers) {
+        const email = sub.email.toLowerCase();
+        if (!recipients.has(email)) {
+            recipients.set(email, {
+                email: sub.email,
+                name: sub.name,
+                source: 'subscriber'
+            });
+        }
+    }
+
+    // Get customers with newsletter = true
+    const customers = await getNewsletterSubscribers();
+    for (const customer of customers) {
+        const email = customer.email.toLowerCase();
+        if (!recipients.has(email)) {
+            recipients.set(email, {
+                email: customer.email,
+                name: customer.full_name,
+                source: 'customer'
+            });
+        }
+    }
+
+    return Array.from(recipients.values());
+}
+
+
+
+/**
  * Get customer orders
  */
 export async function getCustomerOrders(customerId: string): Promise<Order[]> {

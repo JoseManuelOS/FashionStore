@@ -1,0 +1,356 @@
+---
+// NewsletterPopup.astro - Popup promocional para suscripción al newsletter
+---
+
+<!-- Newsletter Popup Modal -->
+<div
+    id="newsletter-popup"
+    class="fixed inset-0 z-[100] hidden"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="popup-title"
+>
+    <!-- Backdrop -->
+    <div
+        class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+        onclick="closeNewsletterPopup()"
+    >
+    </div>
+
+    <!-- Modal Content -->
+    <div
+        class="fixed inset-0 flex items-center justify-center p-4 pointer-events-none"
+    >
+        <div
+            id="popup-content"
+            class="relative bg-dark-400 border border-white/10 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl pointer-events-auto transform transition-all"
+        >
+            <!-- Close Button -->
+            <button
+                onclick="closeNewsletterPopup()"
+                class="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-dark-300/80 text-white/60 hover:text-white hover:bg-dark-200 transition-colors"
+                aria-label="Cerrar"
+            >
+                <svg
+                    class="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+
+            <!-- Header Image/Gradient -->
+            <div
+                class="h-32 bg-gradient-to-br from-neon-cyan via-neon-fuchsia to-purple-600 relative overflow-hidden"
+            >
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <span class="text-6xl">🎁</span>
+                </div>
+                <div
+                    class="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg viewBox=\"
+                    0
+                    0
+                    200
+                    200\"
+                    xmlns='\"http://www.w3.org/2000/svg\"%3E%3Cfilter'
+                    id='\"noiseFilter\"%3E%3CfeTurbulence'
+                    type='\"fractalNoise\"'
+                    baseFrequency='\"0.65\"'
+                    numOctaves='\"3\"'
+                    stitchTiles='\"stitch\"/%3E%3C/filter%3E%3Crect'
+                    width='\"100%25\"'
+                    height='\"100%25\"'
+                    filter='\"url(%23noiseFilter)\"/%3E%3C/svg%3E&apos;)]'
+                    opacity-20"
+                >
+                </div>
+            </div>
+
+            <!-- Form Content -->
+            <div id="popup-form-section" class="p-6">
+                <h2
+                    id="popup-title"
+                    class="text-2xl font-bold text-white text-center mb-2"
+                >
+                    ¡Obtén 10% de Descuento!
+                </h2>
+                <p class="text-zinc-400 text-center mb-6">
+                    Suscríbete a nuestro newsletter y recibe un código exclusivo
+                    para tu primera compra
+                </p>
+
+                <!-- Email Form -->
+                <form id="popup-newsletter-form" class="space-y-4">
+                    <div>
+                        <input
+                            type="email"
+                            id="popup-email"
+                            name="email"
+                            required
+                            placeholder="Tu email"
+                            class="w-full px-4 py-3 bg-dark-300 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/20 transition-all"
+                        />
+                    </div>
+
+                    <button
+                        type="submit"
+                        id="popup-submit-btn"
+                        class="w-full px-6 py-3 bg-gradient-to-r from-neon-cyan to-neon-fuchsia text-dark-500 font-bold rounded-xl hover:shadow-lg hover:shadow-neon-cyan/25 transition-all flex items-center justify-center gap-2"
+                    >
+                        <span>Obtener mi descuento</span>
+                        <svg
+                            class="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                        </svg>
+                    </button>
+                </form>
+
+                <p class="text-zinc-500 text-xs text-center mt-4">
+                    Al suscribirte, aceptas recibir emails con ofertas y
+                    novedades. Puedes cancelar en cualquier momento.
+                </p>
+            </div>
+
+            <!-- Success State (hidden by default) -->
+            <div id="popup-success-section" class="p-6 hidden">
+                <div class="text-center">
+                    <div
+                        class="w-16 h-16 mx-auto mb-4 rounded-full bg-green-500/20 flex items-center justify-center"
+                    >
+                        <svg
+                            class="w-8 h-8 text-green-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-white mb-2">
+                        ¡Gracias por suscribirte!
+                    </h3>
+                    <p class="text-zinc-400 mb-6">Tu código de descuento:</p>
+
+                    <!-- Promo Code Display -->
+                    <div
+                        class="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-2 border-dashed border-amber-500/50 rounded-xl p-4 mb-6"
+                    >
+                        <p
+                            id="popup-promo-code"
+                            class="text-3xl font-bold text-amber-400 font-mono tracking-wider"
+                        >
+                            WELCOME10
+                        </p>
+                        <p class="text-sm text-amber-300/80 mt-1">
+                            10% de descuento
+                        </p>
+                    </div>
+
+                    <button
+                        onclick="copyPromoCode()"
+                        id="copy-code-btn"
+                        class="px-6 py-2 bg-dark-300 text-white rounded-xl hover:bg-dark-200 transition-colors flex items-center gap-2 mx-auto"
+                    >
+                        <svg
+                            class="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                            ></path>
+                        </svg>
+                        <span>Copiar código</span>
+                    </button>
+
+                    <button
+                        onclick="closeNewsletterPopup()"
+                        class="mt-4 text-zinc-400 hover:text-white text-sm transition-colors"
+                    >
+                        Continuar comprando →
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const POPUP_DELAY_MS = 8000; // 8 segundos
+    const POPUP_STORAGE_KEY = "newsletter_popup_shown";
+
+    // Check if popup should be shown
+    function shouldShowPopup(): boolean {
+        // Don't show if already shown in this session
+        if (sessionStorage.getItem(POPUP_STORAGE_KEY)) {
+            return false;
+        }
+        // Don't show if already subscribed (localStorage)
+        if (localStorage.getItem("newsletter_subscribed")) {
+            return false;
+        }
+        return true;
+    }
+
+    function showNewsletterPopup() {
+        const popup = document.getElementById("newsletter-popup");
+        if (popup && shouldShowPopup()) {
+            popup.classList.remove("hidden");
+            document.body.style.overflow = "hidden";
+            sessionStorage.setItem(POPUP_STORAGE_KEY, "true");
+        }
+    }
+
+    (window as any).closeNewsletterPopup = function () {
+        const popup = document.getElementById("newsletter-popup");
+        if (popup) {
+            popup.classList.add("hidden");
+            document.body.style.overflow = "";
+        }
+    };
+
+    (window as any).copyPromoCode = function () {
+        const code =
+            document.getElementById("popup-promo-code")?.textContent ||
+            "WELCOME10";
+        navigator.clipboard.writeText(code.trim()).then(() => {
+            const btn = document.getElementById("copy-code-btn");
+            if (btn) {
+                btn.innerHTML = `
+                    <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span>¡Copiado!</span>
+                `;
+                setTimeout(() => {
+                    btn.innerHTML = `
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                        </svg>
+                        <span>Copiar código</span>
+                    `;
+                }, 2000);
+            }
+        });
+    };
+
+    // Handle form submission
+    document.addEventListener("DOMContentLoaded", () => {
+        const form = document.getElementById(
+            "popup-newsletter-form",
+        ) as HTMLFormElement;
+
+        form?.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const emailInput = document.getElementById(
+                "popup-email",
+            ) as HTMLInputElement;
+            const submitBtn = document.getElementById(
+                "popup-submit-btn",
+            ) as HTMLButtonElement;
+            const email = emailInput?.value;
+
+            if (!email) return;
+
+            // Show loading state
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `
+                <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Procesando...</span>
+            `;
+
+            try {
+                const response = await fetch("/api/newsletter/subscribe", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, source: "popup" }),
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Update promo code display
+                    const promoEl = document.getElementById("popup-promo-code");
+                    if (promoEl && data.promo_code) {
+                        promoEl.textContent = data.promo_code;
+                    }
+
+                    // Show success state
+                    document
+                        .getElementById("popup-form-section")
+                        ?.classList.add("hidden");
+                    document
+                        .getElementById("popup-success-section")
+                        ?.classList.remove("hidden");
+
+                    // Mark as subscribed
+                    localStorage.setItem("newsletter_subscribed", "true");
+                } else {
+                    alert(data.error || "Error al suscribirse");
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = `
+                        <span>Obtener mi descuento</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                        </svg>
+                    `;
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("Error de conexión");
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `
+                    <span>Obtener mi descuento</span>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                    </svg>
+                `;
+            }
+        });
+
+        // Show popup after delay
+        if (shouldShowPopup()) {
+            setTimeout(showNewsletterPopup, POPUP_DELAY_MS);
+        }
+
+        // Exit intent (optional - show when mouse leaves viewport)
+        document.addEventListener("mouseleave", (e) => {
+            if (e.clientY <= 0 && shouldShowPopup()) {
+                showNewsletterPopup();
+            }
+        });
+    });
+
+    // Close on Escape key
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+            (window as any).closeNewsletterPopup();
+        }
+    });
+</script>
