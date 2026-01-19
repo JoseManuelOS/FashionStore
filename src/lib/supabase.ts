@@ -1075,23 +1075,24 @@ export interface Facturacion {
 async function generateInvoiceNumber(): Promise<string> {
     const year = new Date().getFullYear().toString();
 
-    // Get the max invoice number for this year
+    // Get the max invoice number for this year (format: FM-YYYY-XXXXXX)
     const { data } = await supabaseAdmin
         .from('facturacion')
         .select('invoice_number')
-        .like('invoice_number', `${year}-%`)
+        .like('invoice_number', `FM-${year}-%`)
         .order('invoice_number', { ascending: false })
         .limit(1);
 
     let nextSeq = 1;
     if (data && data.length > 0 && data[0].invoice_number) {
         const parts = data[0].invoice_number.split('-');
-        if (parts.length === 2) {
-            nextSeq = parseInt(parts[1], 10) + 1;
+        // Format: FM-YYYY-XXXXXX (3 parts)
+        if (parts.length === 3) {
+            nextSeq = parseInt(parts[2], 10) + 1;
         }
     }
 
-    return `${year}-${nextSeq.toString().padStart(6, '0')}`;
+    return `FM-${year}-${nextSeq.toString().padStart(6, '0')}`;
 }
 
 /**

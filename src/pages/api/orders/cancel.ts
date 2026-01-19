@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../lib/supabase';
 import { createClient } from '@supabase/supabase-js';
+import { sendCancellationNotification } from '../../../lib/admin-notifications';
 
 export const POST: APIRoute = async ({ request }) => {
     try {
@@ -180,8 +181,8 @@ export const POST: APIRoute = async ({ request }) => {
                         <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
                             <!-- Header -->
                             <div style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); padding: 40px 20px; text-align: center;">
-                                <div style="width: 60px; height: 60px; background: white; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 15px;">
-                                    <span style="font-size: 30px;">✕</span>
+                                <div style="width: 70px; height: 70px; background: white; border-radius: 50%; margin: 0 auto 15px auto;">
+                                    <table width="70" height="70"><tr><td align="center" valign="middle" style="color: #ef4444; font-size: 36px; font-weight: bold;">✕</td></tr></table>
                                 </div>
                                 <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: bold;">Pedido Cancelado</h1>
                                 <p style="color: #fecaca; margin: 10px 0 0 0;">Pedido #${order.order_number || order.id}</p>
@@ -248,6 +249,19 @@ export const POST: APIRoute = async ({ request }) => {
         } catch (emailError) {
             console.error('Error sending cancellation email:', emailError);
             // Continue even if email fails
+        }
+
+        // Notify admin about cancellation
+        try {
+            await sendCancellationNotification({
+                id: order.id,
+                order_number: order.order_number,
+                customer_name: customerName,
+                customer_email: customerEmail,
+                total_price: order.total_price
+            }, reason);
+        } catch (adminNotifyError) {
+            console.error('Error sending admin notification:', adminNotifyError);
         }
 
         return new Response(

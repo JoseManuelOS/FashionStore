@@ -37,7 +37,7 @@ BEGIN
   INTO next_seq
   FROM facturacion;
   
-  invoice_num := year_prefix || '-' || LPAD(next_seq::TEXT, 6, '0');
+  invoice_num := 'FM-' || year_prefix || '-' || LPAD(next_seq::TEXT, 6, '0');
   
   RETURN invoice_num;
 END;

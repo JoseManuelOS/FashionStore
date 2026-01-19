@@ -469,7 +469,15 @@ const currentStatus = statusLabels[order?.status || "pending"];
                                 Dirección de Envío
                             </h2>
                             <p class="text-zinc-600 whitespace-pre-line">
-                                {order.shipping_address}
+                                {order.shipping_address
+                                    .split("\n")
+                                    .filter(
+                                        (line: string) =>
+                                            line &&
+                                            line.trim() !== "" &&
+                                            !line.includes("null"),
+                                    )
+                                    .join("\n") || "Dirección no disponible"}
                             </p>
                         </div>
                     )

@@ -137,26 +137,46 @@ function formatDate(dateStr: string) {
                                                 {formatDate(invoice.created_at)}
                                             </span>
                                         </td>
-                                        <td class="px-6 py-4 text-right">
-                                            <a
-                                                href={`/admin/pedidos/${invoice.order_id}`}
-                                                class="inline-flex items-center gap-1 text-sm text-cyan-600 hover:text-cyan-700 font-medium"
-                                            >
-                                                Ver Pedido
-                                                <svg
-                                                    class="w-4 h-4"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    viewBox="0 0 24 24"
+                                        <td class="px-6 py-4">
+                                            <div class="flex items-center justify-end gap-2">
+                                                <!-- Ver Factura -->
+                                                <a
+                                                    href={`/api/invoice/${invoice.order_id}`}
+                                                    target="_blank"
+                                                    class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-cyan-700 bg-cyan-50 rounded-lg hover:bg-cyan-100 transition-colors"
+                                                    title="Ver Factura"
                                                 >
-                                                    <path
-                                                        stroke-linecap="round"
-                                                        stroke-linejoin="round"
-                                                        stroke-width="2"
-                                                        d="M9 5l7 7-7 7"
-                                                    />
-                                                </svg>
-                                            </a>
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                    </svg>
+                                                    Ver
+                                                </a>
+                                                <!-- Enviar Factura -->
+                                                <button
+                                                    type="button"
+                                                    data-order-id={invoice.order_id}
+                                                    data-invoice-number={invoice.invoice_number || invoice.id}
+                                                    class="send-invoice-btn inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors"
+                                                    title="Enviar por Email"
+                                                >
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                                    </svg>
+                                                    Enviar
+                                                </button>
+                                                <!-- Ver Pedido -->
+                                                <a
+                                                    href={`/admin/pedidos/${invoice.order_id}`}
+                                                    class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-zinc-600 bg-zinc-100 rounded-lg hover:bg-zinc-200 transition-colors"
+                                                    title="Ver Pedido"
+                                                >
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                                    </svg>
+                                                    Pedido
+                                                </a>
+                                            </div>
                                         </td>
                                     </tr>
                                 );
@@ -168,3 +188,69 @@ function formatDate(dateStr: string) {
         }
     </div>
 </AdminLayout>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Send invoice buttons
+        document.querySelectorAll('.send-invoice-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const button = e.currentTarget as HTMLButtonElement;
+                const orderId = button.dataset.orderId;
+                const invoiceNumber = button.dataset.invoiceNumber;
+                
+                if (!confirm(`¿Enviar factura ${invoiceNumber} por email al cliente?`)) {
+                    return;
+                }
+                
+                // Disable button and show loading
+                button.disabled = true;
+                const originalContent = button.innerHTML;
+                button.innerHTML = `
+                    <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Enviando...
+                `;
+                
+                try {
+                    const response = await fetch('/api/invoice/send', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ orderId })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (response.ok) {
+                        button.innerHTML = `
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            Enviada
+                        `;
+                        button.classList.remove('bg-emerald-50', 'text-emerald-700', 'hover:bg-emerald-100');
+                        button.classList.add('bg-green-100', 'text-green-700');
+                        
+                        setTimeout(() => {
+                            button.innerHTML = originalContent;
+                            button.classList.remove('bg-green-100', 'text-green-700');
+                            button.classList.add('bg-emerald-50', 'text-emerald-700', 'hover:bg-emerald-100');
+                            button.disabled = false;
+                        }, 3000);
+                    } else {
+                        alert('Error: ' + (result.error || 'No se pudo enviar la factura'));
+                        button.innerHTML = originalContent;
+                        button.disabled = false;
+                    }
+                } catch (error) {
+                    console.error('Error sending invoice:', error);
+                    alert('Error al enviar la factura');
+                    button.innerHTML = originalContent;
+                    button.disabled = false;
+                }
+            });
+        });
+    });
+</script>
+

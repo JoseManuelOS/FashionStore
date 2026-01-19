@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../lib/supabase';
 import { createClient } from '@supabase/supabase-js';
+import { sendReturnRequestNotification } from '../../../lib/admin-notifications';
 
 export const POST: APIRoute = async ({ request }) => {
     try {
@@ -183,6 +184,19 @@ export const POST: APIRoute = async ({ request }) => {
         } catch (emailError) {
             console.error('Error sending return email:', emailError);
             // Continue even if email fails - don't block the response
+        }
+
+        // Notify admin about return request
+        try {
+            await sendReturnRequestNotification({
+                id: order.id,
+                order_number: order.order_number,
+                customer_name: customerName,
+                customer_email: customerEmail,
+                total_price: order.total_price
+            }, reason);
+        } catch (adminNotifyError) {
+            console.error('Error sending admin notification:', adminNotifyError);
         }
 
         return new Response(
