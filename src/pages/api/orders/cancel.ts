@@ -42,9 +42,9 @@ export const POST: APIRoute = async ({ request }) => {
 
         const userEmail = user.email.toLowerCase();
 
-        // Get order ID from request body
+        // Get order ID and reason from request body
         const body = await request.json();
-        const { orderId } = body;
+        const { orderId, reason } = body;
 
         if (!orderId) {
             return new Response(

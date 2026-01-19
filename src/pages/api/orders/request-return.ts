@@ -42,9 +42,9 @@ export const POST: APIRoute = async ({ request }) => {
 
         const userEmail = user.email.toLowerCase();
 
-        // Get order ID from request body
+        // Get order ID and reason from request body
         const body = await request.json();
-        const { orderId } = body;
+        const { orderId, reason } = body;
 
         if (!orderId) {
             return new Response(
@@ -56,7 +56,7 @@ export const POST: APIRoute = async ({ request }) => {
         // Find the order and verify it belongs to this user (by customer_email)
         const { data: order, error: orderError } = await supabaseAdmin
             .from('orders')
-            .select('id, customer_email, customer_name, status, order_number')
+            .select('id, customer_email, customer_name, status, order_number, total_price')
             .eq('id', orderId)
             .single();
 
