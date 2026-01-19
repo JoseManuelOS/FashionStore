@@ -25,6 +25,12 @@ if (Astro.request.method === "POST") {
     const action = formData.get("action")?.toString();
     const subject = formData.get("subject")?.toString();
     const content = formData.get("content")?.toString();
+    const headerTitle = formData.get("headerTitle")?.toString() || "";
+    const imageUrl = formData.get("imageUrl")?.toString() || "";
+    const promoCode = formData.get("promoCode")?.toString() || "";
+    const promoDiscount = formData.get("promoDiscount")?.toString() || "";
+    const buttonText = formData.get("buttonText")?.toString() || "";
+    const buttonUrl = formData.get("buttonUrl")?.toString() || "";
 
     if (action === "send_email" && subject && content) {
         if (subscribers.length > 0) {
@@ -37,7 +43,16 @@ if (Astro.request.method === "POST") {
                         headers: {
                             "Content-Type": "application/json",
                         },
-                        body: JSON.stringify({ subject, content }),
+                        body: JSON.stringify({
+                            subject,
+                            content,
+                            headerTitle,
+                            imageUrl,
+                            promoCode,
+                            promoDiscount,
+                            buttonText,
+                            buttonUrl,
+                        }),
                     },
                 );
 
@@ -224,22 +239,59 @@ function formatDate(dateStr: string) {
                         </div>
                     </div>
 
+                    <!-- Header Title -->
+                    <div>
+                        <label
+                            for="headerTitle"
+                            class="block text-sm font-medium text-zinc-700 mb-2"
+                        >
+                            Título del Header
+                        </label>
+                        <input
+                            type="text"
+                            id="headerTitle"
+                            name="headerTitle"
+                            placeholder="Novedades de FashionMarket"
+                            class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                        />
+                    </div>
+
                     <!-- Subject -->
                     <div>
                         <label
                             for="subject"
                             class="block text-sm font-medium text-zinc-700 mb-2"
                         >
-                            Asunto <span class="text-red-500">*</span>
+                            Asunto del Email <span class="text-red-500">*</span>
                         </label>
                         <input
                             type="text"
                             id="subject"
                             name="subject"
                             required
-                            placeholder="🎉 Nuevas ofertas exclusivas para ti"
+                            placeholder="Nuevas ofertas exclusivas para ti"
                             class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
                         />
+                    </div>
+
+                    <!-- Image URL -->
+                    <div>
+                        <label
+                            for="imageUrl"
+                            class="block text-sm font-medium text-zinc-700 mb-2"
+                        >
+                            URL de Imagen (opcional)
+                        </label>
+                        <input
+                            type="url"
+                            id="imageUrl"
+                            name="imageUrl"
+                            placeholder="https://ejemplo.com/imagen-promocional.jpg"
+                            class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                        />
+                        <p class="text-xs text-zinc-500 mt-1">
+                            Imagen destacada que aparecerá en el email
+                        </p>
                     </div>
 
                     <!-- Content -->
@@ -254,15 +306,120 @@ function formatDate(dateStr: string) {
                             id="content"
                             name="content"
                             required
-                            rows={8}
+                            rows={6}
                             placeholder="Escribe el contenido de tu email aquí...
 
-Puedes incluir:
-- Información sobre nuevos productos
-- Descuentos especiales
-- Novedades de la tienda"
+Puedes incluir información sobre nuevos productos, descuentos especiales o novedades de la tienda."
                             class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all resize-none"
                         ></textarea>
+                    </div>
+
+                    <!-- Promo Code Section -->
+                    <div
+                        class="p-4 bg-amber-50 border border-amber-200 rounded-xl"
+                    >
+                        <h3
+                            class="text-sm font-medium text-amber-800 mb-3 flex items-center gap-2"
+                        >
+                            <svg
+                                class="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+                                ></path>
+                            </svg>
+                            Código Promocional (opcional)
+                        </h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label
+                                    for="promoCode"
+                                    class="block text-xs text-amber-700 mb-1"
+                                    >Código</label
+                                >
+                                <input
+                                    type="text"
+                                    id="promoCode"
+                                    name="promoCode"
+                                    placeholder="VERANO20"
+                                    class="w-full px-3 py-2 bg-white border border-amber-200 rounded-lg text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-amber-400 text-sm uppercase"
+                                />
+                            </div>
+                            <div>
+                                <label
+                                    for="promoDiscount"
+                                    class="block text-xs text-amber-700 mb-1"
+                                    >Descripción del descuento</label
+                                >
+                                <input
+                                    type="text"
+                                    id="promoDiscount"
+                                    name="promoDiscount"
+                                    placeholder="20% de descuento"
+                                    class="w-full px-3 py-2 bg-white border border-amber-200 rounded-lg text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-amber-400 text-sm"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CTA Button Section -->
+                    <div
+                        class="p-4 bg-cyan-50 border border-cyan-200 rounded-xl"
+                    >
+                        <h3
+                            class="text-sm font-medium text-cyan-800 mb-3 flex items-center gap-2"
+                        >
+                            <svg
+                                class="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                                ></path>
+                            </svg>
+                            Botón de Acción
+                        </h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label
+                                    for="buttonText"
+                                    class="block text-xs text-cyan-700 mb-1"
+                                    >Texto del botón</label
+                                >
+                                <input
+                                    type="text"
+                                    id="buttonText"
+                                    name="buttonText"
+                                    placeholder="Visitar la tienda"
+                                    class="w-full px-3 py-2 bg-white border border-cyan-200 rounded-lg text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-400 text-sm"
+                                />
+                            </div>
+                            <div>
+                                <label
+                                    for="buttonUrl"
+                                    class="block text-xs text-cyan-700 mb-1"
+                                    >URL del botón</label
+                                >
+                                <input
+                                    type="url"
+                                    id="buttonUrl"
+                                    name="buttonUrl"
+                                    placeholder="https://fashionmarket.com/ofertas"
+                                    class="w-full px-3 py-2 bg-white border border-cyan-200 rounded-lg text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-400 text-sm"
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Submit Button -->
