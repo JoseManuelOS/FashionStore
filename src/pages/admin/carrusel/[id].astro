@@ -1524,7 +1524,12 @@ if (Astro.request.method === "POST") {
 
     // Ensure style_config is updated before form submission
     const form = document.querySelector('form[method="POST"]');
-    form?.addEventListener("submit", () => {
+    form?.addEventListener("submit", (e) => {
         updateStyleConfig();
+        console.log(
+            "[FORM SUBMIT] currentConfig:",
+            JSON.stringify(currentConfig),
+        );
+        console.log("[FORM SUBMIT] styleInput.value:", styleInput?.value);
     });
 </script>
