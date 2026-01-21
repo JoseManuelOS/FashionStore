@@ -1,0 +1,19 @@
+# Nixpacks configuration for Coolify deployment
+# https://nixpacks.com/docs/configuration/file
+
+[phases.setup]
+nixPkgs = ["nodejs_22", "npm"]
+
+[phases.install]
+cmds = ["npm ci"]
+
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+cmd = "node ./dist/server/entry.mjs"
+
+[variables]
+NODE_ENV = "production"
+HOST = "0.0.0.0"
+PORT = "3000"
