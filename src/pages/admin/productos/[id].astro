@@ -1,6 +1,13 @@
 ---
 import AdminLayout from "../../../layouts/AdminLayout.astro";
-import { supabaseAdmin, getCategories, getProductVariants, updateProductVariants, initProductStock, type ProductVariant } from "../../../lib/supabase";
+import {
+    supabaseAdmin,
+    getCategories,
+    getProductVariants,
+    updateProductVariants,
+    initProductStock,
+    type ProductVariant,
+} from "../../../lib/supabase";
 import ProductImagesUploader from "../../../components/islands/ProductImagesUploader";
 import { slugify } from "../../../lib/utils";
 
@@ -24,27 +31,29 @@ if (!product) {
     return Astro.redirect("/admin/productos");
 }
 
-    try {
-        const variants = await getProductVariants(id!);
-        // Initialize with 0/null for new sizes if not present
-        stockBySize = {};
-        // Storing full variant data in a map for easy access
-        // We'll use a new variable for this
-    } catch (e) {
-        console.error('Error obteniendo variantes:', e);
-    }
+try {
+    const variants = await getProductVariants(id!);
+    // Initialize with 0/null for new sizes if not present
+    stockBySize = {};
+    // Storing full variant data in a map for easy access
+    // We'll use a new variable for this
 } catch (e) {
-    console.error('Error initializing data:', e);
+    console.error("Error obteniendo variantes:", e);
 }
 
 // Prepare variants data for the UI
 const variants = await getProductVariants(id!);
-const variantsMap = variants.reduce((acc, v) => {
-    acc[v.size] = v;
-    return acc;
-}, {} as Record<string, ProductVariant>);
+const variantsMap = variants.reduce(
+    (acc, v) => {
+        acc[v.size] = v;
+        return acc;
+    },
+    {} as Record<string, ProductVariant>,
+);
 
-productImages = (product.images || []).sort((a: any, b: any) => a.order - b.order);
+productImages = (product.images || []).sort(
+    (a: any, b: any) => a.order - b.order,
+);
 const categories = await getCategories();
 
 if (Astro.request.method === "POST") {
@@ -56,31 +65,57 @@ if (Astro.request.method === "POST") {
         const price = parseFloat(formData.get("price") as string);
         const category_id = (formData.get("category_id") as string) || null;
         const sizesRaw = formData.get("sizes") as string;
-        const sizes = sizesRaw ? sizesRaw.split(",").map(s => s.trim()) : product.sizes;
+        const sizes = sizesRaw
+            ? sizesRaw.split(",").map((s) => s.trim())
+            : product.sizes;
         const is_offer = formData.get("is_offer") === "on";
         const active = formData.get("active") === "on";
 
-        const variantsData: Record<string, { stock: number; price: number | null; is_offer: boolean }> = {};
+        const variantsData: Record<
+            string,
+            { stock: number; price: number | null; is_offer: boolean }
+        > = {};
         for (const size of sizes) {
-            const stockValue = parseInt(formData.get(`stock_${size}`) as string) || 0;
-            const priceValue = formData.get(`price_${size}`) ? parseFloat(formData.get(`price_${size}`) as string) : null;
+            const stockValue =
+                parseInt(formData.get(`stock_${size}`) as string) || 0;
+            const priceValue = formData.get(`price_${size}`)
+                ? parseFloat(formData.get(`price_${size}`) as string)
+                : null;
             const isOfferValue = formData.get(`is_offer_${size}`) === "on";
-            
+
             variantsData[size] = {
                 stock: stockValue,
                 price: priceValue,
-                is_offer: isOfferValue
+                is_offer: isOfferValue,
             };
         }
 
-        const totalStock = Object.values(variantsData).reduce((sum, v) => sum + v.stock, 0);
+        const totalStock = Object.values(variantsData).reduce(
+            (sum, v) => sum + v.stock,
+            0,
+        );
 
         const imagesRaw = formData.get("images") as string;
-        const newImageUrls = imagesRaw ? imagesRaw.split(",").map(url => url.trim()).filter(Boolean) : [];
+        const newImageUrls = imagesRaw
+            ? imagesRaw
+                  .split(",")
+                  .map((url) => url.trim())
+                  .filter(Boolean)
+            : [];
 
         const { error: updateError } = await supabaseAdmin
             .from("products")
-            .update({ name, slug, description, price, stock: totalStock, category_id: category_id || null, sizes, is_offer, active })
+            .update({
+                name,
+                slug,
+                description,
+                price,
+                stock: totalStock,
+                category_id: category_id || null,
+                sizes,
+                is_offer,
+                active,
+            })
             .eq("id", id);
 
         if (updateError) {
@@ -89,18 +124,23 @@ if (Astro.request.method === "POST") {
             await updateProductVariants(id!, variantsData);
 
             if (newImageUrls.length > 0 || productImages.length > 0) {
-                 // Always update images if field is present (even if empty to clear)
-                 // But wait, the uploader always sends the current state. 
-                 // If the user didn't touch it, it will send existing images.
-                 // So we can safely delete and re-insert.
-                await supabaseAdmin.from("product_images").delete().eq("product_id", id);
+                // Always update images if field is present (even if empty to clear)
+                // But wait, the uploader always sends the current state.
+                // If the user didn't touch it, it will send existing images.
+                // So we can safely delete and re-insert.
+                await supabaseAdmin
+                    .from("product_images")
+                    .delete()
+                    .eq("product_id", id);
                 if (newImageUrls.length > 0) {
                     const imageRecords = newImageUrls.map((url, index) => ({
                         product_id: id,
                         image_url: url,
                         order: index,
                     }));
-                    await supabaseAdmin.from("product_images").insert(imageRecords);
+                    await supabaseAdmin
+                        .from("product_images")
+                        .insert(imageRecords);
                 }
             }
 
@@ -126,16 +166,16 @@ const currentImageUrls = productImages.map((img: any) => img.image_url);
             font-size: 14px;
             margin-bottom: 24px;
         }
-        
+
         .back-link:hover {
             color: #18181b;
         }
-        
+
         .back-link svg {
             width: 16px;
             height: 16px;
         }
-        
+
         .images-preview {
             background: #fff;
             border: 1px solid #e4e4e7;
@@ -144,21 +184,21 @@ const currentImageUrls = productImages.map((img: any) => img.image_url);
             margin-bottom: 24px;
             max-width: 720px;
         }
-        
+
         .images-title {
             font-size: 13px;
             font-weight: 500;
             color: #71717a;
             margin-bottom: 16px;
         }
-        
+
         .images-grid {
             display: flex;
             gap: 12px;
             overflow-x: auto;
             padding-bottom: 8px;
         }
-        
+
         .image-thumb {
             width: 72px;
             height: 88px;
@@ -168,13 +208,13 @@ const currentImageUrls = productImages.map((img: any) => img.image_url);
             flex-shrink: 0;
             position: relative;
         }
-        
+
         .image-thumb img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
-        
+
         .image-number {
             position: absolute;
             bottom: 4px;
@@ -189,7 +229,7 @@ const currentImageUrls = productImages.map((img: any) => img.image_url);
             align-items: center;
             justify-content: center;
         }
-        
+
         .form-card {
             background: #fff;
             border: 1px solid #e4e4e7;
@@ -197,15 +237,15 @@ const currentImageUrls = productImages.map((img: any) => img.image_url);
             padding: 32px;
             max-width: 720px;
         }
-        
+
         .form-section {
             margin-bottom: 32px;
         }
-        
+
         .form-section:last-child {
             margin-bottom: 0;
         }
-        
+
         .section-title {
             font-size: 13px;
             font-weight: 600;
@@ -216,36 +256,36 @@ const currentImageUrls = productImages.map((img: any) => img.image_url);
             padding-bottom: 12px;
             border-bottom: 1px solid #f4f4f5;
         }
-        
+
         .form-grid {
             display: grid;
             gap: 20px;
         }
-        
+
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px;
         }
-        
+
         @media (max-width: 600px) {
             .form-row {
                 grid-template-columns: 1fr;
             }
         }
-        
+
         .form-group {
             display: flex;
             flex-direction: column;
             gap: 8px;
         }
-        
+
         .form-label {
             font-size: 14px;
             font-weight: 500;
             color: #18181b;
         }
-        
+
         .form-input {
             padding: 12px 16px;
             border: 1px solid #e4e4e7;
@@ -254,43 +294,43 @@ const currentImageUrls = productImages.map((img: any) => img.image_url);
             color: #18181b;
             transition: border-color 0.15s;
         }
-        
+
         .form-input:focus {
             outline: none;
             border-color: #18181b;
         }
-        
+
         .form-input::placeholder {
             color: #a1a1aa;
         }
-        
+
         textarea.form-input {
             resize: none;
             min-height: 100px;
         }
-        
+
         .form-hint {
             font-size: 12px;
             color: #71717a;
         }
-        
+
         .stock-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
             gap: 12px;
         }
-        
+
         .stock-item {
             text-align: center;
         }
-        
+
         .stock-label {
             font-size: 12px;
             font-weight: 600;
             color: #52525b;
             margin-bottom: 6px;
         }
-        
+
         .stock-input {
             width: 100%;
             padding: 10px;
@@ -299,36 +339,36 @@ const currentImageUrls = productImages.map((img: any) => img.image_url);
             border-radius: 8px;
             font-size: 14px;
         }
-        
+
         .stock-input:focus {
             outline: none;
             border-color: #18181b;
         }
-        
+
         .checkbox-group {
             display: flex;
             flex-wrap: wrap;
             gap: 24px;
         }
-        
+
         .checkbox-item {
             display: flex;
             align-items: center;
             gap: 10px;
             cursor: pointer;
         }
-        
+
         .checkbox-item input {
             width: 18px;
             height: 18px;
             accent-color: #18181b;
         }
-        
+
         .checkbox-item span {
             font-size: 14px;
             color: #52525b;
         }
-        
+
         .form-actions {
             display: flex;
             gap: 12px;
@@ -336,7 +376,7 @@ const currentImageUrls = productImages.map((img: any) => img.image_url);
             border-top: 1px solid #f4f4f5;
             margin-top: 32px;
         }
-        
+
         .btn {
             padding: 12px 24px;
             border-radius: 8px;
@@ -349,27 +389,27 @@ const currentImageUrls = productImages.map((img: any) => img.image_url);
             align-items: center;
             justify-content: center;
         }
-        
+
         .btn-primary {
             background: #18181b;
             color: #fff;
             border: none;
         }
-        
+
         .btn-primary:hover {
             background: #27272a;
         }
-        
+
         .btn-secondary {
             background: #fff;
             color: #52525b;
             border: 1px solid #e4e4e7;
         }
-        
+
         .btn-secondary:hover {
             background: #f4f4f5;
         }
-        
+
         .error-message {
             margin-bottom: 24px;
         }
@@ -412,7 +452,7 @@ const currentImageUrls = productImages.map((img: any) => img.image_url);
             cursor: pointer;
             user-select: none;
         }
-        
+
         .variant-offer-toggle input {
             accent-color: #18181b;
         }
@@ -442,7 +482,11 @@ const currentImageUrls = productImages.map((img: any) => img.image_url);
 
     <a href="/admin/productos" class="back-link">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 19l-7-7 7-7"></path>
         </svg>
         Volver a productos
     </a>
@@ -456,27 +500,66 @@ const currentImageUrls = productImages.map((img: any) => img.image_url);
             <div class="section-title">Información básica</div>
             <div class="form-grid">
                 <div class="form-group">
-                    <label class="form-label" for="name">Nombre del producto</label>
-                    <input type="text" id="name" name="name" required class="form-input" value={product.name} />
+                    <label class="form-label" for="name"
+                        >Nombre del producto</label
+                    >
+                    <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        required
+                        class="form-input"
+                        value={product.name}
+                    />
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label" for="category_id">Categoría</label>
-                        <select id="category_id" name="category_id" class="form-input">
+                        <label class="form-label" for="category_id"
+                            >Categoría</label
+                        >
+                        <select
+                            id="category_id"
+                            name="category_id"
+                            class="form-input"
+                        >
                             <option value="">Sin categoría</option>
-                            {categories.map(cat => (
-                                <option value={cat.id} selected={cat.id === product.category_id}>{cat.name}</option>
-                            ))}
+                            {
+                                categories.map((cat) => (
+                                    <option
+                                        value={cat.id}
+                                        selected={
+                                            cat.id === product.category_id
+                                        }
+                                    >
+                                        {cat.name}
+                                    </option>
+                                ))
+                            }
                         </select>
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="price">Precio (€)</label>
-                        <input type="number" id="price" name="price" required min="0" step="0.01" class="form-input" value={product.price} />
+                        <input
+                            type="number"
+                            id="price"
+                            name="price"
+                            required
+                            min="0"
+                            step="0.01"
+                            class="form-input"
+                            value={product.price}
+                        />
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="form-label" for="description">Descripción</label>
-                    <textarea id="description" name="description" class="form-input">{product.description}</textarea>
+                    <label class="form-label" for="description"
+                        >Descripción</label
+                    >
+                    <textarea
+                        id="description"
+                        name="description"
+                        class="form-input">{product.description}</textarea
+                    >
                 </div>
             </div>
         </div>
@@ -485,44 +568,83 @@ const currentImageUrls = productImages.map((img: any) => img.image_url);
             <div class="section-title">Tallas y stock</div>
             <div class="form-grid">
                 <div class="form-group">
-                    <label class="form-label" for="sizes">Tallas disponibles</label>
-                    <input type="text" id="sizes" name="sizes" class="form-input" value={product.sizes?.join(", ")} />
+                    <label class="form-label" for="sizes"
+                        >Tallas disponibles</label
+                    >
+                    <input
+                        type="text"
+                        id="sizes"
+                        name="sizes"
+                        class="form-input"
+                        value={product.sizes?.join(", ")}
+                    />
                     <span class="form-hint">Separadas por coma</span>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Stock por talla</label>
                     <div class="variants-stack">
-                        {product.sizes?.map((size: string) => {
-                            const variant = variantsMap[size] || {};
-                            return (
-                                <div class="variant-card">
-                                    <div class="variant-header">
-                                        <div class="variant-size">{size}</div>
-                                        <label class="variant-offer-toggle">
-                                            <input type="checkbox" name={`is_offer_${size}`} checked={variant.is_offer} />
-                                            <span>Oferta</span>
-                                        </label>
+                        {
+                            product.sizes?.map((size: string) => {
+                                const variant = variantsMap[size] || {};
+                                return (
+                                    <div class="variant-card">
+                                        <div class="variant-header">
+                                            <div class="variant-size">
+                                                {size}
+                                            </div>
+                                            <label class="variant-offer-toggle">
+                                                <input
+                                                    type="checkbox"
+                                                    name={`is_offer_${size}`}
+                                                    checked={variant.is_offer}
+                                                />
+                                                <span>Oferta</span>
+                                            </label>
+                                        </div>
+                                        <div class="variant-inputs">
+                                            <div class="variant-input-group">
+                                                <label>Stock</label>
+                                                <input
+                                                    type="number"
+                                                    name={`stock_${size}`}
+                                                    min="0"
+                                                    value={variant.stock ?? 0}
+                                                    class="stock-input"
+                                                />
+                                            </div>
+                                            <div class="variant-input-group">
+                                                <label>Precio (€)</label>
+                                                <input
+                                                    type="number"
+                                                    name={`price_${size}`}
+                                                    min="0"
+                                                    step="0.01"
+                                                    value={variant.price ?? ""}
+                                                    placeholder="Heredar"
+                                                    class="stock-input"
+                                                />
+                                            </div>
+                                        </div>
+                                        {variant.price && (
+                                            <div class="variant-price-preview">
+                                                Precio final:{" "}
+                                                {new Intl.NumberFormat(
+                                                    "es-ES",
+                                                    {
+                                                        style: "currency",
+                                                        currency: "EUR",
+                                                    },
+                                                ).format(variant.price)}
+                                            </div>
+                                        )}
                                     </div>
-                                    <div class="variant-inputs">
-                                        <div class="variant-input-group">
-                                            <label>Stock</label>
-                                            <input type="number" name={`stock_${size}`} min="0" value={variant.stock ?? 0} class="stock-input" />
-                                        </div>
-                                        <div class="variant-input-group">
-                                            <label>Precio (€)</label>
-                                            <input type="number" name={`price_${size}`} min="0" step="0.01" value={variant.price ?? ''} placeholder="Heredar" class="stock-input" />
-                                        </div>
-                                    </div>
-                                    {variant.price && (
-                                        <div class="variant-price-preview">
-                                            Precio final: {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(variant.price)}
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
+                                );
+                            })
+                        }
                     </div>
-                    <span class="form-hint">El stock total se calculará automáticamente</span>
+                    <span class="form-hint"
+                        >El stock total se calculará automáticamente</span
+                    >
                 </div>
             </div>
         </div>
@@ -530,13 +652,18 @@ const currentImageUrls = productImages.map((img: any) => img.image_url);
         <div class="form-section">
             <div class="section-title">Imágenes</div>
             <div class="form-group">
-                <label class="form-label" for="images">Galería de Imágenes</label>
-                <ProductImagesUploader 
-                    client:load 
-                    initialImages={currentImageUrls} 
-                    inputName="images" 
+                <label class="form-label" for="images"
+                    >Galería de Imágenes</label
+                >
+                <ProductImagesUploader
+                    client:load
+                    initialImages={currentImageUrls}
+                    inputName="images"
                 />
-                <span class="form-hint">Arrastra para reordenar. Haz clic en 'Eliminar' para quitar una imagen.</span>
+                <span class="form-hint"
+                    >Arrastra para reordenar. Haz clic en 'Eliminar' para quitar
+                    una imagen.</span
+                >
             </div>
         </div>
 
@@ -544,18 +671,28 @@ const currentImageUrls = productImages.map((img: any) => img.image_url);
             <div class="section-title">Opciones</div>
             <div class="checkbox-group">
                 <label class="checkbox-item">
-                    <input type="checkbox" name="is_offer" checked={product.is_offer} />
+                    <input
+                        type="checkbox"
+                        name="is_offer"
+                        checked={product.is_offer}
+                    />
                     <span>Producto en oferta</span>
                 </label>
                 <label class="checkbox-item">
-                    <input type="checkbox" name="active" checked={product.active} />
+                    <input
+                        type="checkbox"
+                        name="active"
+                        checked={product.active}
+                    />
                     <span>Activo (visible en tienda)</span>
                 </label>
             </div>
         </div>
 
         <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+            <button type="submit" class="btn btn-primary"
+                >Guardar Cambios</button
+            >
             <a href="/admin/productos" class="btn btn-secondary">Cancelar</a>
         </div>
     </form>
