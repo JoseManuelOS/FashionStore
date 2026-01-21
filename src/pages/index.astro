@@ -27,6 +27,12 @@ try {
 	const offersSetting = await getSetting("offers_enabled");
 	offersEnabled = offersSetting === true || offersSetting === "true";
 	carouselSlides = await getCarouselSlides();
+	
+	// Debug logging for carousel
+	console.log("[HOMEPAGE] Loaded carousel slides:", carouselSlides.length);
+	carouselSlides.forEach((slide, i) => {
+		console.log(`[HOMEPAGE] Slide ${i + 1} "${slide.title}":`, JSON.stringify(slide.style_config));
+	});
 } catch (e) {
 	console.error("Error fetching data:", e);
 }
