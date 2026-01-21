@@ -868,7 +868,8 @@ if (Astro.request.method === "POST") {
             <!-- Submit -->
             <div class="flex justify-end">
                 <button
-                    type="submit"
+                    type="button"
+                    id="save-carousel-btn"
                     class="px-6 py-3 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all hover:-translate-y-0.5 flex items-center gap-2"
                 >
                     <svg
@@ -1522,14 +1523,25 @@ if (Astro.request.method === "POST") {
     loadStyleControls();
     applyConfigToView();
 
-    // Ensure style_config is updated before form submission
-    const form = document.querySelector('form[method="POST"]');
-    form?.addEventListener("submit", (e) => {
+    // Save button handler - explicitly update style_config before submitting
+    const saveBtn = document.getElementById("save-carousel-btn");
+    saveBtn?.addEventListener("click", () => {
+        // Update style config with current positions and styles
         updateStyleConfig();
+
+        // Log what we're saving for debugging
         console.log(
-            "[FORM SUBMIT] currentConfig:",
-            JSON.stringify(currentConfig),
+            "[SAVE CLICK] Final currentConfig:",
+            JSON.stringify(currentConfig, null, 2),
         );
-        console.log("[FORM SUBMIT] styleInput.value:", styleInput?.value);
+        console.log("[SAVE CLICK] styleInput.value:", styleInput?.value);
+
+        // Submit the form programmatically
+        const formElement = document.querySelector(
+            'form[method="POST"]',
+        ) as HTMLFormElement;
+        if (formElement) {
+            formElement.submit();
+        }
     });
 </script>

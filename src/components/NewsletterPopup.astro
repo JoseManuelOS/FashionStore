@@ -47,27 +47,16 @@
 
             <!-- Header Image/Gradient -->
             <div
-                class="h-32 bg-gradient-to-br from-neon-cyan via-neon-fuchsia to-purple-600 relative overflow-hidden"
+                class="h-32 relative overflow-hidden"
+                style="background: linear-gradient(135deg, #06b6d4 0%, #d946ef 50%, #a21caf 100%);"
             >
                 <div class="absolute inset-0 flex items-center justify-center">
                     <span class="text-6xl">🎁</span>
                 </div>
+                <!-- Subtle texture overlay -->
                 <div
-                    class="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg viewBox=\"
-                    0
-                    0
-                    200
-                    200\"
-                    xmlns='\"http://www.w3.org/2000/svg\"%3E%3Cfilter'
-                    id='\"noiseFilter\"%3E%3CfeTurbulence'
-                    type='\"fractalNoise\"'
-                    baseFrequency='\"0.65\"'
-                    numOctaves='\"3\"'
-                    stitchTiles='\"stitch\"/%3E%3C/filter%3E%3Crect'
-                    width='\"100%25\"'
-                    height='\"100%25\"'
-                    filter='\"url(%23noiseFilter)\"/%3E%3C/svg%3E&apos;)]'
-                    opacity-20"
+                    class="absolute inset-0 opacity-10"
+                    style="background-image: radial-gradient(circle at 25% 25%, rgba(255,255,255,0.3) 1px, transparent 1px); background-size: 20px 20px;"
                 >
                 </div>
             </div>
@@ -101,7 +90,8 @@
                     <button
                         type="submit"
                         id="popup-submit-btn"
-                        class="w-full px-6 py-3 bg-gradient-to-r from-neon-cyan to-neon-fuchsia text-dark-500 font-bold rounded-xl hover:shadow-lg hover:shadow-neon-cyan/25 transition-all flex items-center justify-center gap-2"
+                        class="w-full px-6 py-3 text-white font-bold rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                        style="background: linear-gradient(135deg, #06b6d4 0%, #d946ef 100%);"
                     >
                         <span>Obtener mi descuento</span>
                         <svg
@@ -151,15 +141,17 @@
 
                     <!-- Promo Code Display -->
                     <div
-                        class="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-2 border-dashed border-amber-500/50 rounded-xl p-4 mb-6"
+                        class="rounded-xl p-4 mb-6 border-2 border-dashed"
+                        style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.2) 0%, rgba(217, 70, 239, 0.2) 100%); border-color: #06b6d4;"
                     >
                         <p
                             id="popup-promo-code"
-                            class="text-3xl font-bold text-amber-400 font-mono tracking-wider"
+                            class="text-3xl font-bold font-mono tracking-wider"
+                            style="color: #06b6d4;"
                         >
                             WELCOME10
                         </p>
-                        <p class="text-sm text-amber-300/80 mt-1">
+                        <p class="text-sm mt-1" style="color: #d946ef;">
                             10% de descuento
                         </p>
                     </div>
