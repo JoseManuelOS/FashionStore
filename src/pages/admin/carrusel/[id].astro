@@ -44,18 +44,29 @@ if (Astro.request.method === "POST") {
     const style_config_raw = formData.get("style_config")?.toString();
     let style_config = {};
 
+    console.log("[CAROUSEL SAVE] ID:", id);
+    console.log("[CAROUSEL SAVE] style_config_raw:", style_config_raw);
+
     try {
         if (style_config_raw) {
             style_config = JSON.parse(style_config_raw);
+            console.log(
+                "[CAROUSEL SAVE] Parsed style_config:",
+                JSON.stringify(style_config),
+            );
         }
     } catch (e) {
-        console.error("Error parsing style_config", e);
+        console.error("[CAROUSEL SAVE] Error parsing style_config", e);
     }
 
     if (!title || !image_url) {
         error = "El título y la imagen son obligatorios";
     } else {
         try {
+            console.log(
+                "[CAROUSEL SAVE] Calling updateCarouselSlide with style_config:",
+                JSON.stringify(style_config),
+            );
             await updateCarouselSlide(id, {
                 title,
                 subtitle: subtitle || null,
@@ -69,8 +80,10 @@ if (Astro.request.method === "POST") {
                 is_active,
                 style_config,
             });
+            console.log("[CAROUSEL SAVE] Successfully saved!");
             return Astro.redirect("/admin/carrusel?saved=true");
         } catch (e: any) {
+            console.error("[CAROUSEL SAVE] Error saving:", e);
             error = e.message || "Error al actualizar la slide";
         }
     }
