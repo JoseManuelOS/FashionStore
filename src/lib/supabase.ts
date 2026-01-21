@@ -845,6 +845,10 @@ export async function createCarouselSlide(slide: Omit<CarouselSlide, 'id' | 'cre
  * Update a carousel slide
  */
 export async function updateCarouselSlide(id: string, updates: Partial<CarouselSlide>): Promise<CarouselSlide> {
+    console.log('[DB UPDATE] Updating carousel slide:', id);
+    console.log('[DB UPDATE] Updates to save:', JSON.stringify(updates, null, 2));
+    console.log('[DB UPDATE] style_config being saved:', JSON.stringify(updates.style_config, null, 2));
+
     const { data, error } = await supabaseAdmin
         .from('carousel_slides')
         .update(updates)
@@ -852,7 +856,13 @@ export async function updateCarouselSlide(id: string, updates: Partial<CarouselS
         .select()
         .single();
 
-    if (error) throw error;
+    if (error) {
+        console.error('[DB UPDATE] Error saving:', error);
+        throw error;
+    }
+
+    console.log('[DB UPDATE] Successfully saved! Returned data:', JSON.stringify(data, null, 2));
+    console.log('[DB UPDATE] Saved style_config:', JSON.stringify(data.style_config, null, 2));
     return data;
 }
 
