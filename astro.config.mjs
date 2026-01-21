@@ -6,6 +6,7 @@ import node from '@astrojs/node';
 
 // https://astro.build/config
 export default defineConfig({
+  site: process.env.SITE_URL || 'http://j4o0084kg0ssoo0wc0ocw0g8.victoriafp.online',
   output: 'server',
   adapter: node({
     mode: 'standalone'
@@ -17,5 +18,8 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: parseInt(process.env.PORT || '3000')
+  },
+  security: {
+    checkOrigin: false
   }
 });
