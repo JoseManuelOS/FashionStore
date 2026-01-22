@@ -113,8 +113,13 @@ export default function SalesChart({ data, title = 'Ventas últimos 7 días' }: 
   const daysWithSales = data.filter(d => d.total > 0).length;
 
   return (
+    /* 
+      MOBILE-FIRST: Chart Container
+      - p-4 sm:p-6: Padding reducido en móvil, aumenta en sm+
+      - rounded-xl sm:rounded-2xl: Border-radius adaptativo
+    */
     <div 
-      className="rounded-2xl p-6 relative overflow-hidden"
+      className="rounded-xl sm:rounded-2xl p-4 sm:p-6 relative overflow-hidden"
       style={{
         background: brandColors.dark[400],
         border: `1px solid ${brandColors.glass.border}`,
@@ -126,28 +131,42 @@ export default function SalesChart({ data, title = 'Ventas últimos 7 días' }: 
         style={{ background: brandColors.primary.main }}
       />
       
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6 relative z-10">
+      {/* 
+        MOBILE-FIRST: Chart Header
+        - flex-col sm:flex-row: Apilado en móvil, horizontal en sm+
+        - gap-2 sm:gap-0: Espaciado adaptativo
+        - mb-4 sm:mb-6: Margen inferior adaptativo
+      */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-2 sm:gap-0 relative z-10">
         <div>
           <h3 
-            className="text-lg font-semibold mb-1"
+            className="text-base sm:text-lg font-semibold mb-1"
             style={{ color: brandColors.text.primary }}
           >
             {title}
           </h3>
-          <p style={{ color: brandColors.text.muted, fontSize: '14px' }}>
-            Total: <span style={{ color: brandColors.primary.main, fontWeight: 600 }}>
-              {formatCurrency(totalPeriod)}
+          {/* 
+            MOBILE-FIRST: Stats Text
+            - text-xs sm:text-sm: Texto más pequeño en móvil
+            - flex flex-wrap: Permite que los stats se envuelvan
+          */}
+          <p className="flex flex-wrap gap-x-1" style={{ color: brandColors.text.muted, fontSize: 'inherit' }}>
+            <span className="text-xs sm:text-sm">
+              Total: <span style={{ color: brandColors.primary.main, fontWeight: 600 }}>
+                {formatCurrency(totalPeriod)}
+              </span>
             </span>
-            {' · '}
-            Promedio: <span style={{ color: brandColors.text.secondary }}>
-              {formatCurrency(avgDaily)}/día
+            <span className="text-xs sm:text-sm">
+              {' · '}Promedio: <span style={{ color: brandColors.text.secondary }}>
+                {formatCurrency(avgDaily)}/día
+              </span>
             </span>
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        {/* Leyenda - oculta en móvil muy pequeño */}
+        <div className="hidden xs:flex items-center gap-2">
           <span 
-            className="w-3 h-3 rounded-full"
+            className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full"
             style={{ 
               background: `linear-gradient(135deg, ${brandColors.primary.main}, ${brandColors.primary.light})`,
               boxShadow: `0 0 8px ${hexToRgba(brandColors.primary.main, 0.5)}`
@@ -159,8 +178,12 @@ export default function SalesChart({ data, title = 'Ventas últimos 7 días' }: 
         </div>
       </div>
 
-      {/* Chart */}
-      <div className="h-72 relative z-10">
+      {/* 
+        MOBILE-FIRST: Chart Container
+        - h-56 sm:h-72: Altura menor en móvil para mejor visualización
+        - ResponsiveContainer de Recharts ya maneja el ancho automáticamente ✓
+      */}
+      <div className="h-56 sm:h-72 relative z-10">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={chartData}
@@ -223,36 +246,41 @@ export default function SalesChart({ data, title = 'Ventas últimos 7 días' }: 
         </ResponsiveContainer>
       </div>
 
-      {/* Mini estadísticas */}
+      {/* 
+        MOBILE-FIRST: Mini Stats Grid
+        - grid-cols-1 xs:grid-cols-3: Una columna en móvil muy pequeño, 3 en xs+
+        - gap-3 sm:gap-4: Gap adaptativo
+        - mt-4 sm:mt-6 pt-4 sm:pt-6: Márgenes adaptativos
+      */}
       <div 
-        className="grid grid-cols-3 gap-4 mt-6 pt-6 relative z-10"
+        className="grid grid-cols-1 xs:grid-cols-3 gap-3 sm:gap-4 mt-4 sm:mt-6 pt-4 sm:pt-6 relative z-10"
         style={{ borderTop: `1px solid ${brandColors.glass.border}` }}
       >
-        <div className="text-center">
+        <div className="text-center xs:text-center">
           <p 
-            className="text-2xl font-bold"
+            className="text-xl sm:text-2xl font-bold"
             style={{ color: brandColors.status.success }}
           >
             {formatCurrency(maxSales)}
           </p>
-          <p style={{ color: brandColors.text.muted, fontSize: '12px', marginTop: '4px' }}>
+          <p style={{ color: brandColors.text.muted, fontSize: '11px', marginTop: '4px' }} className="sm:text-xs">
             Mejor día
           </p>
         </div>
-        <div className="text-center">
+        <div className="text-center xs:text-center">
           <p 
-            className="text-2xl font-bold"
+            className="text-xl sm:text-2xl font-bold"
             style={{ color: minSales > 0 ? brandColors.text.secondary : brandColors.status.warning }}
           >
             {formatCurrency(minSales)}
           </p>
-          <p style={{ color: brandColors.text.muted, fontSize: '12px', marginTop: '4px' }}>
+          <p style={{ color: brandColors.text.muted, fontSize: '11px', marginTop: '4px' }} className="sm:text-xs">
             Día más bajo
           </p>
         </div>
-        <div className="text-center">
+        <div className="text-center xs:text-center">
           <p 
-            className="text-2xl font-bold"
+            className="text-xl sm:text-2xl font-bold"
             style={{ 
               background: `linear-gradient(135deg, ${brandColors.primary.main}, ${brandColors.secondary.main})`,
               WebkitBackgroundClip: 'text',
@@ -262,7 +290,7 @@ export default function SalesChart({ data, title = 'Ventas últimos 7 días' }: 
           >
             {daysWithSales}
           </p>
-          <p style={{ color: brandColors.text.muted, fontSize: '12px', marginTop: '4px' }}>
+          <p style={{ color: brandColors.text.muted, fontSize: '11px', marginTop: '4px' }} className="sm:text-xs">
             Días con ventas
           </p>
         </div>

@@ -2,6 +2,19 @@
 export default {
     content: ['./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}'],
     theme: {
+        /* 
+         * MOBILE-FIRST: Custom Breakpoints
+         * xs (480px): Para móviles más grandes / landscape
+         * Los demás breakpoints mantienen los valores por defecto de Tailwind
+         */
+        screens: {
+            'xs': '480px',  // Móviles grandes y landscape
+            'sm': '640px',  // Tablets pequeñas
+            'md': '768px',  // Tablets
+            'lg': '1024px', // Desktop
+            'xl': '1280px', // Desktop grande
+            '2xl': '1536px' // Extra grande
+        },
         extend: {
             colors: {
                 // Futuristic Dark Theme

@@ -224,24 +224,38 @@ export default function SizeRecommender({
           {/* Overlay */}
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
 
-          {/* Modal Content */}
+          {/* 
+            MOBILE-FIRST: Modal Content
+            - w-[95vw]: En móvil ocupa 95% del ancho de pantalla
+            - md:w-full md:max-w-md: En tablet+ usa ancho automático con máximo de md
+            - max-h-[90vh]: Altura máxima del 90% del viewport
+            - overflow-y-auto: Scroll vertical si el contenido excede
+          */}
           <div 
-            className="relative bg-dark-500 border border-white/10 rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+            className="relative bg-dark-500 border border-white/10 rounded-2xl shadow-2xl w-[95vw] md:w-full md:max-w-md max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-white/10">
+            {/* 
+              MOBILE-FIRST: Modal Header
+              - p-4 md:p-6: Padding reducido en móvil, aumenta en tablet+
+            */}
+            <div className="flex items-center justify-between p-4 md:p-6 border-b border-white/10">
               <div>
-                <h2 className="text-xl font-semibold text-white">
+                <h2 className="text-lg md:text-xl font-semibold text-white">
                   Encuentra tu talla perfecta
                 </h2>
-                <p className="text-sm text-zinc-400 mt-1">
+                <p className="text-xs md:text-sm text-zinc-400 mt-1">
                   Te ayudamos a elegir la talla ideal
                 </p>
               </div>
+              {/* 
+                MOBILE-FIRST: Close Button
+                - min-w-11 min-h-11: Touch target mínimo recomendado (44x44px = 11 * 4px)
+              */}
               <button
                 onClick={handleClose}
-                className="p-2 text-zinc-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                className="p-2 min-w-11 min-h-11 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                aria-label="Cerrar modal"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -249,16 +263,24 @@ export default function SizeRecommender({
               </button>
             </div>
 
-            {/* Body */}
-            <div className="p-6">
+            {/* 
+              MOBILE-FIRST: Modal Body
+              - p-4 md:p-6: Padding adaptativo
+            */}
+            <div className="p-4 md:p-6">
               {!result ? (
                 <>
-                  {/* Formulario */}
-                  <div className="space-y-5">
+                  {/* Formulario con touch-targets optimizados */}
+                  <div className="space-y-4 md:space-y-5">
                     <div>
                       <label className="block text-sm font-medium text-zinc-300 mb-2">
                         Altura (cm)
                       </label>
+                      {/* 
+                        MOBILE-FIRST: Input Fields
+                        - min-h-12: Touch target superior al mínimo (48px = 12 * 4px)
+                        - text-base: 16px evita zoom automático en iOS
+                      */}
                       <input
                         type="number"
                         value={altura}
@@ -266,7 +288,7 @@ export default function SizeRecommender({
                         placeholder="Ej: 175"
                         min="140"
                         max="220"
-                        className="w-full px-4 py-3 bg-dark-400 border border-white/10 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors"
+                        className="w-full px-4 py-3 min-h-12 text-base bg-dark-400 border border-white/10 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors"
                       />
                     </div>
 
@@ -281,14 +303,18 @@ export default function SizeRecommender({
                         placeholder="Ej: 75"
                         min="40"
                         max="150"
-                        className="w-full px-4 py-3 bg-dark-400 border border-white/10 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors"
+                        className="w-full px-4 py-3 min-h-12 text-base bg-dark-400 border border-white/10 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors"
                       />
                     </div>
 
+                    {/* 
+                      MOBILE-FIRST: Calculate Button
+                      - min-h-12: Touch target óptimo (48px)
+                    */}
                     <button
                       onClick={handleCalculate}
                       disabled={!altura || !peso}
-                      className="w-full py-3 px-4 bg-gradient-to-r from-neon-cyan to-neon-fuchsia text-white font-medium rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full py-3 px-4 min-h-12 text-base bg-gradient-to-r from-neon-cyan to-neon-fuchsia text-white font-medium rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Calcular mi talla
                     </button>
@@ -307,17 +333,23 @@ export default function SizeRecommender({
                     </button>
 
                     {showChart && (
-                      <div className="mt-4 overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="text-zinc-400 border-b border-white/10">
-                              <th className="text-left py-2">Talla</th>
-                              <th className="text-center py-2">Pecho</th>
-                              <th className="text-center py-2">Cintura</th>
-                              <th className="text-center py-2">Cadera</th>
-                            </tr>
-                          </thead>
-                          <tbody className="text-zinc-300">
+                      <div className="mt-4">
+                        {/* 
+                          MOBILE-FIRST: Size Chart Table
+                          - overflow-x-auto: Scroll horizontal en móviles pequeños
+                          - -mx-4 px-4: Bleed negativo para aprovechar padding del contenedor
+                        */}
+                        <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+                          <table className="w-full text-sm min-w-[280px]">
+                            <thead>
+                              <tr className="text-zinc-400 border-b border-white/10">
+                                <th className="text-left py-2 pr-2">Talla</th>
+                                <th className="text-center py-2 px-2">Pecho</th>
+                                <th className="text-center py-2 px-2">Cintura</th>
+                                <th className="text-center py-2 pl-2">Cadera</th>
+                              </tr>
+                            </thead>
+                            <tbody className="text-zinc-300">
                             {Object.entries(sizeChart)
                               .filter(([size]) => availableSizes.includes(size))
                               .map(([size, measures]) => (
@@ -330,7 +362,8 @@ export default function SizeRecommender({
                               ))}
                           </tbody>
                         </table>
-                        <p className="text-xs text-zinc-500 mt-2">*Medidas en centímetros</p>
+                        </div>
+                        <p className="text-xs text-zinc-500 mt-2">*Medidas en centímetros. Desliza horizontalmente para ver más →</p>
                       </div>
                     )}
                   </div>
@@ -369,9 +402,13 @@ export default function SizeRecommender({
 
                       <div className="space-y-3">
                         {availableSizes.includes(result.size) ? (
+                          /* 
+                            MOBILE-FIRST: Action Buttons
+                            - min-h-12: Touch target óptimo para dedos (48px)
+                          */
                           <button
                             onClick={handleSelectSize}
-                            className="w-full py-3 px-4 bg-neon-cyan text-dark-600 font-medium rounded-lg hover:bg-neon-cyan-light transition-colors"
+                            className="w-full py-3 px-4 min-h-12 text-base bg-neon-cyan text-dark-600 font-medium rounded-lg hover:bg-neon-cyan-light transition-colors"
                           >
                             Seleccionar talla {result.size}
                           </button>
@@ -383,7 +420,7 @@ export default function SizeRecommender({
                         
                         <button
                           onClick={resetForm}
-                          className="w-full py-3 px-4 border border-white/20 text-white font-medium rounded-lg hover:bg-white/5 transition-colors"
+                          className="w-full py-3 px-4 min-h-12 text-base border border-white/20 text-white font-medium rounded-lg hover:bg-white/5 transition-colors"
                         >
                           Calcular de nuevo
                         </button>
@@ -402,7 +439,7 @@ export default function SizeRecommender({
                       <p className="text-zinc-400 mb-6">{result.tip}</p>
                       <button
                         onClick={resetForm}
-                        className="w-full py-3 px-4 bg-white/10 text-white font-medium rounded-lg hover:bg-white/20 transition-colors"
+                        className="w-full py-3 px-4 min-h-12 text-base bg-white/10 text-white font-medium rounded-lg hover:bg-white/20 transition-colors"
                       >
                         Intentar de nuevo
                       </button>
@@ -412,8 +449,11 @@ export default function SizeRecommender({
               )}
             </div>
 
-            {/* Footer */}
-            <div className="px-6 py-4 bg-dark-400/50 border-t border-white/5">
+            {/* 
+              MOBILE-FIRST: Modal Footer
+              - px-4 md:px-6: Padding horizontal adaptativo
+            */}
+            <div className="px-4 md:px-6 py-4 bg-dark-400/50 border-t border-white/5">
               <p className="text-xs text-zinc-500 text-center">
                 💡 Esta es una recomendación orientativa. El ajuste puede variar según el modelo.
               </p>
