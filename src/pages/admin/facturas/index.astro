@@ -31,33 +31,33 @@ function formatDate(dateStr: string) {
 <AdminLayout title="Gestión de Facturas">
     <!-- Stats Cards -->
     <div class="grid grid-cols-2 gap-4 mb-8">
-        <div class="bg-white rounded-xl border border-zinc-200 p-4">
-            <div class="text-2xl font-bold text-zinc-900">{stats.total}</div>
-            <div class="text-sm text-zinc-500">Total Facturas</div>
+        <div class="bg-dark-400 rounded-xl border border-white/10 p-4">
+            <div class="text-2xl font-bold text-zinc-100">{stats.total}</div>
+            <div class="text-sm text-zinc-400">Total Facturas</div>
         </div>
-        <div class="bg-zinc-900 rounded-xl p-4">
+        <div class="bg-gradient-to-br from-neon-cyan to-neon-purple rounded-xl p-4">
             <div class="text-2xl font-bold text-white">
                 {formatPrice(stats.totalAmount)}
             </div>
-            <div class="text-sm text-zinc-400">Total Facturado</div>
+            <div class="text-sm text-white/80">Total Facturado</div>
         </div>
     </div>
 
     <!-- Invoices List -->
-    <div class="bg-white rounded-2xl border border-zinc-200 overflow-hidden">
-        <div class="p-6 border-b border-zinc-200">
-            <h2 class="text-lg font-semibold text-zinc-900">
+    <div class="bg-dark-400 rounded-2xl border border-white/10 overflow-hidden">
+        <div class="p-6 border-b border-white/10">
+            <h2 class="text-lg font-semibold text-zinc-100">
                 Todas las Facturas
             </h2>
-            <p class="text-sm text-zinc-500 mt-1">Historial de facturación</p>
+            <p class="text-sm text-zinc-400 mt-1">Historial de facturación</p>
         </div>
 
         {
             invoices.length === 0 ? (
                 <div class="p-12 text-center">
-                    <div class="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <div class="w-16 h-16 bg-dark-300 rounded-full flex items-center justify-center mx-auto mb-4">
                         <svg
-                            class="w-8 h-8 text-zinc-400"
+                            class="w-8 h-8 text-zinc-500"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -77,29 +77,29 @@ function formatDate(dateStr: string) {
             ) : (
                 <div class="overflow-x-auto">
                     <table class="w-full">
-                        <thead class="bg-zinc-50 border-b border-zinc-200">
+                        <thead class="bg-dark-300 border-b border-white/10">
                             <tr>
-                                <th class="text-left px-6 py-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                                <th class="text-left px-6 py-3 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
                                     ID Factura
                                 </th>
-                                <th class="text-left px-6 py-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                                <th class="text-left px-6 py-3 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
                                     Pedido
                                 </th>
-                                <th class="text-left px-6 py-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                                <th class="text-left px-6 py-3 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
                                     Cliente
                                 </th>
-                                <th class="text-left px-6 py-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                                <th class="text-left px-6 py-3 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
                                     Total
                                 </th>
-                                <th class="text-left px-6 py-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                                <th class="text-left px-6 py-3 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
                                     Fecha
                                 </th>
-                                <th class="text-right px-6 py-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                                <th class="text-right px-6 py-3 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
                                     Acciones
                                 </th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-zinc-100">
+                        <tbody class="divide-y divide-white/5">
                             {invoices.map((invoice) => {
                                 const orderNumber =
                                     invoice.orders?.order_number || "-";
@@ -108,32 +108,32 @@ function formatDate(dateStr: string) {
                                 const total = invoice.orders?.total_price || 0;
 
                                 return (
-                                    <tr class="hover:bg-zinc-50 transition-colors">
+                                    <tr class="hover:bg-white/5 transition-colors">
                                         <td class="px-6 py-4">
-                                            <span class="font-mono text-sm font-medium text-zinc-900">
+                                            <span class="font-mono text-sm font-medium text-zinc-100">
                                                 #{invoice.id}
                                             </span>
                                         </td>
                                         <td class="px-6 py-4">
                                             <a
                                                 href={`/admin/pedidos/${invoice.order_id}`}
-                                                class="text-sm text-cyan-600 hover:underline"
+                                                class="text-sm text-neon-cyan hover:underline"
                                             >
                                                 #{orderNumber}
                                             </a>
                                         </td>
                                         <td class="px-6 py-4">
-                                            <div class="text-sm font-medium text-zinc-900">
+                                            <div class="text-sm font-medium text-zinc-100">
                                                 {customerName}
                                             </div>
                                         </td>
                                         <td class="px-6 py-4">
-                                            <span class="font-semibold text-zinc-900">
+                                            <span class="font-semibold text-zinc-100">
                                                 {formatPrice(total)}
                                             </span>
                                         </td>
                                         <td class="px-6 py-4">
-                                            <span class="text-sm text-zinc-500">
+                                            <span class="text-sm text-zinc-400">
                                                 {formatDate(invoice.created_at)}
                                             </span>
                                         </td>
@@ -143,7 +143,7 @@ function formatDate(dateStr: string) {
                                                 <a
                                                     href={`/api/invoice/${invoice.order_id}`}
                                                     target="_blank"
-                                                    class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-cyan-700 bg-cyan-50 rounded-lg hover:bg-cyan-100 transition-colors"
+                                                    class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-neon-cyan bg-neon-cyan/10 rounded-lg hover:bg-neon-cyan/20 border border-neon-cyan/30 transition-colors"
                                                     title="Ver Factura"
                                                 >
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -157,7 +157,7 @@ function formatDate(dateStr: string) {
                                                     type="button"
                                                     data-order-id={invoice.order_id}
                                                     data-invoice-number={invoice.invoice_number || invoice.id}
-                                                    class="send-invoice-btn inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors"
+                                                    class="send-invoice-btn inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-emerald-400 bg-emerald-500/10 rounded-lg hover:bg-emerald-500/20 border border-emerald-500/30 transition-colors"
                                                     title="Enviar por Email"
                                                 >
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -168,7 +168,7 @@ function formatDate(dateStr: string) {
                                                 <!-- Ver Pedido -->
                                                 <a
                                                     href={`/admin/pedidos/${invoice.order_id}`}
-                                                    class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-zinc-600 bg-zinc-100 rounded-lg hover:bg-zinc-200 transition-colors"
+                                                    class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-zinc-400 bg-dark-300 rounded-lg hover:bg-dark-200 border border-white/10 transition-colors"
                                                     title="Ver Pedido"
                                                 >
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

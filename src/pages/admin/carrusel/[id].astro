@@ -112,8 +112,8 @@ if (Astro.request.method === "POST") {
                 </svg>
             </a>
             <div>
-                <h1 class="text-2xl font-bold text-zinc-900">Editar Slide</h1>
-                <p class="text-zinc-500 mt-0.5">
+                <h1 class="text-2xl font-bold text-zinc-100">Editar Slide</h1>
+                <p class="text-zinc-400 mt-0.5">
                     Modifica la configuración de esta slide del carrusel
                 </p>
             </div>
@@ -121,7 +121,7 @@ if (Astro.request.method === "POST") {
 
         {
             error && (
-                <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+                <div class="mb-6 p-4 bg-dark-400 border border-red-500/30 rounded-xl text-red-400">
                     {error}
                 </div>
             )
@@ -129,11 +129,11 @@ if (Astro.request.method === "POST") {
 
         <!-- Preview Header Bar -->
         <div
-            class="bg-white rounded-xl border border-zinc-200 p-3 mb-4 flex items-center justify-between gap-4"
+            class="bg-dark-400 rounded-xl border border-white/10 p-3 mb-4 flex items-center justify-between gap-4"
         >
             <div class="flex items-center gap-4 flex-1">
                 <div
-                    class="w-32 h-20 rounded-lg overflow-hidden border border-zinc-200 flex-shrink-0 relative"
+                    class="w-32 h-20 rounded-lg overflow-hidden border border-white/10 flex-shrink-0 relative"
                 >
                     <img
                         id="thumbnail-preview"
@@ -147,10 +147,10 @@ if (Astro.request.method === "POST") {
                     </div>
                 </div>
                 <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-zinc-900 truncate">
+                    <p class="text-sm font-medium text-zinc-100 truncate">
                         {slide.title}
                     </p>
-                    <p class="text-xs text-zinc-500">
+                    <p class="text-xs text-zinc-400">
                         Clic en "Ver Vista Previa" para editar posiciones
                     </p>
                 </div>
@@ -158,7 +158,7 @@ if (Astro.request.method === "POST") {
             <button
                 type="button"
                 id="open-preview-modal"
-                class="px-4 py-2 bg-gradient-to-r from-purple-600 to-cyan-600 text-white text-sm font-semibold rounded-lg hover:from-purple-700 hover:to-cyan-700 transition-all flex items-center gap-2"
+                class="px-4 py-2 bg-gradient-to-r from-neon-cyan to-cyan-600 text-black text-sm font-semibold rounded-lg hover:from-cyan-400 hover:to-cyan-700 transition-all flex items-center gap-2"
             >
                 <svg
                     class="w-4 h-4"
@@ -701,12 +701,12 @@ if (Astro.request.method === "POST") {
             </div>
 
             <!-- CTA Section -->
-            <div class="bg-white rounded-xl border border-zinc-200 p-4">
+            <div class="bg-dark-400 rounded-xl border border-white/10 p-4">
                 <h2
-                    class="text-sm font-semibold text-zinc-900 flex items-center gap-2 mb-3"
+                    class="text-sm font-semibold text-zinc-100 flex items-center gap-2 mb-3"
                 >
                     <svg
-                        class="w-5 h-5 text-cyan-600"
+                        class="w-5 h-5 text-neon-cyan"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -723,7 +723,7 @@ if (Astro.request.method === "POST") {
                     <div>
                         <label
                             for="cta_text"
-                            class="block text-sm font-medium text-zinc-700 mb-1"
+                            class="block text-sm font-medium text-zinc-300 mb-1"
                             >Texto</label
                         >
                         <input
@@ -732,14 +732,14 @@ if (Astro.request.method === "POST") {
                             name="cta_text"
                             value={slide.cta_text}
                             placeholder="Explorar"
-                            class="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20"
+                            class="w-full px-3 py-2 bg-dark-300 border border-white/10 rounded-lg text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan/20"
                             oninput="document.getElementById('preview-cta-text-inner').textContent = this.value"
                         />
                     </div>
                     <div>
                         <label
                             for="cta_link"
-                            class="block text-sm font-medium text-zinc-700 mb-1"
+                            class="block text-sm font-medium text-zinc-300 mb-1"
                             >Enlace</label
                         >
                         <input

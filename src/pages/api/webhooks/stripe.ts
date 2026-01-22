@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import Stripe from 'stripe';
-import { supabaseAdmin, createFacturacion } from '../../../lib/supabase';
+import { supabaseAdmin, createFacturacion, decrementStock } from '../../../lib/supabase';
 import { Resend } from 'resend';
 
 const stripe = new Stripe(import.meta.env.STRIPE_SECRET_KEY, {
@@ -214,6 +214,21 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
 
         if (itemsError) {
             console.error('Error creating order items:', itemsError);
+        }
+
+        // ==========================================
+        // 📦 Decrementar Stock por cada item
+        // ==========================================
+        console.log('Decrementing stock for order items...');
+        for (const item of orderItems) {
+            if (item.product_id && item.size) {
+                const success = await decrementStock(item.product_id, item.size, item.quantity);
+                if (success) {
+                    console.log(`[STOCK] Decremented ${item.quantity} units of ${item.product_name} (${item.size})`);
+                } else {
+                    console.warn(`[STOCK] Failed to decrement stock for ${item.product_name} (${item.size})`);
+                }
+            }
         }
 
         // ==========================================

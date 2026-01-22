@@ -738,6 +738,31 @@ export async function decrementStock(productId: string, size: string, quantity: 
 }
 
 /**
+ * Incrementar stock después de una devolución
+ */
+export async function incrementStock(productId: string, size: string, quantity: number = 1): Promise<boolean> {
+    // Obtener stock actual
+    const currentStock = await getStockForSize(productId, size);
+
+    const { error } = await supabaseAdmin
+        .from('product_variants')
+        .update({
+            stock: currentStock + quantity,
+            updated_at: new Date().toISOString()
+        })
+        .eq('product_id', productId)
+        .eq('size', size);
+
+    if (error) {
+        console.error('Error incrementando stock:', error);
+        return false;
+    }
+
+    console.log(`[STOCK] Incrementado stock de producto ${productId} talla ${size}: +${quantity} (nuevo: ${currentStock + quantity})`);
+    return true;
+}
+
+/**
  * Obtener stock total de un producto (suma de todas las tallas)
  */
 export async function getTotalStock(productId: string): Promise<number> {

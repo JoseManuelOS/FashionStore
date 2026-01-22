@@ -1,0 +1,516 @@
+---
+/**
+ * Dashboard Ejecutivo - Panel de Control con KPIs y Gráficos
+ * 
+ * NOTA EDUCATIVA - Arquitectura de Datos:
+ * 
+ * 1. OBTENCIÓN DE DATOS (Server-Side):
+ *    Los datos se obtienen en el frontmatter de Astro (se ejecuta en el servidor).
+ *    Esto significa que la página se renderiza con los datos ya disponibles,
+ *    mejorando el SEO y el tiempo de carga inicial.
+ * 
+ * 2. AGREGACIÓN DE DATOS:
+ *    - Ventas del mes: Sumamos total_price de pedidos con status válido
+ *    - Pedidos pendientes: Contamos pedidos con status 'paid' (pagados, esperando envío)
+ *    - Top producto: Agregamos por product_name en order_items y ordenamos
+ *    - Ventas 7 días: Agrupamos por fecha y sumamos
+ * 
+ * 3. ISLANDS ARCHITECTURE:
+ *    - Los KPIs son HTML estático (no necesitan JS)
+ *    - El gráfico usa client:visible para cargarse solo cuando es visible
+ *    - Esto optimiza el bundle JS inicial
+ */
+
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { formatPrice } from "../../lib/supabase";
+import { 
+    getDashboardStats, 
+    getLast7DaysSales,
+    type DashboardStats,
+    type DailySales 
+} from "../../lib/dashboard-queries";
+import SalesChart from "../../components/islands/SalesChart";
+import KPICard from "../../components/islands/KPICard";
+
+export const prerender = false;
+
+// Obtener datos del dashboard
+let stats: DashboardStats = {
+    monthlySales: 0,
+    pendingOrders: 0,
+    topProduct: null,
+    totalProducts: 0,
+    lowStockCount: 0
+};
+
+let salesData: DailySales[] = [];
+
+try {
+    // Ejecutar ambas consultas en paralelo para optimizar tiempo
+    [stats, salesData] = await Promise.all([
+        getDashboardStats(),
+        getLast7DaysSales()
+    ]);
+} catch (error) {
+    console.error('Error loading dashboard data:', error);
+}
+
+// Formatear datos para mostrar
+const formattedMonthlySales = new Intl.NumberFormat('es-ES', {
+    style: 'currency',
+    currency: 'EUR'
+}).format(stats.monthlySales);
+---
+
+<AdminLayout title="Dashboard Ejecutivo">
+    <style>
+        /* ============================================= */
+        /* Dashboard Ejecutivo - Tema de Marca          */
+        /* Colores: neon-cyan (#06b6d4), fuchsia (#d946ef) */
+        /* ============================================= */
+        
+        .dashboard-header {
+            margin-bottom: 32px;
+        }
+        
+        .dashboard-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #fafafa;
+            margin-bottom: 8px;
+            font-family: 'Space Grotesk', system-ui, sans-serif;
+        }
+        
+        .dashboard-subtitle {
+            font-size: 14px;
+            color: #a1a1aa;
+        }
+        
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+        
+        /* KPI Cards con gradientes de marca */
+        .kpi-card {
+            background: linear-gradient(135deg, #12121a 0%, #18181f 100%);
+            border-radius: 16px;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            border-radius: 16px 16px 0 0;
+        }
+        
+        .kpi-card::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, var(--card-glow) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        
+        .kpi-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px var(--card-shadow);
+        }
+        
+        .kpi-card:hover::after {
+            opacity: 0.15;
+        }
+        
+        /* Variantes de color usando CSS variables */
+        .kpi-card.cyan {
+            --card-glow: rgba(6, 182, 212, 0.5);
+            --card-shadow: rgba(6, 182, 212, 0.15);
+            --icon-bg: rgba(6, 182, 212, 0.1);
+            --icon-color: #06b6d4;
+        }
+        .kpi-card.cyan::before {
+            background: linear-gradient(90deg, #06b6d4, #22d3ee);
+        }
+        
+        .kpi-card.fuchsia {
+            --card-glow: rgba(217, 70, 239, 0.5);
+            --card-shadow: rgba(217, 70, 239, 0.15);
+            --icon-bg: rgba(217, 70, 239, 0.1);
+            --icon-color: #d946ef;
+        }
+        .kpi-card.fuchsia::before {
+            background: linear-gradient(90deg, #d946ef, #e879f9);
+        }
+        
+        .kpi-card.purple {
+            --card-glow: rgba(139, 92, 246, 0.5);
+            --card-shadow: rgba(139, 92, 246, 0.15);
+            --icon-bg: rgba(139, 92, 246, 0.1);
+            --icon-color: #8b5cf6;
+        }
+        .kpi-card.purple::before {
+            background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+        }
+        
+        .kpi-card.amber {
+            --card-glow: rgba(245, 158, 11, 0.5);
+            --card-shadow: rgba(245, 158, 11, 0.15);
+            --icon-bg: rgba(245, 158, 11, 0.1);
+            --icon-color: #f59e0b;
+        }
+        .kpi-card.amber::before {
+            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+        }
+        
+        .kpi-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            background: var(--icon-bg);
+            color: var(--icon-color);
+        }
+        
+        .kpi-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #a1a1aa;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .kpi-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #fafafa;
+            line-height: 1.2;
+            font-family: 'Space Grotesk', system-ui, sans-serif;
+        }
+        
+        .kpi-value.small {
+            font-size: 20px;
+            line-height: 1.4;
+        }
+        
+        .kpi-value.gradient {
+            background: linear-gradient(135deg, #06b6d4, #d946ef);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .kpi-subtext {
+            font-size: 12px;
+            color: #a1a1aa;
+            margin-top: 8px;
+        }
+        
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+        }
+        
+        @media (max-width: 1200px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* El chart-card ahora es transparente porque SalesChart tiene su propio fondo */
+        .chart-card {
+            background: transparent;
+        }
+        
+        /* Quick Stats con estilo de marca */
+        .quick-stats {
+            background: linear-gradient(135deg, #12121a 0%, #18181f 100%);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            border-radius: 16px;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .quick-stats::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #06b6d4, #22d3ee);
+        }
+        
+        .quick-stats-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fafafa;
+            margin-bottom: 20px;
+            font-family: 'Space Grotesk', system-ui, sans-serif;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+        
+        .stat-name {
+            font-size: 14px;
+            color: #a1a1aa;
+        }
+        
+        .stat-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #fafafa;
+        }
+        
+        .stat-value.accent {
+            color: #06b6d4;
+        }
+        
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .badge.warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: #d97706;
+        }
+        
+        .badge.success {
+            background: rgba(6, 182, 212, 0.1);
+            color: #0891b2;
+        }
+        
+        .quick-links {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .quick-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: rgba(6, 182, 212, 0.1);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            border-radius: 10px;
+            text-decoration: none;
+            color: #fafafa;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+        }
+        
+        .quick-link:last-child {
+            margin-bottom: 0;
+        }
+        
+        .quick-link:hover {
+            background: rgba(6, 182, 212, 0.2);
+            border-color: #06b6d4;
+            transform: translateX(4px);
+        }
+        
+        .quick-link svg {
+            color: #06b6d4;
+            flex-shrink: 0;
+        }
+        
+        .refresh-note {
+            text-align: center;
+            padding: 20px;
+            font-size: 12px;
+            color: #a1a1aa;
+            margin-top: 8px;
+        }
+        
+        .refresh-note span {
+            color: #06b6d4;
+        }
+    </style>
+
+    <!-- Header -->
+    <div class="dashboard-header">
+        <h1 class="dashboard-title">Dashboard Ejecutivo</h1>
+        <p class="dashboard-subtitle">
+            Resumen de métricas clave • Actualizado: {new Date().toLocaleDateString('es-ES', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            })}
+        </p>
+    </div>
+
+    <!-- KPI Cards con colores de marca -->
+    <div class="kpi-grid">
+        <!-- Ventas del Mes - Cyan (Primary) -->
+        <div class="kpi-card cyan">
+            <div class="kpi-icon">
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <div class="kpi-label">Ventas del Mes</div>
+            <div class="kpi-value gradient">{formattedMonthlySales}</div>
+            <div class="kpi-subtext">
+                {new Date().toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+            </div>
+        </div>
+
+        <!-- Pedidos Pendientes - Fuchsia (Secondary) -->
+        <div class="kpi-card fuchsia">
+            <div class="kpi-icon">
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+            </div>
+            <div class="kpi-label">Pedidos Pendientes</div>
+            <div class="kpi-value">{stats.pendingOrders}</div>
+            <div class="kpi-subtext">
+                {stats.pendingOrders === 0 ? '✓ ¡Todo al día!' : '⚡ Requieren atención'}
+            </div>
+        </div>
+
+        <!-- Top Producto - Purple (Accent) -->
+        <div class="kpi-card purple">
+            <div class="kpi-icon">
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                </svg>
+            </div>
+            <div class="kpi-label">Producto Más Vendido</div>
+            <div class="kpi-value small">
+                {stats.topProduct?.name || 'Sin datos'}
+            </div>
+            <div class="kpi-subtext">
+                {stats.topProduct 
+                    ? `🔥 ${stats.topProduct.quantity} unidades vendidas` 
+                    : 'No hay ventas registradas'}
+            </div>
+        </div>
+
+        <!-- Stock Bajo - Amber (Warning) -->
+        <div class="kpi-card amber">
+            <div class="kpi-icon">
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+            <div class="kpi-label">Productos Stock Bajo</div>
+            <div class="kpi-value">{stats.lowStockCount}</div>
+            <div class="kpi-subtext">
+                {stats.lowStockCount > 0 
+                    ? '⚠️ Necesitan reposición' 
+                    : '✓ Inventario saludable'}
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Grid: Chart + Quick Stats -->
+    <div class="content-grid">
+        <!-- Sales Chart (ya tiene estilos de marca internos) -->
+        <div class="chart-card">
+            <SalesChart 
+                client:visible 
+                data={salesData}
+                title="Ventas de los últimos 7 días"
+            />
+        </div>
+
+        <!-- Quick Stats Sidebar -->
+        <div class="quick-stats">
+            <h3 class="quick-stats-title">📊 Resumen Rápido</h3>
+            
+            <div class="stat-item">
+                <span class="stat-name">Total productos</span>
+                <span class="stat-value">{stats.totalProducts}</span>
+            </div>
+            
+            <div class="stat-item">
+                <span class="stat-name">Pedidos hoy</span>
+                <span class="stat-value accent">
+                    {salesData.length > 0 && salesData[salesData.length - 1].total > 0 
+                        ? formatPrice(salesData[salesData.length - 1].total)
+                        : '€0,00'}
+                </span>
+            </div>
+            
+            <div class="stat-item">
+                <span class="stat-name">Stock bajo (≤5)</span>
+                <span class={`badge ${stats.lowStockCount > 0 ? 'warning' : 'success'}`}>
+                    {stats.lowStockCount > 0 
+                        ? `${stats.lowStockCount} productos` 
+                        : '✓ OK'}
+                </span>
+            </div>
+            
+            <div class="stat-item">
+                <span class="stat-name">Pedidos pendientes</span>
+                <span class={`badge ${stats.pendingOrders > 0 ? 'warning' : 'success'}`}>
+                    {stats.pendingOrders > 0 
+                        ? `${stats.pendingOrders} pedidos` 
+                        : '✓ Al día'}
+                </span>
+            </div>
+
+            <!-- Enlaces Rápidos con estilo de marca -->
+            <div class="quick-links">
+                <a href="/admin/pedidos" class="quick-link">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    Ver todos los pedidos
+                </a>
+                <a href="/admin/productos" class="quick-link">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                    Gestionar inventario
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="refresh-note">
+        Los datos se actualizan con cada recarga · <span>Powered by Supabase</span>
+    </div>
+</AdminLayout>

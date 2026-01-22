@@ -101,7 +101,7 @@ function formatDate(dateStr: string) {
             {
                 message && (
                     <div
-                        class={`p-4 rounded-xl border ${messageType === "success" ? "bg-emerald-50 border-emerald-200 text-emerald-700" : messageType === "warning" ? "bg-amber-50 border-amber-200 text-amber-700" : "bg-red-50 border-red-200 text-red-700"}`}
+                        class={`p-4 rounded-xl border ${messageType === "success" ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" : messageType === "warning" ? "bg-amber-500/10 border-amber-500/30 text-amber-400" : "bg-red-500/10 border-red-500/30 text-red-400"}`}
                     >
                         <div class="flex items-start gap-3">
                             {messageType === "success" ? (
@@ -161,10 +161,10 @@ function formatDate(dateStr: string) {
                                 )}
                                 {failedTo.length > 0 && (
                                     <details class="mt-2">
-                                        <summary class="text-sm cursor-pointer hover:underline text-red-600">
+                                        <summary class="text-sm cursor-pointer hover:underline text-red-400">
                                             Ver fallidos ({failedTo.length})
                                         </summary>
-                                        <div class="mt-2 text-sm text-red-600 max-h-32 overflow-auto">
+                                        <div class="mt-2 text-sm text-red-400 max-h-32 overflow-auto">
                                             {failedTo.join(", ")}
                                         </div>
                                     </details>
@@ -177,14 +177,14 @@ function formatDate(dateStr: string) {
 
             <form
                 method="POST"
-                class="bg-white rounded-2xl border border-zinc-200 overflow-hidden"
+                class="bg-dark-400 rounded-2xl border border-white/10 overflow-hidden"
             >
-                <div class="p-6 border-b border-zinc-200">
+                <div class="p-6 border-b border-white/10">
                     <h2
-                        class="text-lg font-semibold text-zinc-900 flex items-center gap-2"
+                        class="text-lg font-semibold text-zinc-100 flex items-center gap-2"
                     >
                         <svg
-                            class="w-5 h-5 text-cyan-600"
+                            class="w-5 h-5 text-neon-cyan"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -198,7 +198,7 @@ function formatDate(dateStr: string) {
                         </svg>
                         Enviar Newsletter
                     </h2>
-                    <p class="text-sm text-zinc-500 mt-1">
+                    <p class="text-sm text-zinc-400 mt-1">
                         Envía emails a los {subscribers.length} clientes suscritos
                         al newsletter
                     </p>
@@ -209,14 +209,14 @@ function formatDate(dateStr: string) {
 
                     <!-- Audience Info -->
                     <div
-                        class="p-4 bg-emerald-50 border border-emerald-200 rounded-xl"
+                        class="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl"
                     >
                         <div class="flex items-center gap-3">
                             <div
-                                class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center"
+                                class="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center"
                             >
                                 <svg
-                                    class="w-5 h-5 text-emerald-600"
+                                    class="w-5 h-5 text-emerald-400"
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
@@ -229,10 +229,10 @@ function formatDate(dateStr: string) {
                                 </svg>
                             </div>
                             <div>
-                                <div class="font-medium text-emerald-900">
+                                <div class="font-medium text-emerald-300">
                                     Suscriptores del Newsletter
                                 </div>
-                                <div class="text-sm text-emerald-700">
+                                <div class="text-sm text-emerald-400/80">
                                     {subscribers.length} personas recibirán este email
                                 </div>
                             </div>
@@ -243,7 +243,7 @@ function formatDate(dateStr: string) {
                     <div>
                         <label
                             for="headerTitle"
-                            class="block text-sm font-medium text-zinc-700 mb-2"
+                            class="block text-sm font-medium text-zinc-300 mb-2"
                         >
                             Título del Header
                         </label>
@@ -252,7 +252,7 @@ function formatDate(dateStr: string) {
                             id="headerTitle"
                             name="headerTitle"
                             placeholder="Novedades de FashionMarket"
-                            class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                            class="w-full px-4 py-3 bg-dark-300 border border-white/10 rounded-xl text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/20 transition-all"
                         />
                     </div>
 
@@ -260,9 +260,9 @@ function formatDate(dateStr: string) {
                     <div>
                         <label
                             for="subject"
-                            class="block text-sm font-medium text-zinc-700 mb-2"
+                            class="block text-sm font-medium text-zinc-300 mb-2"
                         >
-                            Asunto del Email <span class="text-red-500">*</span>
+                            Asunto del Email <span class="text-red-400">*</span>
                         </label>
                         <input
                             type="text"
@@ -270,7 +270,7 @@ function formatDate(dateStr: string) {
                             name="subject"
                             required
                             placeholder="Nuevas ofertas exclusivas para ti"
-                            class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                            class="w-full px-4 py-3 bg-dark-300 border border-white/10 rounded-xl text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/20 transition-all"
                         />
                     </div>
 
@@ -278,7 +278,7 @@ function formatDate(dateStr: string) {
                     <div>
                         <label
                             for="imageUrl"
-                            class="block text-sm font-medium text-zinc-700 mb-2"
+                            class="block text-sm font-medium text-zinc-300 mb-2"
                         >
                             URL de Imagen (opcional)
                         </label>
@@ -287,7 +287,7 @@ function formatDate(dateStr: string) {
                             id="imageUrl"
                             name="imageUrl"
                             placeholder="https://ejemplo.com/imagen-promocional.jpg"
-                            class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                            class="w-full px-4 py-3 bg-dark-300 border border-white/10 rounded-xl text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/20 transition-all"
                         />
                         <p class="text-xs text-zinc-500 mt-1">
                             Imagen destacada que aparecerá en el email
@@ -298,9 +298,9 @@ function formatDate(dateStr: string) {
                     <div>
                         <label
                             for="content"
-                            class="block text-sm font-medium text-zinc-700 mb-2"
+                            class="block text-sm font-medium text-zinc-300 mb-2"
                         >
-                            Contenido <span class="text-red-500">*</span>
+                            Contenido <span class="text-red-400">*</span>
                         </label>
                         <textarea
                             id="content"
@@ -310,16 +310,16 @@ function formatDate(dateStr: string) {
                             placeholder="Escribe el contenido de tu email aquí...
 
 Puedes incluir información sobre nuevos productos, descuentos especiales o novedades de la tienda."
-                            class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all resize-none"
+                            class="w-full px-4 py-3 bg-dark-300 border border-white/10 rounded-xl text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/20 transition-all resize-none"
                         ></textarea>
                     </div>
 
                     <!-- Promo Code Section -->
                     <div
-                        class="p-4 bg-amber-50 border border-amber-200 rounded-xl"
+                        class="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl"
                     >
                         <h3
-                            class="text-sm font-medium text-amber-800 mb-3 flex items-center gap-2"
+                            class="text-sm font-medium text-amber-400 mb-3 flex items-center gap-2"
                         >
                             <svg
                                 class="w-4 h-4"
@@ -340,7 +340,7 @@ Puedes incluir información sobre nuevos productos, descuentos especiales o nove
                             <div>
                                 <label
                                     for="promoCode"
-                                    class="block text-xs text-amber-700 mb-1"
+                                    class="block text-xs text-amber-400/80 mb-1"
                                     >Código</label
                                 >
                                 <input
@@ -348,13 +348,13 @@ Puedes incluir información sobre nuevos productos, descuentos especiales o nove
                                     id="promoCode"
                                     name="promoCode"
                                     placeholder="VERANO20"
-                                    class="w-full px-3 py-2 bg-white border border-amber-200 rounded-lg text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-amber-400 text-sm uppercase"
+                                    class="w-full px-3 py-2 bg-dark-300 border border-amber-500/20 rounded-lg text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500 text-sm uppercase"
                                 />
                             </div>
                             <div>
                                 <label
                                     for="promoDiscount"
-                                    class="block text-xs text-amber-700 mb-1"
+                                    class="block text-xs text-amber-400/80 mb-1"
                                     >Descripción del descuento</label
                                 >
                                 <input
@@ -362,7 +362,7 @@ Puedes incluir información sobre nuevos productos, descuentos especiales o nove
                                     id="promoDiscount"
                                     name="promoDiscount"
                                     placeholder="20% de descuento"
-                                    class="w-full px-3 py-2 bg-white border border-amber-200 rounded-lg text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-amber-400 text-sm"
+                                    class="w-full px-3 py-2 bg-dark-300 border border-amber-500/20 rounded-lg text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500 text-sm"
                                 />
                             </div>
                         </div>
@@ -370,10 +370,10 @@ Puedes incluir información sobre nuevos productos, descuentos especiales o nove
 
                     <!-- CTA Button Section -->
                     <div
-                        class="p-4 bg-cyan-50 border border-cyan-200 rounded-xl"
+                        class="p-4 bg-neon-cyan/10 border border-neon-cyan/30 rounded-xl"
                     >
                         <h3
-                            class="text-sm font-medium text-cyan-800 mb-3 flex items-center gap-2"
+                            class="text-sm font-medium text-neon-cyan mb-3 flex items-center gap-2"
                         >
                             <svg
                                 class="w-4 h-4"
@@ -394,7 +394,7 @@ Puedes incluir información sobre nuevos productos, descuentos especiales o nove
                             <div>
                                 <label
                                     for="buttonText"
-                                    class="block text-xs text-cyan-700 mb-1"
+                                    class="block text-xs text-neon-cyan/80 mb-1"
                                     >Texto del botón</label
                                 >
                                 <input
@@ -402,13 +402,13 @@ Puedes incluir información sobre nuevos productos, descuentos especiales o nove
                                     id="buttonText"
                                     name="buttonText"
                                     placeholder="Visitar la tienda"
-                                    class="w-full px-3 py-2 bg-white border border-cyan-200 rounded-lg text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-400 text-sm"
+                                    class="w-full px-3 py-2 bg-dark-300 border border-neon-cyan/20 rounded-lg text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-neon-cyan text-sm"
                                 />
                             </div>
                             <div>
                                 <label
                                     for="buttonUrl"
-                                    class="block text-xs text-cyan-700 mb-1"
+                                    class="block text-xs text-neon-cyan/80 mb-1"
                                     >URL del botón</label
                                 >
                                 <input
@@ -416,7 +416,7 @@ Puedes incluir información sobre nuevos productos, descuentos especiales o nove
                                     id="buttonUrl"
                                     name="buttonUrl"
                                     placeholder="https://fashionmarket.com/ofertas"
-                                    class="w-full px-3 py-2 bg-white border border-cyan-200 rounded-lg text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-400 text-sm"
+                                    class="w-full px-3 py-2 bg-dark-300 border border-neon-cyan/20 rounded-lg text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-neon-cyan text-sm"
                                 />
                             </div>
                         </div>
@@ -424,15 +424,15 @@ Puedes incluir información sobre nuevos productos, descuentos especiales o nove
 
                     <!-- Submit Button -->
                     <div class="flex items-center justify-between pt-2">
-                        <div class="text-sm text-zinc-500">
-                            <span class="font-medium text-zinc-700"
+                        <div class="text-sm text-zinc-400">
+                            <span class="font-medium text-zinc-200"
                                 >{subscribers.length}</span
                             > destinatarios
                         </div>
                         <button
                             type="submit"
                             disabled={subscribers.length === 0}
-                            class="px-6 py-3 bg-cyan-600 text-white font-medium rounded-xl hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                            class="px-6 py-3 bg-gradient-to-r from-neon-cyan to-neon-purple text-white font-medium rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-lg shadow-neon-cyan/20"
                         >
                             <svg
                                 class="w-5 h-5"
@@ -454,11 +454,11 @@ Puedes incluir información sobre nuevos productos, descuentos especiales o nove
                 <!-- Info Note -->
                 <div class="px-6 pb-6">
                     <div
-                        class="p-4 bg-cyan-50 border border-cyan-200 rounded-xl"
+                        class="p-4 bg-neon-cyan/10 border border-neon-cyan/30 rounded-xl"
                     >
                         <div class="flex gap-3">
                             <svg
-                                class="w-5 h-5 text-cyan-600 mt-0.5 shrink-0"
+                                class="w-5 h-5 text-neon-cyan mt-0.5 shrink-0"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -470,7 +470,7 @@ Puedes incluir información sobre nuevos productos, descuentos especiales o nove
                                     d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                                 ></path>
                             </svg>
-                            <p class="text-sm text-cyan-800">
+                            <p class="text-sm text-neon-cyan/90">
                                 <strong>Resend configurado:</strong> Los emails se
                                 enviarán usando tu cuenta de Resend. Cada suscriptor
                                 recibirá un email personalizado con su nombre.
@@ -484,14 +484,14 @@ Puedes incluir información sobre nuevos productos, descuentos especiales o nove
         <!-- Sidebar - Subscribers List -->
         <div class="space-y-6">
             <div
-                class="bg-white rounded-2xl border border-zinc-200 overflow-hidden"
+                class="bg-dark-400 rounded-2xl border border-white/10 overflow-hidden"
             >
-                <div class="p-5 border-b border-zinc-200">
+                <div class="p-5 border-b border-white/10">
                     <h2
-                        class="font-semibold text-zinc-900 flex items-center gap-2"
+                        class="font-semibold text-zinc-100 flex items-center gap-2"
                     >
                         <svg
-                            class="w-5 h-5 text-emerald-600"
+                            class="w-5 h-5 text-emerald-400"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -504,7 +504,7 @@ Puedes incluir información sobre nuevos productos, descuentos especiales o nove
                         </svg>
                         Suscritos al Newsletter
                     </h2>
-                    <p class="text-sm text-zinc-500 mt-1">
+                    <p class="text-sm text-zinc-400 mt-1">
                         {subscribers.length} clientes
                     </p>
                 </div>
@@ -532,15 +532,15 @@ Puedes incluir información sobre nuevos productos, descuentos especiales o nove
                             </p>
                         </div>
                     ) : (
-                        <div class="max-h-96 overflow-y-auto divide-y divide-zinc-100">
+                        <div class="max-h-96 overflow-y-auto divide-y divide-white/5">
                             {subscribers.map((sub) => (
-                                <div class="p-4 flex items-center gap-3">
-                                    <div class="w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center text-zinc-600 text-sm font-medium">
+                                <div class="p-4 flex items-center gap-3 hover:bg-white/5 transition-colors">
+                                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-neon-cyan to-neon-purple flex items-center justify-center text-white text-sm font-medium">
                                         {sub.name?.charAt(0).toUpperCase() ||
                                             sub.email.charAt(0).toUpperCase()}
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <div class="text-sm font-medium text-zinc-900 truncate">
+                                        <div class="text-sm font-medium text-zinc-100 truncate">
                                             {sub.name || "Sin nombre"}
                                         </div>
                                         <div class="text-xs text-zinc-500 truncate">
@@ -548,7 +548,7 @@ Puedes incluir información sobre nuevos productos, descuentos especiales o nove
                                         </div>
                                     </div>
                                     <span
-                                        class={`text-xs px-2 py-0.5 rounded-full ${sub.source === "subscriber" ? "bg-cyan-100 text-cyan-700" : "bg-emerald-100 text-emerald-700"}`}
+                                        class={`text-xs px-2 py-0.5 rounded-full ${sub.source === "subscriber" ? "bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30" : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"}`}
                                     >
                                         {sub.source === "subscriber"
                                             ? "Popup"
@@ -563,7 +563,7 @@ Puedes incluir información sobre nuevos productos, descuentos especiales o nove
 
             <!-- Quick Stats -->
             <div
-                class="bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl p-5 text-white"
+                class="bg-gradient-to-br from-neon-cyan to-neon-purple rounded-2xl p-5 text-white"
             >
                 <div class="flex items-center gap-3 mb-4">
                     <div
@@ -594,12 +594,12 @@ Puedes incluir información sobre nuevos productos, descuentos especiales o nove
             </div>
 
             <!-- Tips -->
-            <div class="bg-white rounded-2xl border border-zinc-200 p-5">
+            <div class="bg-dark-400 rounded-2xl border border-white/10 p-5">
                 <h3
-                    class="font-medium text-zinc-900 mb-3 flex items-center gap-2"
+                    class="font-medium text-zinc-100 mb-3 flex items-center gap-2"
                 >
                     <svg
-                        class="w-4 h-4 text-cyan-600"
+                        class="w-4 h-4 text-neon-cyan"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -613,19 +613,19 @@ Puedes incluir información sobre nuevos productos, descuentos especiales o nove
                     </svg>
                     Consejos
                 </h3>
-                <ul class="text-sm text-zinc-600 space-y-2">
+                <ul class="text-sm text-zinc-400 space-y-2">
                     <li class="flex items-start gap-2">
-                        <span class="text-cyan-500 mt-1">•</span>
+                        <span class="text-neon-cyan mt-1">•</span>
                         <span>Usa emojis en el asunto para mayor apertura</span>
                     </li>
                     <li class="flex items-start gap-2">
-                        <span class="text-cyan-500 mt-1">•</span>
+                        <span class="text-neon-cyan mt-1">•</span>
                         <span
                             >Personaliza el contenido con ofertas exclusivas</span
                         >
                     </li>
                     <li class="flex items-start gap-2">
-                        <span class="text-cyan-500 mt-1">•</span>
+                        <span class="text-neon-cyan mt-1">•</span>
                         <span>Envía en horarios de mayor engagement</span>
                     </li>
                 </ul>

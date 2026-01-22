@@ -61,7 +61,7 @@ if (Astro.request.method === "POST") {
         <div class="flex items-center gap-4 mb-8">
             <a
                 href="/admin/carrusel"
-                class="p-2 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors"
+                class="p-2 text-zinc-400 hover:text-zinc-100 hover:bg-dark-300 rounded-lg transition-colors"
             >
                 <svg
                     class="w-5 h-5"
@@ -77,8 +77,8 @@ if (Astro.request.method === "POST") {
                 </svg>
             </a>
             <div>
-                <h1 class="text-2xl font-bold text-zinc-900">Nueva Slide</h1>
-                <p class="text-zinc-500 mt-0.5">
+                <h1 class="text-2xl font-bold text-zinc-100">Nueva Slide</h1>
+                <p class="text-zinc-400 mt-0.5">
                     Añade una nueva imagen al carrusel del homepage
                 </p>
             </div>
@@ -86,7 +86,7 @@ if (Astro.request.method === "POST") {
 
         {
             error && (
-                <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+                <div class="mb-6 p-4 bg-dark-400 border border-red-500/30 rounded-xl text-red-400">
                     {error}
                 </div>
             )
@@ -98,10 +98,10 @@ if (Astro.request.method === "POST") {
             <div class="xl:col-span-8 sticky top-6">
                 <div class="mb-4">
                     <h2
-                        class="text-lg font-semibold text-zinc-900 mb-4 flex items-center gap-2"
+                        class="text-lg font-semibold text-zinc-100 mb-4 flex items-center gap-2"
                     >
                         <svg
-                            class="w-5 h-5 text-purple-600"
+                            class="w-5 h-5 text-neon-cyan"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -116,7 +116,7 @@ if (Astro.request.method === "POST") {
                         Vista Previa
                     </h2>
                     <div
-                        class="relative w-full aspect-[21/9] rounded-2xl overflow-hidden shadow-2xl group border border-zinc-200 bg-zinc-100"
+                        class="relative w-full aspect-[21/9] rounded-2xl overflow-hidden shadow-2xl group border border-white/10 bg-dark-300"
                     >
                         <!-- Background Image -->
                         <img
@@ -276,7 +276,7 @@ if (Astro.request.method === "POST") {
                     />
                     <!-- Image Section -->
                     <div
-                        class="bg-white rounded-2xl border border-zinc-200 p-6"
+                        class="bg-dark-400 rounded-2xl border border-white/10 p-6"
                     >
                         <h2
                             class="text-base font-semibold text-zinc-900 flex items-center gap-2 mb-5"
@@ -297,8 +297,8 @@ if (Astro.request.method === "POST") {
                         </h2>
                         <div>
                             <label
-                                class="block text-sm font-medium text-zinc-700 mb-2"
-                                >Imagen del carrusel <span class="text-red-500"
+                                class="block text-sm font-medium text-zinc-300 mb-2"
+                                >Imagen del carrusel <span class="text-red-400"
                                     >*</span
                                 ></label
                             >
@@ -314,7 +314,7 @@ if (Astro.request.method === "POST") {
                                         name="image"
                                         id="image"
                                         accept="image/*"
-                                        class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-cyan-500 file:text-white hover:file:bg-cyan-600 transition-all cursor-pointer"
+                                        class="w-full px-4 py-3 bg-dark-300 border border-white/10 rounded-xl text-zinc-100 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-neon-cyan file:text-black hover:file:bg-cyan-400 transition-all cursor-pointer"
                                         onchange="updatePreviewImage(this)"
                                     />
                                     <p class="text-xs text-zinc-500">
@@ -328,13 +328,13 @@ if (Astro.request.method === "POST") {
 
                     <!-- Content Section -->
                     <div
-                        class="bg-white rounded-2xl border border-zinc-200 p-6"
+                        class="bg-dark-400 rounded-2xl border border-white/10 p-6"
                     >
                         <h2
-                            class="text-base font-semibold text-zinc-900 flex items-center gap-2 mb-5"
+                            class="text-base font-semibold text-zinc-100 flex items-center gap-2 mb-5"
                         >
                             <svg
-                                class="w-5 h-5 text-cyan-600"
+                                class="w-5 h-5 text-neon-cyan"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -353,9 +353,9 @@ if (Astro.request.method === "POST") {
                             <div>
                                 <label
                                     for="title"
-                                    class="block text-sm font-medium text-zinc-700 mb-2"
+                                    class="block text-sm font-medium text-zinc-300 mb-2"
                                 >
-                                    Título <span class="text-red-500">*</span>
+                                    Título <span class="text-red-400">*</span>
                                 </label>
                                 <input
                                     type="text"
@@ -363,7 +363,7 @@ if (Astro.request.method === "POST") {
                                     name="title"
                                     required
                                     placeholder="Nueva Colección"
-                                    class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                                    class="w-full px-4 py-3 bg-dark-300 border border-white/10 rounded-xl text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/20 transition-all"
                                     oninput="document.getElementById('preview-title').textContent = this.value"
                                 />
                             </div>
@@ -371,7 +371,7 @@ if (Astro.request.method === "POST") {
                             <div>
                                 <label
                                     for="subtitle"
-                                    class="block text-sm font-medium text-zinc-700 mb-2"
+                                    class="block text-sm font-medium text-zinc-300 mb-2"
                                 >
                                     Subtítulo
                                 </label>
@@ -380,7 +380,7 @@ if (Astro.request.method === "POST") {
                                     id="subtitle"
                                     name="subtitle"
                                     placeholder="Primavera 2026"
-                                    class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                                    class="w-full px-4 py-3 bg-dark-300 border border-white/10 rounded-xl text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/20 transition-all"
                                     oninput="document.getElementById('preview-subtitle').textContent = this.value"
                                 />
                             </div>
@@ -389,7 +389,7 @@ if (Astro.request.method === "POST") {
                         <div class="mt-5">
                             <label
                                 for="discount_code"
-                                class="block text-sm font-medium text-zinc-700 mb-2"
+                                class="block text-sm font-medium text-zinc-300 mb-2"
                             >
                                 Código de Descuento (Opcional)
                             </label>
@@ -416,7 +416,7 @@ if (Astro.request.method === "POST") {
                                     id="discount_code"
                                     name="discount_code"
                                     placeholder="EJ: VERANO2026"
-                                    class="w-full pl-10 px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all uppercase"
+                                    class="w-full pl-10 px-4 py-3 bg-dark-300 border border-white/10 rounded-xl text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/20 transition-all uppercase"
                                     oninput="const el = document.getElementById('preview-discount-container'); const code = document.getElementById('preview-discount-code'); if(this.value){ el.classList.remove('hidden'); code.textContent = this.value; } else { el.classList.add('hidden'); }"
                                 />
                             </div>
@@ -429,7 +429,7 @@ if (Astro.request.method === "POST") {
                         <div class="mt-5">
                             <label
                                 for="description"
-                                class="block text-sm font-medium text-zinc-700 mb-2"
+                                class="block text-sm font-medium text-zinc-300 mb-2"
                             >
                                 Descripción
                             </label>
@@ -438,7 +438,7 @@ if (Astro.request.method === "POST") {
                                 name="description"
                                 rows={3}
                                 placeholder="Descubre las últimas tendencias en moda masculina"
-                                class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all resize-none"
+                                class="w-full px-4 py-3 bg-dark-300 border border-white/10 rounded-xl text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/20 transition-all resize-none"
                                 oninput="document.getElementById('preview-description').textContent = this.value"
                             ></textarea>
                         </div>
@@ -446,13 +446,13 @@ if (Astro.request.method === "POST") {
 
                     <!-- CTA Section -->
                     <div
-                        class="bg-white rounded-2xl border border-zinc-200 p-6"
+                        class="bg-dark-400 rounded-2xl border border-white/10 p-6"
                     >
                         <h2
-                            class="text-base font-semibold text-zinc-900 flex items-center gap-2 mb-5"
+                            class="text-base font-semibold text-zinc-100 flex items-center gap-2 mb-5"
                         >
                             <svg
-                                class="w-5 h-5 text-cyan-600"
+                                class="w-5 h-5 text-neon-cyan"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -471,7 +471,7 @@ if (Astro.request.method === "POST") {
                             <div>
                                 <label
                                     for="cta_text"
-                                    class="block text-sm font-medium text-zinc-700 mb-2"
+                                    class="block text-sm font-medium text-zinc-300 mb-2"
                                 >
                                     Texto del botón
                                 </label>
@@ -481,7 +481,7 @@ if (Astro.request.method === "POST") {
                                     name="cta_text"
                                     value="Ver más"
                                     placeholder="Explorar"
-                                    class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                                    class="w-full px-4 py-3 bg-dark-300 border border-white/10 rounded-xl text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/20 transition-all"
                                     oninput="document.getElementById('preview-cta-text-inner').textContent = this.value"
                                 />
                             </div>
@@ -489,7 +489,7 @@ if (Astro.request.method === "POST") {
                             <div>
                                 <label
                                     for="cta_link"
-                                    class="block text-sm font-medium text-zinc-700 mb-2"
+                                    class="block text-sm font-medium text-zinc-300 mb-2"
                                 >
                                     Enlace del botón
                                 </label>
@@ -499,7 +499,7 @@ if (Astro.request.method === "POST") {
                                     name="cta_link"
                                     value="/productos"
                                     placeholder="/productos"
-                                    class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                                    class="w-full px-4 py-3 bg-dark-300 border border-white/10 rounded-xl text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/20 transition-all"
                                 />
                             </div>
                         </div>
@@ -507,13 +507,13 @@ if (Astro.request.method === "POST") {
 
                     <!-- Config Section -->
                     <div
-                        class="bg-white rounded-2xl border border-zinc-200 p-6"
+                        class="bg-dark-400 rounded-2xl border border-white/10 p-6"
                     >
                         <h2
-                            class="text-base font-semibold text-zinc-900 flex items-center gap-2 mb-5"
+                            class="text-base font-semibold text-zinc-100 flex items-center gap-2 mb-5"
                         >
                             <svg
-                                class="w-5 h-5 text-cyan-600"
+                                class="w-5 h-5 text-neon-cyan"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -537,7 +537,7 @@ if (Astro.request.method === "POST") {
                             <div>
                                 <label
                                     for="duration"
-                                    class="block text-sm font-medium text-zinc-700 mb-2"
+                                    class="block text-sm font-medium text-zinc-300 mb-2"
                                 >
                                     Duración (ms)
                                 </label>
@@ -550,7 +550,7 @@ if (Astro.request.method === "POST") {
                                         min="1000"
                                         max="30000"
                                         step="500"
-                                        class="w-full px-4 py-3 pr-12 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                                        class="w-full px-4 py-3 pr-12 bg-dark-300 border border-white/10 rounded-xl text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/20 transition-all"
                                     />
                                     <span
                                         class="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 text-sm"
@@ -565,7 +565,7 @@ if (Astro.request.method === "POST") {
                             <div>
                                 <label
                                     for="sort_order"
-                                    class="block text-sm font-medium text-zinc-700 mb-2"
+                                    class="block text-sm font-medium text-zinc-300 mb-2"
                                 >
                                     Orden
                                 </label>
@@ -575,7 +575,7 @@ if (Astro.request.method === "POST") {
                                     name="sort_order"
                                     value="0"
                                     min="0"
-                                    class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                                    class="w-full px-4 py-3 bg-dark-300 border border-white/10 rounded-xl text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/20 transition-all"
                                 />
                                 <p class="text-xs text-zinc-500 mt-1.5">
                                     Menor número = primero
@@ -584,25 +584,25 @@ if (Astro.request.method === "POST") {
 
                             <div>
                                 <label
-                                    class="block text-sm font-medium text-zinc-700 mb-2"
+                                    class="block text-sm font-medium text-zinc-300 mb-2"
                                 >
                                     Estado
                                 </label>
                                 <label
-                                    class="flex items-center gap-3 px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl cursor-pointer hover:border-cyan-500 transition-colors"
+                                    class="flex items-center gap-3 px-4 py-3 bg-dark-300 border border-white/10 rounded-xl cursor-pointer hover:border-neon-cyan transition-colors"
                                 >
                                     <input
                                         type="checkbox"
                                         name="is_active"
                                         value="true"
                                         checked
-                                        class="w-5 h-5 rounded border-zinc-300 text-cyan-600 focus:ring-cyan-500"
+                                        class="w-5 h-5 rounded border-white/20 text-neon-cyan focus:ring-neon-cyan bg-dark-300"
                                     />
-                                    <span class="text-zinc-700">Activa</span>
+                                    <span class="text-zinc-100">Activa</span>
                                 </label>
                             </div>
                         </div>
-                        <p class="text-sm text-zinc-500 mt-2 text-center">
+                        <p class="text-sm text-zinc-400 mt-2 text-center">
                             Arrastra cada elemento para posicionarlo donde
                             quieras.
                         </p>
@@ -612,13 +612,13 @@ if (Astro.request.method === "POST") {
                     <div class="flex items-center justify-end gap-4 pt-4">
                         <a
                             href="/admin/carrusel"
-                            class="px-6 py-3 text-zinc-500 hover:text-zinc-900 transition-colors"
+                            class="px-6 py-3 text-zinc-400 hover:text-zinc-100 transition-colors"
                         >
                             Cancelar
                         </a>
                         <button
                             type="submit"
-                            class="px-6 py-3 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all hover:-translate-y-0.5 flex items-center gap-2"
+                            class="px-6 py-3 bg-gradient-to-r from-neon-cyan to-cyan-500 text-black font-semibold rounded-xl hover:from-cyan-400 hover:to-cyan-600 transition-all duration-300 hover:-translate-y-0.5 flex items-center gap-2 shadow-lg shadow-neon-cyan/25"
                         >
                             <svg
                                 class="w-5 h-5"

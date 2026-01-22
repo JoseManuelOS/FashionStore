@@ -1,6 +1,7 @@
 ---
 import PublicLayout from "../../layouts/PublicLayout.astro";
 import AddToCartButton from "../../components/islands/AddToCartButton";
+import SizeRecommender from "../../components/islands/SizeRecommender";
 import {
     getProductBySlug,
     getProducts,
@@ -176,6 +177,15 @@ if (product.category) {
                     <!-- Add to Cart Component (React Island) -->
                     <div class="glass-card p-6 mb-8">
                         <AddToCartButton client:load product={product} />
+                        
+                        <!-- Size Recommender (Interactive Island) -->
+                        <div class="mt-4 pt-4 border-t border-white/10">
+                            <SizeRecommender 
+                                client:load 
+                                productName={product.name}
+                                availableSizes={product.sizes || ['S', 'M', 'L', 'XL']}
+                            />
+                        </div>
                     </div>
 
                     <!-- Product Features -->

@@ -52,31 +52,54 @@ try {
         }
         
         .stat-card {
-            background: #fff;
-            border: 1px solid #e4e4e7;
-            border-radius: 12px;
+            background: #12121a;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
             padding: 24px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
         }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--card-accent, #06b6d4), transparent);
+            opacity: 0.6;
+        }
+        
+        .stat-card:hover {
+            border-color: rgba(6, 182, 212, 0.3);
+            box-shadow: 0 0 30px rgba(6, 182, 212, 0.1);
+        }
+        
+        .stat-card.cyan { --card-accent: #06b6d4; }
+        .stat-card.emerald { --card-accent: #10b981; }
+        .stat-card.amber { --card-accent: #f59e0b; }
+        .stat-card.fuchsia { --card-accent: #d946ef; }
         
         .stat-label {
             font-size: 13px;
-            color: #71717a;
+            color: #a1a1aa;
             margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
         .stat-value {
             font-size: 32px;
-            font-weight: 600;
-            color: #18181b;
+            font-weight: 700;
+            color: #f4f4f5;
         }
         
-        .stat-value.warning {
-            color: #f59e0b;
-        }
-        
-        .stat-value.success {
-            color: #10b981;
-        }
+        .stat-value.cyan { color: #06b6d4; }
+        .stat-value.emerald { color: #10b981; }
+        .stat-value.amber { color: #f59e0b; }
+        .stat-value.fuchsia { color: #d946ef; }
         
         .content-grid {
             display: grid;
@@ -91,16 +114,16 @@ try {
         }
         
         .card {
-            background: #fff;
-            border: 1px solid #e4e4e7;
-            border-radius: 12px;
+            background: #12121a;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
             padding: 24px;
         }
         
         .card-title {
             font-size: 14px;
             font-weight: 600;
-            color: #18181b;
+            color: #f4f4f5;
             margin-bottom: 20px;
         }
         
@@ -115,31 +138,34 @@ try {
             align-items: center;
             gap: 12px;
             padding: 12px 16px;
-            border-radius: 8px;
+            border-radius: 10px;
             text-decoration: none;
             font-size: 14px;
-            color: #52525b;
-            transition: all 0.15s;
+            color: #a1a1aa;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
         }
         
         .action-link:hover {
-            background: #f4f4f5;
-            color: #18181b;
+            background: rgba(6, 182, 212, 0.1);
+            color: #f4f4f5;
+            border-color: rgba(6, 182, 212, 0.2);
         }
         
         .action-link.primary {
-            background: #18181b;
+            background: linear-gradient(135deg, #06b6d4, #8b5cf6);
             color: #fff;
+            font-weight: 500;
         }
         
         .action-link.primary:hover {
-            background: #27272a;
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.4);
+            transform: translateY(-1px);
         }
         
         .action-link svg {
             width: 18px;
             height: 18px;
-            opacity: 0.7;
         }
         
         .product-list {
@@ -152,10 +178,10 @@ try {
             align-items: center;
             gap: 16px;
             padding: 16px 0;
-            border-bottom: 1px solid #f4f4f5;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
             text-decoration: none;
             color: inherit;
-            transition: opacity 0.15s;
+            transition: all 0.2s ease;
         }
         
         .product-item:last-child {
@@ -163,14 +189,14 @@ try {
         }
         
         .product-item:hover {
-            opacity: 0.7;
+            opacity: 0.8;
         }
         
         .product-image {
             width: 48px;
             height: 56px;
             border-radius: 8px;
-            background: #f4f4f5;
+            background: #1f1f28;
             overflow: hidden;
             flex-shrink: 0;
         }
@@ -189,7 +215,7 @@ try {
         .product-name {
             font-size: 14px;
             font-weight: 500;
-            color: #18181b;
+            color: #f4f4f5;
             margin-bottom: 4px;
             white-space: nowrap;
             overflow: hidden;
@@ -204,7 +230,7 @@ try {
         .product-price {
             font-size: 14px;
             font-weight: 600;
-            color: #18181b;
+            color: #06b6d4;
         }
         
         .badge {
@@ -217,8 +243,8 @@ try {
         }
         
         .badge.offer {
-            background: #fef2f2;
-            color: #dc2626;
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
         }
         
         .empty-state {
@@ -230,12 +256,13 @@ try {
         
         .view-all {
             font-size: 13px;
-            color: #71717a;
+            color: #06b6d4;
             text-decoration: none;
+            transition: color 0.2s;
         }
         
         .view-all:hover {
-            color: #18181b;
+            color: #22d3ee;
         }
         
         .card-header {
@@ -248,21 +275,21 @@ try {
 
     <!-- Stats -->
     <div class="stats-grid">
-        <div class="stat-card">
+        <div class="stat-card cyan">
             <div class="stat-label">Productos Activos</div>
-            <div class="stat-value">{stats.totalProducts}</div>
+            <div class="stat-value cyan">{stats.totalProducts}</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card emerald">
             <div class="stat-label">Unidades en Stock</div>
-            <div class="stat-value success">{stats.totalStock}</div>
+            <div class="stat-value emerald">{stats.totalStock}</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card amber">
             <div class="stat-label">Stock Bajo (≤5)</div>
-            <div class="stat-value warning">{stats.lowStockProducts}</div>
+            <div class="stat-value amber">{stats.lowStockProducts}</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card fuchsia">
             <div class="stat-label">Pedidos Pendientes</div>
-            <div class="stat-value">{stats.pendingOrders}</div>
+            <div class="stat-value fuchsia">{stats.pendingOrders}</div>
         </div>
     </div>
 
