@@ -347,13 +347,13 @@ const currentStatus = statusLabels[order?.status || "pending"];
                     class="bg-dark-400 rounded-2xl border border-white/10 overflow-hidden"
                 >
                     <div
-                        class="p-5 border-b border-zinc-200 flex items-center justify-between"
+                        class="p-5 border-b border-white/10 flex items-center justify-between"
                     >
                         <h2
-                            class="font-semibold text-zinc-900 flex items-center gap-2"
+                            class="font-semibold text-zinc-100 flex items-center gap-2"
                         >
                             <svg
-                                class="w-5 h-5 text-zinc-400"
+                                class="w-5 h-5 text-neon-cyan"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -368,15 +368,15 @@ const currentStatus = statusLabels[order?.status || "pending"];
                             Productos
                         </h2>
                         <span
-                            class="text-sm text-zinc-500 bg-zinc-100 px-2.5 py-1 rounded-lg"
+                            class="text-sm text-zinc-400 bg-dark-300 px-2.5 py-1 rounded-lg border border-white/10"
                             >{order?.items?.length || 0} artículos</span
                         >
                     </div>
                     <div class="divide-y divide-zinc-100">
                         {
                             order?.items?.map((item: any) => (
-                                <div class="p-5 flex items-center gap-4 hover:bg-zinc-50 transition-colors">
-                                    <div class="w-20 h-20 bg-zinc-100 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0">
+                                <div class="p-5 flex items-center gap-4 hover:bg-white/5 transition-colors">
+                                    <div class="w-20 h-20 bg-dark-300 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0">
                                         {item.product_image ? (
                                             <img
                                                 src={item.product_image}
@@ -385,7 +385,7 @@ const currentStatus = statusLabels[order?.status || "pending"];
                                             />
                                         ) : (
                                             <svg
-                                                class="w-8 h-8 text-zinc-400"
+                                                class="w-8 h-8 text-zinc-500"
                                                 fill="none"
                                                 stroke="currentColor"
                                                 viewBox="0 0 24 24"
@@ -400,10 +400,10 @@ const currentStatus = statusLabels[order?.status || "pending"];
                                         )}
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <div class="font-medium text-zinc-900 truncate">
+                                        <div class="font-medium text-zinc-100 truncate">
                                             {item.product_name}
                                         </div>
-                                        <div class="text-sm text-zinc-500">
+                                        <div class="text-sm text-zinc-400">
                                             {item.size && (
                                                 <span>
                                                     Talla: {item.size} •{" "}
@@ -413,13 +413,13 @@ const currentStatus = statusLabels[order?.status || "pending"];
                                         </div>
                                     </div>
                                     <div class="text-right">
-                                        <div class="font-semibold text-zinc-900">
+                                        <div class="font-semibold text-zinc-100">
                                             {formatPrice(
                                                 item.price_at_purchase *
                                                     item.quantity,
                                             )}
                                         </div>
-                                        <div class="text-xs text-zinc-500">
+                                        <div class="text-xs text-zinc-400">
                                             {formatPrice(
                                                 item.price_at_purchase,
                                             )}{" "}
@@ -430,12 +430,12 @@ const currentStatus = statusLabels[order?.status || "pending"];
                             ))
                         }
                     </div>
-                    <div class="p-5 bg-zinc-50 border-t border-zinc-200">
+                    <div class="p-5 bg-dark-300 border-t border-white/10">
                         <div class="flex justify-between items-center">
-                            <span class="font-semibold text-zinc-900"
+                            <span class="font-semibold text-zinc-100"
                                 >Total</span
                             >
-                            <span class="text-xl font-bold text-zinc-900"
+                            <span class="text-xl font-bold text-neon-cyan"
                                 >{formatPrice(order?.total_price || 0)}</span
                             >
                         </div>
@@ -448,7 +448,7 @@ const currentStatus = statusLabels[order?.status || "pending"];
                         <div class="bg-dark-400 rounded-2xl border border-white/10 p-5">
                             <h2 class="font-semibold text-zinc-100 mb-3 flex items-center gap-2">
                                 <svg
-                                    class="w-5 h-5 text-zinc-400"
+                                    class="w-5 h-5 text-neon-purple"
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
@@ -468,7 +468,7 @@ const currentStatus = statusLabels[order?.status || "pending"];
                                 </svg>
                                 Dirección de Envío
                             </h2>
-                            <p class="text-zinc-400 whitespace-pre-line">
+                            <p class="text-zinc-600 whitespace-pre-line">
                                 {order.shipping_address
                                     .split("\n")
                                     .filter(
@@ -534,7 +534,7 @@ const currentStatus = statusLabels[order?.status || "pending"];
                             order?.customer_email && (
                                 <a
                                     href={`mailto:${order.customer_email}`}
-                                    class="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-dark-300 text-zinc-300 font-medium rounded-xl hover:bg-dark-200 transition-colors text-sm border border-white/10"
+                                    class="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-gradient-to-r from-neon-cyan to-cyan-600 text-white font-medium rounded-xl hover:from-cyan-400 hover:to-cyan-700 transition-all text-sm shadow-lg shadow-neon-cyan/20"
                                 >
                                     <svg
                                         class="w-4 h-4"
@@ -614,7 +614,7 @@ const currentStatus = statusLabels[order?.status || "pending"];
                         </select>
                         <button
                             type="submit"
-                            class="w-full px-4 py-2.5 bg-zinc-900 text-white font-medium rounded-xl hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
+                            class="w-full px-4 py-2.5 bg-gradient-to-r from-cyan-600 to-cyan-500 text-white font-medium rounded-xl hover:from-cyan-700 hover:to-cyan-600 transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2"
                         >
                             <svg
                                 class="w-4 h-4"
@@ -635,12 +635,12 @@ const currentStatus = statusLabels[order?.status || "pending"];
                 </div>
 
                 <!-- Shipping Info -->
-                <div class="bg-white rounded-2xl border border-zinc-200 p-5">
+                <div class="bg-dark-400 rounded-2xl border border-white/10 p-5">
                     <h2
-                        class="font-semibold text-zinc-900 mb-4 flex items-center gap-2"
+                        class="font-semibold text-zinc-100 mb-4 flex items-center gap-2"
                     >
                         <svg
-                            class="w-5 h-5 text-purple-500"
+                            class="w-5 h-5 text-neon-purple"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -663,13 +663,13 @@ const currentStatus = statusLabels[order?.status || "pending"];
 
                         <div>
                             <label
-                                class="block text-sm font-medium text-zinc-700 mb-1.5"
+                                class="block text-sm font-medium text-zinc-300 mb-1.5"
                                 >Empresa Transportista</label
                             >
                             <select
                                 name="shipping_carrier"
                                 id="shipping_carrier"
-                                class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                                class="w-full px-4 py-3 bg-dark-300 border border-white/10 rounded-xl text-zinc-100 focus:outline-none focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/20"
                             >
                                 <option value="">Seleccionar...</option>
                                 {
@@ -690,7 +690,7 @@ const currentStatus = statusLabels[order?.status || "pending"];
 
                         <div>
                             <label
-                                class="block text-sm font-medium text-zinc-700 mb-1.5"
+                                class="block text-sm font-medium text-zinc-300 mb-1.5"
                                 >Código de Seguimiento</label
                             >
                             <input
@@ -699,13 +699,13 @@ const currentStatus = statusLabels[order?.status || "pending"];
                                 id="tracking_number"
                                 value={order?.tracking_number || ""}
                                 placeholder="Ej: 1Z999AA10123456784"
-                                class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                                class="w-full px-4 py-3 bg-dark-300 border border-white/10 rounded-xl text-zinc-100 focus:outline-none focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/20"
                             />
                         </div>
 
                         <div>
                             <label
-                                class="block text-sm font-medium text-zinc-700 mb-1.5"
+                                class="block text-sm font-medium text-zinc-300 mb-1.5"
                                 >URL de Seguimiento</label
                             >
                             <input
@@ -714,7 +714,7 @@ const currentStatus = statusLabels[order?.status || "pending"];
                                 id="tracking_url"
                                 value={order?.tracking_url || ""}
                                 placeholder="https://..."
-                                class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                                class="w-full px-4 py-3 bg-dark-300 border border-white/10 rounded-xl text-zinc-100 focus:outline-none focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/20"
                             />
                             <p class="text-xs text-zinc-500 mt-1">
                                 Se genera automáticamente al seleccionar
@@ -817,12 +817,12 @@ const currentStatus = statusLabels[order?.status || "pending"];
                 </div>
 
                 <!-- Timeline -->
-                <div class="bg-white rounded-2xl border border-zinc-200 p-5">
+                <div class="bg-dark-400 rounded-2xl border border-white/10 p-5">
                     <h2
-                        class="font-semibold text-zinc-900 mb-4 flex items-center gap-2"
+                        class="font-semibold text-zinc-100 mb-4 flex items-center gap-2"
                     >
                         <svg
-                            class="w-5 h-5 text-emerald-500"
+                            class="w-5 h-5 text-emerald-400"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -838,7 +838,7 @@ const currentStatus = statusLabels[order?.status || "pending"];
                     </h2>
                     <div class="space-y-3 relative">
                         <div
-                            class="absolute left-[7px] top-2 bottom-2 w-0.5 bg-zinc-100"
+                            class="absolute left-[7px] top-2 bottom-2 w-0.5 bg-white/10"
                         >
                         </div>
                         <div class="flex gap-3 relative">
@@ -847,10 +847,10 @@ const currentStatus = statusLabels[order?.status || "pending"];
                             >
                             </div>
                             <div class="flex-1">
-                                <div class="text-sm font-medium text-zinc-900">
+                                <div class="text-sm font-medium text-zinc-100">
                                     Pedido creado
                                 </div>
-                                <div class="text-xs text-zinc-500">
+                                <div class="text-xs text-zinc-400">
                                     {formatDate(order?.created_at || "")}
                                 </div>
                             </div>
@@ -860,10 +860,10 @@ const currentStatus = statusLabels[order?.status || "pending"];
                                 <div class="flex gap-3 relative">
                                     <div class="w-3.5 h-3.5 mt-0.5 rounded-full bg-purple-500 border-2 border-white shadow-sm z-10" />
                                     <div class="flex-1">
-                                        <div class="text-sm font-medium text-zinc-900">
+                                        <div class="text-sm font-medium text-zinc-100">
                                             Pedido enviado
                                         </div>
-                                        <div class="text-xs text-zinc-500">
+                                        <div class="text-xs text-zinc-400">
                                             {formatDate(order.shipped_at)}
                                         </div>
                                     </div>
@@ -875,10 +875,10 @@ const currentStatus = statusLabels[order?.status || "pending"];
                                 <div class="flex gap-3 relative">
                                     <div class="w-3.5 h-3.5 mt-0.5 rounded-full bg-cyan-500 border-2 border-white shadow-sm z-10" />
                                     <div class="flex-1">
-                                        <div class="text-sm font-medium text-zinc-900">
+                                        <div class="text-sm font-medium text-zinc-100">
                                             Pedido entregado
                                         </div>
-                                        <div class="text-xs text-zinc-500">
+                                        <div class="text-xs text-zinc-400">
                                             {formatDate(order.delivered_at)}
                                         </div>
                                     </div>
@@ -893,10 +893,10 @@ const currentStatus = statusLabels[order?.status || "pending"];
                                     <div class="flex gap-3 relative">
                                         <div class="w-3.5 h-3.5 mt-0.5 rounded-full bg-blue-500 border-2 border-white shadow-sm z-10" />
                                         <div class="flex-1">
-                                            <div class="text-sm font-medium text-zinc-900">
+                                            <div class="text-sm font-medium text-zinc-100">
                                                 Última actualización
                                             </div>
-                                            <div class="text-xs text-zinc-500">
+                                            <div class="text-xs text-zinc-400">
                                                 {formatDate(order.updated_at)}
                                             </div>
                                         </div>

@@ -25,28 +25,28 @@ const statusLabels: Record<
 > = {
     pending: {
         label: "Pendiente",
-        color: "text-amber-700",
-        bg: "bg-amber-50 border-amber-200",
+        color: "text-amber-400",
+        bg: "bg-amber-500/10 border-amber-500/30",
     },
     paid: {
         label: "Pagado",
-        color: "text-blue-700",
-        bg: "bg-blue-50 border-blue-200",
+        color: "text-blue-400",
+        bg: "bg-blue-500/10 border-blue-500/30",
     },
     shipped: {
         label: "Enviado",
-        color: "text-purple-700",
-        bg: "bg-purple-50 border-purple-200",
+        color: "text-purple-400",
+        bg: "bg-purple-500/10 border-purple-500/30",
     },
     delivered: {
         label: "Entregado",
-        color: "text-emerald-700",
-        bg: "bg-emerald-50 border-emerald-200",
+        color: "text-emerald-400",
+        bg: "bg-emerald-500/10 border-emerald-500/30",
     },
     cancelled: {
         label: "Cancelado",
-        color: "text-red-700",
-        bg: "bg-red-50 border-red-200",
+        color: "text-red-400",
+        bg: "bg-red-500/10 border-red-500/30",
     },
 };
 
@@ -64,12 +64,12 @@ const totalSpent = orders
 ---
 
 <AdminLayout title={`Cliente: ${customer.full_name || customer.email}`}>
-    <div class="max-w-4xl">
+    <div class="max-w-7xl w-full">
         <!-- Header -->
         <div class="flex items-center gap-4 mb-8">
             <a
                 href="/admin/usuarios"
-                class="p-2 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors"
+                class="p-2 text-zinc-400 hover:text-zinc-100 hover:bg-white/10 rounded-lg transition-colors"
             >
                 <svg
                     class="w-5 h-5"
@@ -86,7 +86,7 @@ const totalSpent = orders
             </a>
             <div class="flex items-center gap-4">
                 <div
-                    class="w-14 h-14 rounded-full bg-zinc-200 flex items-center justify-center text-zinc-600 text-xl font-semibold"
+                    class="w-14 h-14 rounded-full bg-dark-300 flex items-center justify-center text-zinc-300 text-xl font-semibold"
                 >
                     {
                         customer.avatar_url ? (
@@ -101,52 +101,52 @@ const totalSpent = orders
                         )
                     }
                 </div>
-                <div>
-                    <h1 class="text-2xl font-bold text-zinc-900">
+                <div class="min-w-0">
+                    <h1 class="text-2xl font-bold text-zinc-100 truncate">
                         {customer.full_name || "Sin nombre"}
                     </h1>
-                    <p class="text-zinc-500">{customer.email}</p>
+                    <p class="text-zinc-400 break-all">{customer.email}</p>
                 </div>
             </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Main Content -->
-            <div class="lg:col-span-2 space-y-6">
+            <div class="lg:col-span-2 space-y-6 min-w-0">
                 <!-- Stats -->
                 <div class="grid grid-cols-3 gap-4">
                     <div
-                        class="bg-white rounded-xl border border-zinc-200 p-4 text-center"
+                        class="bg-dark-400 rounded-xl border border-white/10 p-4 text-center"
                     >
-                        <div class="text-2xl font-bold text-zinc-900">
+                        <div class="text-2xl font-bold text-neon-cyan">
                             {orders.length}
                         </div>
-                        <div class="text-sm text-zinc-500">Pedidos</div>
+                        <div class="text-sm text-zinc-400">Pedidos</div>
                     </div>
                     <div
-                        class="bg-white rounded-xl border border-zinc-200 p-4 text-center"
+                        class="bg-dark-400 rounded-xl border border-emerald-500/20 p-4 text-center"
                     >
-                        <div class="text-2xl font-bold text-zinc-900">
+                        <div class="text-2xl font-bold text-emerald-400">
                             {formatPrice(totalSpent)}
                         </div>
-                        <div class="text-sm text-zinc-500">Total Gastado</div>
+                        <div class="text-sm text-zinc-400">Total Gastado</div>
                     </div>
                     <div
-                        class="bg-white rounded-xl border border-zinc-200 p-4 text-center"
+                        class="bg-dark-400 rounded-xl border border-neon-purple/20 p-4 text-center"
                     >
-                        <div class="text-2xl font-bold text-zinc-900">
+                        <div class="text-2xl font-bold text-neon-purple">
                             {formatDate(customer.created_at)}
                         </div>
-                        <div class="text-sm text-zinc-500">Cliente desde</div>
+                        <div class="text-sm text-zinc-400">Cliente desde</div>
                     </div>
                 </div>
 
                 <!-- Orders History -->
                 <div
-                    class="bg-white rounded-2xl border border-zinc-200 overflow-hidden"
+                    class="bg-dark-400 rounded-2xl border border-white/10 overflow-hidden"
                 >
-                    <div class="p-5 border-b border-zinc-200">
-                        <h2 class="font-semibold text-zinc-900">
+                    <div class="p-5 border-b border-white/10">
+                        <h2 class="font-semibold text-zinc-100">
                             Historial de Pedidos
                         </h2>
                     </div>
@@ -154,7 +154,7 @@ const totalSpent = orders
                     {
                         orders.length === 0 ? (
                             <div class="p-8 text-center">
-                                <div class="w-12 h-12 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <div class="w-12 h-12 bg-dark-300 rounded-full flex items-center justify-center mx-auto mb-3">
                                     <svg
                                         class="w-6 h-6 text-zinc-400"
                                         fill="none"
@@ -169,12 +169,12 @@ const totalSpent = orders
                                         />
                                     </svg>
                                 </div>
-                                <p class="text-zinc-500">
+                                <p class="text-zinc-400">
                                     Este cliente no ha realizado pedidos
                                 </p>
                             </div>
                         ) : (
-                            <div class="divide-y divide-zinc-100">
+                            <div class="divide-y divide-white/10">
                                 {orders.map((order) => {
                                     const status =
                                         statusLabels[order.status] ||
@@ -182,13 +182,13 @@ const totalSpent = orders
                                     return (
                                         <a
                                             href={`/admin/pedidos/${order.id}`}
-                                            class="block p-5 hover:bg-zinc-50 transition-colors"
+                                            class="block p-5 hover:bg-white/5 transition-colors"
                                         >
                                             <div class="flex items-center justify-between">
                                                 <div class="flex items-center gap-4">
-                                                    <div class="w-10 h-10 bg-zinc-100 rounded-lg flex items-center justify-center">
+                                                    <div class="w-10 h-10 bg-dark-300 rounded-lg flex items-center justify-center">
                                                         <svg
-                                                            class="w-5 h-5 text-zinc-500"
+                                                            class="w-5 h-5 text-neon-cyan"
                                                             fill="none"
                                                             stroke="currentColor"
                                                             viewBox="0 0 24 24"
@@ -202,7 +202,7 @@ const totalSpent = orders
                                                         </svg>
                                                     </div>
                                                     <div>
-                                                        <div class="font-medium text-zinc-900">
+                                                        <div class="font-medium text-zinc-100">
                                                             Pedido #
                                                             {order.order_number
                                                                 ? order.order_number
@@ -211,7 +211,7 @@ const totalSpent = orders
                                                                       8,
                                                                   )}
                                                         </div>
-                                                        <div class="text-sm text-zinc-500">
+                                                        <div class="text-sm text-zinc-400">
                                                             {formatDate(
                                                                 order.created_at,
                                                             )}{" "}
@@ -229,7 +229,7 @@ const totalSpent = orders
                                                     >
                                                         {status.label}
                                                     </span>
-                                                    <span class="font-semibold text-zinc-900">
+                                                    <span class="font-semibold text-zinc-100">
                                                         {formatPrice(
                                                             order.total_price,
                                                         )}
@@ -246,11 +246,11 @@ const totalSpent = orders
             </div>
 
             <!-- Sidebar -->
-            <div class="space-y-6">
+            <div class="space-y-6 min-w-0">
                 <!-- Contact Info -->
-                <div class="bg-white rounded-2xl border border-zinc-200 p-5">
+                <div class="bg-dark-400 rounded-2xl border border-white/10 p-5 overflow-hidden">
                     <h2
-                        class="font-semibold text-zinc-900 mb-4 flex items-center gap-2"
+                        class="font-semibold text-zinc-100 mb-4 flex items-center gap-2"
                     >
                         <svg
                             class="w-5 h-5 text-zinc-400"
@@ -270,19 +270,19 @@ const totalSpent = orders
                     <div class="space-y-4">
                         <div>
                             <div
-                                class="text-xs text-zinc-500 uppercase tracking-wider mb-1"
+                                class="text-xs text-zinc-400 uppercase tracking-wider mb-1"
                             >
                                 Email
                             </div>
-                            <div class="text-zinc-900">{customer.email}</div>
+                            <div class="text-zinc-100 break-all">{customer.email}</div>
                         </div>
                         <div>
                             <div
-                                class="text-xs text-zinc-500 uppercase tracking-wider mb-1"
+                                class="text-xs text-zinc-400 uppercase tracking-wider mb-1"
                             >
                                 Teléfono
                             </div>
-                            <div class="text-zinc-900">
+                            <div class="text-zinc-100">
                                 {customer.phone || "No registrado"}
                             </div>
                         </div>
@@ -290,9 +290,9 @@ const totalSpent = orders
                 </div>
 
                 <!-- Newsletter Status -->
-                <div class="bg-white rounded-2xl border border-zinc-200 p-5">
+                <div class="bg-dark-400 rounded-2xl border border-white/10 p-5 overflow-hidden">
                     <h2
-                        class="font-semibold text-zinc-900 mb-4 flex items-center gap-2"
+                        class="font-semibold text-zinc-100 mb-4 flex items-center gap-2"
                     >
                         <svg
                             class="w-5 h-5 text-zinc-400"
@@ -311,10 +311,10 @@ const totalSpent = orders
                     </h2>
                     {
                         customer.newsletter ? (
-                            <div class="flex items-center gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
-                                <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+                            <div class="flex items-center gap-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                                <div class="w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center">
                                     <svg
-                                        class="w-5 h-5 text-emerald-600"
+                                        class="w-5 h-5 text-emerald-400"
                                         fill="none"
                                         stroke="currentColor"
                                         viewBox="0 0 24 24"
@@ -328,17 +328,17 @@ const totalSpent = orders
                                     </svg>
                                 </div>
                                 <div>
-                                    <div class="font-medium text-emerald-900">
+                                    <div class="font-medium text-emerald-300">
                                         Suscrito al Newsletter
                                     </div>
-                                    <div class="text-sm text-emerald-700">
+                                    <div class="text-sm text-emerald-400">
                                         Acepta recibir comunicaciones
                                     </div>
                                 </div>
                             </div>
                         ) : (
-                            <div class="flex items-center gap-3 p-3 bg-zinc-50 border border-zinc-200 rounded-xl">
-                                <div class="w-10 h-10 bg-zinc-200 rounded-full flex items-center justify-center">
+                            <div class="flex items-center gap-3 p-3 bg-dark-300 border border-white/10 rounded-xl">
+                                <div class="w-10 h-10 bg-dark-500/50 rounded-full flex items-center justify-center">
                                     <svg
                                         class="w-5 h-5 text-zinc-500"
                                         fill="none"
@@ -354,10 +354,10 @@ const totalSpent = orders
                                     </svg>
                                 </div>
                                 <div>
-                                    <div class="font-medium text-zinc-700">
+                                    <div class="font-medium text-zinc-200">
                                         No suscrito
                                     </div>
-                                    <div class="text-sm text-zinc-500">
+                                    <div class="text-sm text-zinc-400">
                                         No desea recibir comunicaciones
                                     </div>
                                 </div>
@@ -370,8 +370,8 @@ const totalSpent = orders
                 {
                     customer.default_address &&
                         Object.keys(customer.default_address).length > 0 && (
-                            <div class="bg-white rounded-2xl border border-zinc-200 p-5">
-                                <h2 class="font-semibold text-zinc-900 mb-4 flex items-center gap-2">
+                            <div class="bg-dark-400 rounded-2xl border border-white/10 p-5 overflow-hidden">
+                                <h2 class="font-semibold text-zinc-100 mb-4 flex items-center gap-2">
                                     <svg
                                         class="w-5 h-5 text-zinc-400"
                                         fill="none"
@@ -393,7 +393,7 @@ const totalSpent = orders
                                     </svg>
                                     Dirección por Defecto
                                 </h2>
-                                <div class="text-zinc-600 text-sm space-y-1">
+                                <div class="text-zinc-300 text-sm space-y-1">
                                     {customer.default_address.street && (
                                         <p>{customer.default_address.street}</p>
                                     )}

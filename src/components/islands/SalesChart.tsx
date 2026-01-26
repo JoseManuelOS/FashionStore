@@ -50,7 +50,8 @@ const formatCurrency = (value: number): string => {
 // Tooltip personalizado con estilos de marca
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
-    const date = new Date(label);
+    // Usar la fecha original del payload, no el label formateado
+    const date = new Date(payload[0].payload.date);
     const formattedDate = date.toLocaleDateString('es-ES', {
       weekday: 'long',
       year: 'numeric',
