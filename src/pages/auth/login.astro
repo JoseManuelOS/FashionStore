@@ -2,12 +2,6 @@
 import PublicLayout from "../../layouts/PublicLayout.astro";
 
 export const prerender = false;
-
-// If already logged in, redirect to home
-const user = Astro.locals.user;
-if (user) {
-  return Astro.redirect("/");
-}
 ---
 
 <PublicLayout title="Iniciar Sesión | FashionMarket">
