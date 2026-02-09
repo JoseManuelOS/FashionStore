@@ -150,6 +150,41 @@ export const prerender = false;
     const errorMessage = document.getElementById('error-message');
     const successMessage = document.getElementById('success-message');
 
+    // Manejar el token de recuperación de la URL
+    // Supabase redirige con tokens en el hash: #access_token=...&type=recovery
+    (async () => {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+      const type = hashParams.get('type');
+
+      if (type === 'recovery' && accessToken && refreshToken) {
+        // Establecer la sesión con los tokens del enlace de recuperación
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        if (error) {
+          console.error('Error setting recovery session:', error);
+          if (errorMessage) {
+            errorMessage.textContent = 'El enlace ha expirado. Solicita uno nuevo.';
+            errorMessage.classList.remove('hidden');
+          }
+          submitBtn.disabled = true;
+        }
+      } else {
+        // Si no hay tokens, intentar obtener sesión existente
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          if (errorMessage) {
+            errorMessage.textContent = 'Enlace inválido o expirado. Solicita un nuevo enlace de recuperación.';
+            errorMessage.classList.remove('hidden');
+          }
+          submitBtn.disabled = true;
+        }
+      }
+    })();
+
     // Toggle password visibility
     const togglePassword = document.getElementById('toggle-password');
     const toggleConfirm = document.getElementById('toggle-confirm');

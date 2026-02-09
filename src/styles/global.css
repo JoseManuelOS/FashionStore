@@ -245,7 +245,7 @@
 
   /* Badge Styles */
   .badge-offer {
-    background: linear-gradient(135deg, #d946ef 0%, #a21caf 100%);
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
     color: white;
     padding: 0.25rem 0.75rem;
     font-size: 0.75rem;
@@ -509,4 +509,318 @@
 
 .animate-particle-6 {
   animation: particle-6 0.5s ease-out forwards;
+}
+
+/* ============================================= */
+/* GSAP Animation Styles                         */
+/* ============================================= */
+
+/* Animation Variables */
+:root {
+  --anim-duration-instant: 0.1s;
+  --anim-duration-fast: 0.2s;
+  --anim-duration-normal: 0.3s;
+  --anim-duration-slow: 0.5s;
+  --anim-duration-slower: 0.8s;
+  --anim-ease-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --anim-ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* Button Ripple Effect */
+.btn-ripple-effect {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* CTA Pulse Animation */
+.hero-btn,
+.cta-btn,
+.btn-cta-pulse {
+  animation: ctaPulse 2.5s ease-in-out infinite;
+}
+
+@keyframes ctaPulse {
+  0%, 100% { 
+    box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4);
+  }
+  50% { 
+    box-shadow: 0 0 25px 8px rgba(212, 175, 55, 0);
+  }
+}
+
+/* Badge Pulse for Offers */
+.badge-offer,
+.badge-sale,
+.offer-badge {
+  animation: badgePulse 1.8s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+  0%, 100% { 
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4);
+  }
+  50% { 
+    transform: scale(1.05);
+    box-shadow: 0 0 15px 5px rgba(220, 38, 38, 0);
+  }
+}
+
+/* Offer Price Pulse Animation */
+.animate-price-pulse {
+  animation: pricePulse 2s ease-in-out infinite;
+}
+
+@keyframes pricePulse {
+  0%, 100% { 
+    text-shadow: 0 0 0 rgba(239, 68, 68, 0);
+  }
+  50% { 
+    text-shadow: 0 0 12px rgba(239, 68, 68, 0.6), 0 0 20px rgba(239, 68, 68, 0.3);
+  }
+}
+
+/* Discount Badge Animation */
+.animate-discount-badge {
+  animation: discountBadge 2.2s ease-in-out infinite;
+}
+
+@keyframes discountBadge {
+  0%, 100% { 
+    transform: scale(1);
+    background-color: rgba(239, 68, 68, 0.2);
+  }
+  50% { 
+    transform: scale(1.08);
+    background-color: rgba(239, 68, 68, 0.35);
+  }
+}
+
+/* Skeleton Loading */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 25%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.03) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Enhanced Product Card Animations */
+.product-card,
+.product-card-new {
+  will-change: transform;
+}
+
+.product-card .product-actions,
+.product-card-new .product-quick-view {
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+/* Category Card Arrow Animation */
+.category-link svg,
+.category-arrow {
+  transition: transform 0.3s var(--anim-ease-out);
+}
+
+.category-card:hover .category-link svg,
+.category-card:hover .category-arrow {
+  transform: translateX(8px);
+}
+
+/* Footer Link Underline Animation */
+.footer-link {
+  position: relative;
+}
+
+.footer-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: linear-gradient(90deg, #06b6d4, #d946ef);
+  transition: width 0.3s var(--anim-ease-out);
+}
+
+.footer-link:hover::after {
+  width: 100%;
+}
+
+/* Social Icons Hover */
+.social-icon {
+  transition: transform 0.3s var(--anim-ease-bounce), color 0.3s;
+}
+
+.social-icon:hover {
+  transform: scale(1.2) translateY(-3px);
+  color: #06b6d4;
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .hero-btn,
+  .cta-btn,
+  .btn-cta-pulse,
+  .badge-offer,
+  .badge-sale,
+  .offer-badge {
+    animation: none;
+  }
+}
+
+/* ============================================= */
+/* Admin Panel Animations                        */
+/* ============================================= */
+
+/* Sidebar navigation hover effects */
+aside nav a {
+  transition: all 0.25s ease;
+}
+
+aside nav a:hover svg {
+  transform: scale(1.1);
+  transition: transform 0.2s ease;
+}
+
+/* Stat card animations */
+.stat-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+}
+
+/* Table row hover */
+tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+/* Admin buttons */
+.admin-btn {
+  transition: all 0.2s ease;
+}
+
+.admin-btn:hover {
+  transform: translateY(-1px);
+}
+
+.admin-btn:active {
+  transform: translateY(0);
+}
+
+/* Card entrance animation class */
+.admin-card-enter {
+  animation: adminCardEnter 0.4s ease forwards;
+}
+
+@keyframes adminCardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Stagger delay utilities for admin */
+.admin-stagger-1 { animation-delay: 0.1s; }
+.admin-stagger-2 { animation-delay: 0.2s; }
+.admin-stagger-3 { animation-delay: 0.3s; }
+.admin-stagger-4 { animation-delay: 0.4s; }
+.admin-stagger-5 { animation-delay: 0.5s; }
+
+/* Loading shimmer for admin */
+.admin-loading {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 25%,
+    rgba(255, 255, 255, 0.06) 50%,
+    rgba(255, 255, 255, 0.03) 75%
+  );
+  background-size: 200% 100%;
+  animation: adminShimmer 1.2s infinite;
+}
+
+@keyframes adminShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Success/Error flash animations */
+.admin-flash-success {
+  animation: flashSuccess 0.5s ease;
+}
+
+@keyframes flashSuccess {
+  0%, 100% { background-color: transparent; }
+  50% { background-color: rgba(16, 185, 129, 0.2); }
+}
+
+.admin-flash-error {
+  animation: flashError 0.5s ease;
+}
+
+@keyframes flashError {
+  0%, 100% { background-color: transparent; }
+  50% { background-color: rgba(239, 68, 68, 0.2); }
+}
+
+/* Number count up animation helper */
+.admin-count-up {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Notification badge pulse */
+.admin-notification-badge {
+  animation: adminBadgePulse 2s ease-in-out infinite;
+}
+
+@keyframes adminBadgePulse {
+  0%, 100% { 
+    box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.4);
+  }
+  50% { 
+    box-shadow: 0 0 10px 4px rgba(6, 182, 212, 0);
+  }
+}
+
+/* Chart container animation */
+.admin-chart-container {
+  opacity: 0;
+  animation: adminChartReveal 0.6s ease 0.5s forwards;
+}
+
+@keyframes adminChartReveal {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }

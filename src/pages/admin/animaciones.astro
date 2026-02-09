@@ -1,0 +1,551 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { supabase } from '../../lib/supabase';
+
+// Obtener configuración actual de animaciones
+const { data: settingRow } = await supabase
+  .from('settings')
+  .select('value')
+  .eq('key', 'animations_config')
+  .single();
+
+// Configuración por defecto
+const defaultConfig = {
+  enabled: false,
+  respectReducedMotion: true,
+  hero: {
+    enabled: true,
+    type: 'fadeSlideUp',
+    duration: 1,
+    stagger: 0.2
+  },
+  products: {
+    enabled: true,
+    type: 'staggerFade',
+    duration: 0.6,
+    stagger: 0.1
+  },
+  categories: {
+    enabled: true,
+    type: 'scaleIn',
+    duration: 0.5,
+    stagger: 0.15
+  },
+  buttons: {
+    hoverScale: true,
+    rippleEffect: true,
+    ctaPulse: true
+  },
+  cart: {
+    slideIn: true,
+    itemsAnimate: true
+  },
+  badges: {
+    pulseEffect: true,
+    bounceOnHover: true
+  },
+  scrollProgress: {
+    enabled: true,
+    color: '#06b6d4',
+    height: 3,
+    position: 'top'
+  },
+  pageTransitions: {
+    enabled: true,
+    type: 'fade',
+    duration: 0.3
+  }
+};
+
+const animationConfig = settingRow?.value || defaultConfig;
+---
+
+<AdminLayout title="Animaciones">
+  <div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-white">Configuración de Animaciones</h1>
+        <p class="text-gray-400 mt-1">Gestiona las animaciones de la tienda sin tocar código</p>
+      </div>
+      <button
+        id="saveButton"
+        class="px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-purple-500 text-white rounded-lg font-medium hover:shadow-lg hover:shadow-cyan-500/25 transition-all disabled:opacity-50"
+      >
+        Guardar Cambios
+      </button>
+    </div>
+
+    <!-- Estado General -->
+    <div class="bg-gray-800/50 rounded-xl border border-gray-700 p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+            <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+            Estado General
+          </h2>
+          <p class="text-gray-400 text-sm mt-1">Activa o desactiva todas las animaciones globalmente</p>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" id="globalEnabled" class="sr-only peer" checked={animationConfig.enabled}>
+          <div class="w-14 h-7 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-cyan-500 peer-checked:to-purple-500"></div>
+        </label>
+      </div>
+      
+      <div class="mt-4 pt-4 border-t border-gray-700">
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" id="respectReducedMotion" class="w-5 h-5 rounded bg-gray-700 border-gray-600 text-cyan-500 focus:ring-cyan-500" checked={animationConfig.respectReducedMotion}>
+          <div>
+            <span class="text-white">Respetar preferencias de accesibilidad</span>
+            <p class="text-gray-400 text-sm">Desactiva animaciones si el usuario tiene "reducir movimiento" activado</p>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Grid de configuraciones -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      
+      <!-- Hero Section -->
+      <div class="bg-gray-800/50 rounded-xl border border-gray-700 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+            <span class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500/20 to-cyan-500/5 flex items-center justify-center">
+              🎬
+            </span>
+            Hero / Banner Principal
+          </h3>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" data-section="hero" data-field="enabled" class="sr-only peer section-toggle" checked={animationConfig.hero?.enabled}>
+            <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
+          </label>
+        </div>
+        
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm text-gray-400 mb-2">Tipo de animación</label>
+            <select data-section="hero" data-field="type" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+              <option value="fadeSlideUp" selected={animationConfig.hero?.type === 'fadeSlideUp'}>Fade + Slide Up</option>
+              <option value="fadeIn" selected={animationConfig.hero?.type === 'fadeIn'}>Fade In</option>
+              <option value="scaleUp" selected={animationConfig.hero?.type === 'scaleUp'}>Scale Up</option>
+              <option value="slideFromLeft" selected={animationConfig.hero?.type === 'slideFromLeft'}>Slide desde izquierda</option>
+              <option value="slideFromRight" selected={animationConfig.hero?.type === 'slideFromRight'}>Slide desde derecha</option>
+            </select>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm text-gray-400 mb-2">Duración (s)</label>
+              <input type="number" data-section="hero" data-field="duration" step="0.1" min="0.1" max="3" value={animationConfig.hero?.duration || 1} class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-cyan-500">
+            </div>
+            <div>
+              <label class="block text-sm text-gray-400 mb-2">Stagger (s)</label>
+              <input type="number" data-section="hero" data-field="stagger" step="0.05" min="0" max="1" value={animationConfig.hero?.stagger || 0.2} class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-cyan-500">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Products Section -->
+      <div class="bg-gray-800/50 rounded-xl border border-gray-700 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+            <span class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-purple-500/5 flex items-center justify-center">
+              🛍️
+            </span>
+            Productos
+          </h3>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" data-section="products" data-field="enabled" class="sr-only peer section-toggle" checked={animationConfig.products?.enabled}>
+            <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500"></div>
+          </label>
+        </div>
+        
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm text-gray-400 mb-2">Tipo de animación</label>
+            <select data-section="products" data-field="type" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+              <option value="staggerFade" selected={animationConfig.products?.type === 'staggerFade'}>Stagger Fade</option>
+              <option value="staggerScale" selected={animationConfig.products?.type === 'staggerScale'}>Stagger Scale</option>
+              <option value="slideUp" selected={animationConfig.products?.type === 'slideUp'}>Slide Up</option>
+              <option value="flipIn" selected={animationConfig.products?.type === 'flipIn'}>Flip In</option>
+            </select>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm text-gray-400 mb-2">Duración (s)</label>
+              <input type="number" data-section="products" data-field="duration" step="0.1" min="0.1" max="2" value={animationConfig.products?.duration || 0.6} class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-purple-500">
+            </div>
+            <div>
+              <label class="block text-sm text-gray-400 mb-2">Stagger (s)</label>
+              <input type="number" data-section="products" data-field="stagger" step="0.05" min="0" max="0.5" value={animationConfig.products?.stagger || 0.1} class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-purple-500">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Categories Section -->
+      <div class="bg-gray-800/50 rounded-xl border border-gray-700 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+            <span class="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500/20 to-pink-500/5 flex items-center justify-center">
+              📂
+            </span>
+            Categorías
+          </h3>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" data-section="categories" data-field="enabled" class="sr-only peer section-toggle" checked={animationConfig.categories?.enabled}>
+            <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-500"></div>
+          </label>
+        </div>
+        
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm text-gray-400 mb-2">Tipo de animación</label>
+            <select data-section="categories" data-field="type" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent">
+              <option value="scaleIn" selected={animationConfig.categories?.type === 'scaleIn'}>Scale In</option>
+              <option value="fadeSlide" selected={animationConfig.categories?.type === 'fadeSlide'}>Fade + Slide</option>
+              <option value="rotateIn" selected={animationConfig.categories?.type === 'rotateIn'}>Rotate In</option>
+            </select>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm text-gray-400 mb-2">Duración (s)</label>
+              <input type="number" data-section="categories" data-field="duration" step="0.1" min="0.1" max="2" value={animationConfig.categories?.duration || 0.5} class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-pink-500">
+            </div>
+            <div>
+              <label class="block text-sm text-gray-400 mb-2">Stagger (s)</label>
+              <input type="number" data-section="categories" data-field="stagger" step="0.05" min="0" max="0.5" value={animationConfig.categories?.stagger || 0.15} class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-pink-500">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Buttons Section -->
+      <div class="bg-gray-800/50 rounded-xl border border-gray-700 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+            <span class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 flex items-center justify-center">
+              🔘
+            </span>
+            Botones e Interacciones
+          </h3>
+        </div>
+        
+        <div class="space-y-4">
+          <label class="flex items-center gap-3 cursor-pointer p-3 rounded-lg hover:bg-gray-700/50 transition-colors">
+            <input type="checkbox" data-section="buttons" data-field="hoverScale" class="w-5 h-5 rounded bg-gray-700 border-gray-600 text-emerald-500 focus:ring-emerald-500" checked={animationConfig.buttons?.hoverScale}>
+            <div>
+              <span class="text-white">Escala al pasar el ratón</span>
+              <p class="text-gray-400 text-sm">Los botones crecen ligeramente al hover</p>
+            </div>
+          </label>
+          
+          <label class="flex items-center gap-3 cursor-pointer p-3 rounded-lg hover:bg-gray-700/50 transition-colors">
+            <input type="checkbox" data-section="buttons" data-field="rippleEffect" class="w-5 h-5 rounded bg-gray-700 border-gray-600 text-emerald-500 focus:ring-emerald-500" checked={animationConfig.buttons?.rippleEffect}>
+            <div>
+              <span class="text-white">Efecto ripple al click</span>
+              <p class="text-gray-400 text-sm">Onda expansiva estilo Material Design</p>
+            </div>
+          </label>
+          
+          <label class="flex items-center gap-3 cursor-pointer p-3 rounded-lg hover:bg-gray-700/50 transition-colors">
+            <input type="checkbox" data-section="buttons" data-field="ctaPulse" class="w-5 h-5 rounded bg-gray-700 border-gray-600 text-emerald-500 focus:ring-emerald-500" checked={animationConfig.buttons?.ctaPulse}>
+            <div>
+              <span class="text-white">Pulso en CTAs</span>
+              <p class="text-gray-400 text-sm">Efecto glow pulsante en botones importantes</p>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Cart Section -->
+      <div class="bg-gray-800/50 rounded-xl border border-gray-700 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+            <span class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500/20 to-amber-500/5 flex items-center justify-center">
+              🛒
+            </span>
+            Carrito
+          </h3>
+        </div>
+        
+        <div class="space-y-4">
+          <label class="flex items-center gap-3 cursor-pointer p-3 rounded-lg hover:bg-gray-700/50 transition-colors">
+            <input type="checkbox" data-section="cart" data-field="slideIn" class="w-5 h-5 rounded bg-gray-700 border-gray-600 text-amber-500 focus:ring-amber-500" checked={animationConfig.cart?.slideIn}>
+            <div>
+              <span class="text-white">Slide-in del panel</span>
+              <p class="text-gray-400 text-sm">El carrito entra deslizándose desde la derecha</p>
+            </div>
+          </label>
+          
+          <label class="flex items-center gap-3 cursor-pointer p-3 rounded-lg hover:bg-gray-700/50 transition-colors">
+            <input type="checkbox" data-section="cart" data-field="itemsAnimate" class="w-5 h-5 rounded bg-gray-700 border-gray-600 text-amber-500 focus:ring-amber-500" checked={animationConfig.cart?.itemsAnimate}>
+            <div>
+              <span class="text-white">Animar items</span>
+              <p class="text-gray-400 text-sm">Los productos del carrito aparecen con animación</p>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Badges Section -->
+      <div class="bg-gray-800/50 rounded-xl border border-gray-700 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+            <span class="w-8 h-8 rounded-lg bg-gradient-to-br from-red-500/20 to-red-500/5 flex items-center justify-center">
+              🏷️
+            </span>
+            Badges / Etiquetas
+          </h3>
+        </div>
+        
+        <div class="space-y-4">
+          <label class="flex items-center gap-3 cursor-pointer p-3 rounded-lg hover:bg-gray-700/50 transition-colors">
+            <input type="checkbox" data-section="badges" data-field="pulseEffect" class="w-5 h-5 rounded bg-gray-700 border-gray-600 text-red-500 focus:ring-red-500" checked={animationConfig.badges?.pulseEffect}>
+            <div>
+              <span class="text-white">Efecto pulso</span>
+              <p class="text-gray-400 text-sm">Las etiquetas de oferta pulsan para llamar la atención</p>
+            </div>
+          </label>
+          
+          <label class="flex items-center gap-3 cursor-pointer p-3 rounded-lg hover:bg-gray-700/50 transition-colors">
+            <input type="checkbox" data-section="badges" data-field="bounceOnHover" class="w-5 h-5 rounded bg-gray-700 border-gray-600 text-red-500 focus:ring-red-500" checked={animationConfig.badges?.bounceOnHover}>
+            <div>
+              <span class="text-white">Bounce al hover</span>
+              <p class="text-gray-400 text-sm">Las etiquetas rebotan al pasar el ratón</p>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Scroll Progress Section -->
+      <div class="bg-gray-800/50 rounded-xl border border-gray-700 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+            <span class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center">
+              📊
+            </span>
+            Barra de Progreso de Scroll
+          </h3>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" data-section="scrollProgress" data-field="enabled" class="sr-only peer section-toggle" checked={animationConfig.scrollProgress?.enabled}>
+            <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-cyan-500 peer-checked:to-purple-500"></div>
+          </label>
+        </div>
+        
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm text-gray-400 mb-2">Color</label>
+            <div class="flex gap-3">
+              <input type="color" data-section="scrollProgress" data-field="color" value={animationConfig.scrollProgress?.color || '#06b6d4'} class="w-12 h-10 rounded-lg cursor-pointer bg-transparent border border-gray-600">
+              <input type="text" data-section="scrollProgress" data-field="color" value={animationConfig.scrollProgress?.color || '#06b6d4'} class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white font-mono text-sm">
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm text-gray-400 mb-2">Altura (px)</label>
+              <input type="number" data-section="scrollProgress" data-field="height" min="1" max="10" value={animationConfig.scrollProgress?.height || 3} class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-cyan-500">
+            </div>
+            <div>
+              <label class="block text-sm text-gray-400 mb-2">Posición</label>
+              <select data-section="scrollProgress" data-field="position" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-cyan-500">
+                <option value="top" selected={animationConfig.scrollProgress?.position === 'top'}>Arriba</option>
+                <option value="bottom" selected={animationConfig.scrollProgress?.position === 'bottom'}>Abajo</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Page Transitions Section -->
+      <div class="bg-gray-800/50 rounded-xl border border-gray-700 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+            <span class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500/20 to-indigo-500/5 flex items-center justify-center">
+              🔄
+            </span>
+            Transiciones de Página
+          </h3>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" data-section="pageTransitions" data-field="enabled" class="sr-only peer section-toggle" checked={animationConfig.pageTransitions?.enabled}>
+            <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-500"></div>
+          </label>
+        </div>
+        
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm text-gray-400 mb-2">Tipo de transición</label>
+            <select data-section="pageTransitions" data-field="type" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+              <option value="fade" selected={animationConfig.pageTransitions?.type === 'fade'}>Fade</option>
+              <option value="slide" selected={animationConfig.pageTransitions?.type === 'slide'}>Slide</option>
+              <option value="scale" selected={animationConfig.pageTransitions?.type === 'scale'}>Scale</option>
+              <option value="none" selected={animationConfig.pageTransitions?.type === 'none'}>Sin transición</option>
+            </select>
+          </div>
+          
+          <div>
+            <label class="block text-sm text-gray-400 mb-2">Duración (s)</label>
+            <input type="number" data-section="pageTransitions" data-field="duration" step="0.1" min="0.1" max="1" value={animationConfig.pageTransitions?.duration || 0.3} class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-indigo-500">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Preview Section -->
+    <div class="bg-gray-800/50 rounded-xl border border-gray-700 p-6">
+      <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+        <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+        </svg>
+        Vista Previa
+      </h3>
+      <p class="text-gray-400 text-sm mb-4">Los cambios se aplicarán después de guardar. Abre la tienda en otra pestaña para ver las animaciones en acción.</p>
+      <a href="/" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+        </svg>
+        Abrir tienda
+      </a>
+    </div>
+
+    <!-- Reset Button -->
+    <div class="flex justify-end">
+      <button
+        id="resetButton"
+        class="px-4 py-2 text-gray-400 hover:text-white transition-colors flex items-center gap-2"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        Restaurar valores por defecto
+      </button>
+    </div>
+  </div>
+
+  <!-- Toast notification -->
+  <div id="toast" class="fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50"></div>
+</AdminLayout>
+
+<script define:vars={{ animationConfig, defaultConfig }}>
+  // Estado actual de la configuración
+  let currentConfig = JSON.parse(JSON.stringify(animationConfig));
+  
+  // Función para mostrar toast
+  function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 z-50 ${
+      type === 'success' ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
+    }`;
+    toast.style.transform = 'translateY(0)';
+    toast.style.opacity = '1';
+    
+    setTimeout(() => {
+      toast.style.transform = 'translateY(20px)';
+      toast.style.opacity = '0';
+    }, 3000);
+  }
+  
+  // Función para actualizar la configuración
+  function updateConfig(section, field, value) {
+    if (!currentConfig[section]) {
+      currentConfig[section] = {};
+    }
+    currentConfig[section][field] = value;
+  }
+  
+  // Event listeners para inputs
+  document.querySelectorAll('input[data-section], select[data-section]').forEach(input => {
+    const section = input.dataset.section;
+    const field = input.dataset.field;
+    
+    input.addEventListener('change', (e) => {
+      let value;
+      if (input.type === 'checkbox') {
+        value = input.checked;
+      } else if (input.type === 'number') {
+        value = parseFloat(input.value);
+      } else {
+        value = input.value;
+      }
+      updateConfig(section, field, value);
+    });
+  });
+  
+  // Global enabled toggle
+  document.getElementById('globalEnabled')?.addEventListener('change', (e) => {
+    currentConfig.enabled = e.target.checked;
+  });
+  
+  // Respect reduced motion toggle
+  document.getElementById('respectReducedMotion')?.addEventListener('change', (e) => {
+    currentConfig.respectReducedMotion = e.target.checked;
+  });
+  
+  // Sincronizar color inputs
+  document.querySelectorAll('input[type="color"]').forEach(colorInput => {
+    const section = colorInput.dataset.section;
+    const field = colorInput.dataset.field;
+    const textInput = document.querySelector(`input[type="text"][data-section="${section}"][data-field="${field}"]`);
+    
+    if (textInput) {
+      colorInput.addEventListener('input', (e) => {
+        textInput.value = e.target.value;
+        updateConfig(section, field, e.target.value);
+      });
+      
+      textInput.addEventListener('input', (e) => {
+        if (/^#[0-9A-Fa-f]{6}$/.test(e.target.value)) {
+          colorInput.value = e.target.value;
+          updateConfig(section, field, e.target.value);
+        }
+      });
+    }
+  });
+  
+  // Save button
+  document.getElementById('saveButton')?.addEventListener('click', async () => {
+    const btn = document.getElementById('saveButton');
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+    
+    try {
+      const response = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          key: 'animations_config',
+          value: currentConfig
+        }),
+      });
+      
+      if (response.ok) {
+        showToast('✓ Configuración guardada correctamente');
+      } else {
+        throw new Error('Error al guardar');
+      }
+    } catch (error) {
+      showToast('Error al guardar la configuración', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Guardar Cambios';
+    }
+  });
+  
+  // Reset button
+  document.getElementById('resetButton')?.addEventListener('click', () => {
+    if (confirm('¿Estás seguro de que quieres restaurar los valores por defecto?')) {
+      currentConfig = JSON.parse(JSON.stringify(defaultConfig));
+      location.reload(); // Recargar para mostrar valores por defecto
+    }
+  });
+</script>

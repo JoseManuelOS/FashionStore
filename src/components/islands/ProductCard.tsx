@@ -231,11 +231,11 @@ export default function ProductCard({ product }: ProductCardProps) {
                                 <span className="font-display text-sm text-zinc-500 line-through">
                                     {formatPrice(product.original_price)}
                                 </span>
-                                <span className="font-display text-xl text-red-500 font-semibold">
+                                <span className="font-display text-xl text-red-500 font-semibold animate-price-pulse">
                                     {formatPrice(product.price)}
                                 </span>
                                 {product.discount_percent && (
-                                    <span className="text-xs bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded">
+                                    <span className="text-xs bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded animate-discount-badge">
                                         -{product.discount_percent}%
                                     </span>
                                 )}

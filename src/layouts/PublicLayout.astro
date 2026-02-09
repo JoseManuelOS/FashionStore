@@ -4,6 +4,7 @@ import CartIcon from "../components/islands/CartIcon";
 import CartSlideOver from "../components/islands/CartSlideOver";
 import UserMenu from "../components/islands/UserMenu";
 import NewsletterPopup from "../components/NewsletterPopup.astro";
+import PageAnimations from "../components/islands/PageAnimations";
 import { getCategories } from "../lib/supabase";
 
 export interface Props {
@@ -326,6 +327,9 @@ try {
 
     <!-- Newsletter Popup -->
     <NewsletterPopup />
+
+    <!-- Page Animations (GSAP) - Isolated component -->
+    <PageAnimations client:load />
 
     <!-- Scripts -->
 
