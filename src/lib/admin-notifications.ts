@@ -59,7 +59,7 @@ export async function sendNewOrderNotification(order: {
         `).join('');
 
         await resend.emails.send({
-            from: 'FashionMarket <onboarding@resend.dev>',
+            from: 'FashionMarket <noreply@roomieapp.info>',
             to: [ADMIN_EMAIL],
             subject: `Nuevo pedido #${order.order_number || order.id.slice(0, 8)} - ${formatCurrency(order.total_price)}`,
             html: `
@@ -138,7 +138,7 @@ export async function sendLowStockAlert(products: Array<{
         `).join('');
 
         await resend.emails.send({
-            from: 'FashionMarket <onboarding@resend.dev>',
+            from: 'FashionMarket <noreply@roomieapp.info>',
             to: [ADMIN_EMAIL],
             subject: `Alerta de Stock: ${products.length} producto(s) con stock bajo`,
             html: `
@@ -197,7 +197,7 @@ export async function sendCancellationNotification(order: {
 }, reason?: string) {
     try {
         await resend.emails.send({
-            from: 'FashionMarket <onboarding@resend.dev>',
+            from: 'FashionMarket <noreply@roomieapp.info>',
             to: [ADMIN_EMAIL],
             subject: `Pedido #${order.order_number || order.id.slice(0, 8)} Cancelado`,
             html: `
@@ -261,7 +261,7 @@ export async function sendReturnRequestNotification(order: {
 }, reason: string) {
     try {
         await resend.emails.send({
-            from: 'FashionMarket <onboarding@resend.dev>',
+            from: 'FashionMarket <noreply@roomieapp.info>',
             to: [ADMIN_EMAIL],
             subject: `Solicitud de Devolución - Pedido #${order.order_number || order.id.slice(0, 8)}`,
             html: `
@@ -334,7 +334,7 @@ export async function sendPendingShipmentsSummary(orders: Array<{
         `).join('');
 
         await resend.emails.send({
-            from: 'FashionMarket <onboarding@resend.dev>',
+            from: 'FashionMarket <noreply@roomieapp.info>',
             to: [ADMIN_EMAIL],
             subject: `Recordatorio: ${orders.length} pedido(s) pendientes de envío`,
             html: `

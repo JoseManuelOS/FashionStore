@@ -97,7 +97,7 @@ export const POST: APIRoute = async ({ request }) => {
             const resend = new Resend(import.meta.env.RESEND_API_KEY);
 
             await resend.emails.send({
-                from: 'FashionMarket <onboarding@resend.dev>',
+                from: 'FashionMarket <noreply@roomieapp.info>',
                 to: [customerEmail],
                 subject: `Solicitud de Devolución - Pedido #${order.order_number || order.id}`,
                 html: `

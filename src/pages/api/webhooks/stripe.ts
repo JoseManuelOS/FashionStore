@@ -311,7 +311,7 @@ async function sendOrderConfirmationEmail(data: {
         ` : '';
 
         await resend.emails.send({
-            from: 'FashionMarket <onboarding@resend.dev>',
+            from: 'FashionMarket <noreply@roomieapp.info>',
             to: [data.to],
             subject: `Confirmación de Pedido #${data.orderNumber || data.orderId.slice(0, 8)} - FashionMarket`,
             html: `
@@ -507,7 +507,7 @@ async function sendInvoiceEmail(orderId: string) {
         `).join('');
 
         await resend.emails.send({
-            from: 'FashionMarket <onboarding@resend.dev>',
+            from: 'FashionMarket <noreply@roomieapp.info>',
             to: [customerEmail],
             subject: `Factura ${invoiceNumber} - FashionMarket`,
             html: `

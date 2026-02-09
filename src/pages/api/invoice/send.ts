@@ -68,7 +68,7 @@ export const POST: APIRoute = async ({ request }) => {
 
         // Send email
         const { data, error } = await resend.emails.send({
-            from: 'FashionMarket <onboarding@resend.dev>',
+            from: 'FashionMarket <noreply@roomieapp.info>',
             to: [order.customer_email],
             subject: `Factura ${invoice.invoice_number || '#' + invoice.id} - FashionMarket`,
             html: `

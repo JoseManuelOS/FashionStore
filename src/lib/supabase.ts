@@ -418,7 +418,7 @@ async function sendShippingNotificationEmail(order: Order) {
         const carrierName = carrierNames[order.shipping_carrier || ''] || 'Transportista';
 
         await resend.emails.send({
-            from: 'FashionMarket <onboarding@resend.dev>',
+            from: 'FashionMarket <noreply@roomieapp.info>',
             to: [order.customer_email!],
             subject: '📦 ¡Tu pedido está en camino! - FashionMarket',
             html: `

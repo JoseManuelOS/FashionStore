@@ -19,7 +19,7 @@ export const POST: APIRoute = async ({ request }) => {
         }
 
         const { data, error } = await resend.emails.send({
-            from: 'FashionMarket <onboarding@resend.dev>',
+            from: 'FashionMarket <noreply@roomieapp.info>',
             to: [to],
             subject: 'Bienvenido a FashionMarket - Tu cuenta ha sido creada',
             html: `

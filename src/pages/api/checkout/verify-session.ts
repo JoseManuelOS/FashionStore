@@ -260,7 +260,7 @@ export const POST: APIRoute = async ({ request }) => {
                     });
 
                     await resend.emails.send({
-                        from: 'FashionMarket <onboarding@resend.dev>',
+                        from: 'FashionMarket <noreply@roomieapp.info>',
                         to: customerEmail,
                         subject: `Factura ${invoiceData.invoice_number} - Pedido #${order.order_number}`,
                         html: `
@@ -373,7 +373,7 @@ export const POST: APIRoute = async ({ request }) => {
                 `).join('');
 
                 await resend.emails.send({
-                    from: 'FashionMarket <onboarding@resend.dev>',
+                    from: 'FashionMarket <noreply@roomieapp.info>',
                     to: customerEmail,
                     subject: `Confirmación de pedido #${order.order_number ? order.order_number : order.id.slice(0, 8).toUpperCase()}`,
                     html: `
