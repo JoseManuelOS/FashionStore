@@ -358,17 +358,21 @@ export const POST: APIRoute = async ({ request }) => {
             try {
                 const productsHtml = orderItems.map(item => `
                     <tr>
-                        <td style="padding: 12px; border-bottom: 1px solid #333;">
-                            <div style="display: flex; align-items: center; gap: 12px;">
-                                ${item.product_image ? `<img src="${item.product_image}" alt="${item.product_name}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;" />` : ''}
-                                <div>
-                                    <p style="margin: 0; font-weight: 600; color: #fff;">${item.product_name}</p>
-                                    ${item.size ? `<p style="margin: 4px 0 0; font-size: 12px; color: #888;">Talla: ${item.size}</p>` : ''}
-                                </div>
-                            </div>
+                        <td style="padding: 12px; border-bottom: 1px solid #2a2a3e;">
+                            <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                                <tr>
+                                    <td width="64" valign="top">
+                                        ${item.product_image ? `<img src="${item.product_image}" alt="${item.product_name}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; background: #2a2a3e; display: block;" />` : '<div style="width: 60px; height: 60px; background: #2a2a3e; border-radius: 8px;"></div>'}
+                                    </td>
+                                    <td style="padding-left: 12px;" valign="middle">
+                                        <p style="margin: 0; font-weight: 600; color: #f1f5f9;">${item.product_name}</p>
+                                        ${item.size ? `<p style="margin: 4px 0 0; font-size: 12px; color: #71717a;">Talla: ${item.size}</p>` : ''}
+                                    </td>
+                                </tr>
+                            </table>
                         </td>
-                        <td style="padding: 12px; border-bottom: 1px solid #333; text-align: center; color: #888;">${item.quantity}</td>
-                        <td style="padding: 12px; border-bottom: 1px solid #333; text-align: right; color: #00d4ff; font-weight: 600;">${new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(item.price_at_purchase * item.quantity)}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #2a2a3e; text-align: center; color: #a1a1aa; vertical-align: middle;">${item.quantity}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #2a2a3e; text-align: right; color: #22d3ee; font-weight: 600; vertical-align: middle;">${new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(item.price_at_purchase * item.quantity)}</td>
                     </tr>
                 `).join('');
 
@@ -402,16 +406,18 @@ export const POST: APIRoute = async ({ request }) => {
                                 <div style="padding: 40px 32px;">
                                     <!-- Order Info Card -->
                                     <div style="background: #0a0a0f; border: 1px solid #2a2a3e; border-radius: 16px; padding: 24px; margin-bottom: 24px;">
-                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #2a2a3e; padding-bottom: 16px;">
-                                            <div>
-                                                <p style="color: #71717a; font-size: 12px; margin: 0; text-transform: uppercase;">Número de pedido</p>
-                                                <p style="color: #22d3ee; font-size: 18px; font-weight: 700; margin: 4px 0 0;">#${order.order_number ? order.order_number : order.id.slice(0, 8).toUpperCase()}</p>
-                                            </div>
-                                            <div style="text-align: right;">
-                                                <p style="color: #71717a; font-size: 12px; margin: 0; text-transform: uppercase;">Total</p>
-                                                <p style="color: #f1f5f9; font-size: 24px; font-weight: 700; margin: 4px 0 0;">${new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(totalPrice)}</p>
-                                            </div>
-                                        </div>
+                                        <table width="100%" style="margin-bottom: 16px; border-bottom: 1px solid #2a2a3e; padding-bottom: 16px;">
+                                            <tr>
+                                                <td>
+                                                    <p style="color: #71717a; font-size: 12px; margin: 0; text-transform: uppercase;">Número de pedido</p>
+                                                    <p style="color: #22d3ee; font-size: 18px; font-weight: 700; margin: 4px 0 0;">#${order.order_number ? order.order_number : order.id.slice(0, 8).toUpperCase()}</p>
+                                                </td>
+                                                <td style="text-align: right;">
+                                                    <p style="color: #71717a; font-size: 12px; margin: 0; text-transform: uppercase;">Total</p>
+                                                    <p style="color: #f1f5f9; font-size: 24px; font-weight: 700; margin: 4px 0 0;">${new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(totalPrice)}</p>
+                                                </td>
+                                            </tr>
+                                        </table>
                                         
                                         <!-- Products Table -->
                                         <table style="width: 100%; border-collapse: collapse;">

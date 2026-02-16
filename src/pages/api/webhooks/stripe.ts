@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import Stripe from 'stripe';
 import { supabaseAdmin, createFacturacion, decrementStock } from '../../../lib/supabase';
 import { Resend } from 'resend';
+import { sendNewOrderNotification, sendLowStockAlert } from '../../../lib/admin-notifications';
 
 const stripe = new Stripe(import.meta.env.STRIPE_SECRET_KEY, {
     apiVersion: '2025-12-15.clover',
@@ -263,6 +264,51 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
                 console.error('Error sending invoice email:', invoiceEmailError);
                 // No fallamos el webhook, la factura se puede reenviar después
             }
+        }
+
+        // Enviar notificación al admin
+        try {
+            await sendNewOrderNotification({
+                id: order.id,
+                order_number: order.order_number,
+                customer_name: customerName || undefined,
+                customer_email: customerEmail || undefined,
+                total_price: totalPrice,
+                items: orderItems
+            });
+        } catch (notifyError) {
+            console.error('⚠️ Error sending admin notification (non-fatal):', notifyError);
+        }
+
+        // Comprobar stock bajo y alertar al admin
+        try {
+            const lowStockProducts: Array<{ id: string; name: string; size?: string; currentStock: number }> = [];
+
+            for (const item of orderItems) {
+                if (item.product_id && item.size) {
+                    const { data: variant } = await supabaseAdmin
+                        .from('product_variants')
+                        .select('stock, size')
+                        .eq('product_id', item.product_id)
+                        .eq('size', item.size)
+                        .single();
+
+                    if (variant && variant.stock < 5) {
+                        lowStockProducts.push({
+                            id: item.product_id,
+                            name: item.product_name,
+                            size: item.size || undefined,
+                            currentStock: variant.stock
+                        });
+                    }
+                }
+            }
+
+            if (lowStockProducts.length > 0) {
+                await sendLowStockAlert(lowStockProducts);
+            }
+        } catch (stockError) {
+            console.error('⚠️ Error checking stock (non-fatal):', stockError);
         }
 
         console.log('Order processing completed successfully');

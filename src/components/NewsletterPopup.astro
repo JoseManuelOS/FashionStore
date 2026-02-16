@@ -1,5 +1,5 @@
 ---
-// NewsletterPopup.astro - Popup promocional para suscripción al newsletter
+// NewsletterPopup.astro - Popup con caja regalo animada + confeti
 ---
 
 <!-- Newsletter Popup Modal -->
@@ -12,18 +12,55 @@
 >
     <!-- Backdrop -->
     <div
-        class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+        id="popup-backdrop"
+        class="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        style="opacity: 0; transition: opacity 0.4s ease;"
         onclick="closeNewsletterPopup()"
-    >
-    </div>
+    ></div>
 
-    <!-- Modal Content -->
-    <div
-        class="fixed inset-0 flex items-center justify-center p-4 pointer-events-none"
-    >
+    <!-- Confetti Canvas -->
+    <canvas id="confetti-canvas" class="absolute inset-0 pointer-events-none" style="z-index: 2;"></canvas>
+
+    <!-- Gift Box Stage -->
+    <div class="fixed inset-0 flex items-center justify-center p-4 pointer-events-none" style="z-index: 3;">
+
+        <!-- Gift Box (initial state) -->
+        <div id="gift-box-container" class="pointer-events-auto" style="perspective: 800px;">
+            <div id="gift-box" class="relative" style="width: 140px; height: 140px; cursor: pointer;">
+                <!-- Box Body -->
+                <div class="absolute bottom-0 left-0 right-0" style="height: 90px; background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); border-radius: 12px; box-shadow: 0 10px 40px rgba(6, 182, 212, 0.4);">
+                    <!-- Vertical ribbon -->
+                    <div class="absolute left-1/2 top-0 bottom-0" style="width: 20px; margin-left: -10px; background: linear-gradient(135deg, #f59e0b, #f97316); opacity: 0.9;"></div>
+                    <!-- Horizontal ribbon -->
+                    <div class="absolute top-1/2 left-0 right-0" style="height: 20px; margin-top: -10px; background: linear-gradient(135deg, #f59e0b, #f97316); opacity: 0.9;"></div>
+                </div>
+                <!-- Box Lid -->
+                <div id="gift-lid" class="absolute left-[-6px] right-[-6px]" style="height: 44px; top: 6px; transform-origin: bottom right; transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);">
+                    <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%); border-radius: 10px; box-shadow: 0 -4px 20px rgba(6, 182, 212, 0.3);">
+                        <!-- Lid ribbon -->
+                        <div class="absolute left-1/2 top-0 bottom-0" style="width: 20px; margin-left: -10px; background: linear-gradient(135deg, #fbbf24, #f59e0b); opacity: 0.9; border-radius: 2px;"></div>
+                    </div>
+                    <!-- Bow -->
+                    <div class="absolute left-1/2 top-[-18px]" style="margin-left: -22px;">
+                        <div style="width: 44px; height: 28px; position: relative;">
+                            <div style="position: absolute; width: 22px; height: 22px; background: #f59e0b; border-radius: 50% 50% 0 50%; transform: rotate(-30deg); left: 0; top: 0; box-shadow: inset -2px -2px 4px rgba(0,0,0,0.15);"></div>
+                            <div style="position: absolute; width: 22px; height: 22px; background: #f97316; border-radius: 50% 50% 50% 0; transform: rotate(30deg); right: 0; top: 0; box-shadow: inset 2px -2px 4px rgba(0,0,0,0.15);"></div>
+                            <div class="absolute left-1/2 top-[10px]" style="width: 12px; height: 12px; margin-left: -6px; background: #fbbf24; border-radius: 50%; border: 2px solid #f59e0b;"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Tap hint -->
+                <div id="gift-hint" class="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap text-sm text-white/70 font-medium" style="animation: giftPulse 1.5s ease-in-out infinite;">
+                    Toca para abrir &#x1F381;
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Content (hidden initially) -->
         <div
             id="popup-content"
-            class="relative bg-dark-400 border border-white/10 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl pointer-events-auto transform transition-all"
+            class="relative bg-dark-400 border border-white/10 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl pointer-events-auto"
+            style="opacity: 0; transform: scale(0.5) translateY(30px); transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); display: none; z-index: 3;"
         >
             <!-- Close Button -->
             <button
@@ -31,50 +68,29 @@
                 class="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-dark-300/80 text-white/60 hover:text-white hover:bg-dark-200 transition-colors"
                 aria-label="Cerrar"
             >
-                <svg
-                    class="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                >
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M6 18L18 6M6 6l12 12"></path>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
             </button>
 
-            <!-- Header Image/Gradient -->
-            <div
-                class="h-32 relative overflow-hidden"
-                style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 50%, #0e7490 100%);"
-            >
+            <!-- Header with sparkles -->
+            <div class="h-32 relative overflow-hidden" style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 50%, #0e7490 100%);">
                 <div class="absolute inset-0 flex items-center justify-center">
-                    <span class="text-6xl">🎁</span>
+                    <span class="text-6xl" id="header-emoji" style="opacity: 0; transform: scale(0);">&#x1F389;</span>
                 </div>
-                <!-- Subtle texture overlay -->
-                <div
-                    class="absolute inset-0 opacity-10"
-                    style="background-image: radial-gradient(circle at 25% 25%, rgba(255,255,255,0.3) 1px, transparent 1px); background-size: 20px 20px;"
-                >
-                </div>
+                <div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(circle at 25% 25%, rgba(255,255,255,0.3) 1px, transparent 1px); background-size: 20px 20px;"></div>
+                <div id="header-sparkles" class="absolute inset-0 overflow-hidden"></div>
             </div>
 
             <!-- Form Content -->
             <div id="popup-form-section" class="p-6">
-                <h2
-                    id="popup-title"
-                    class="text-2xl font-bold text-white text-center mb-2"
-                >
-                    ¡Obtén 10% de Descuento!
+                <h2 id="popup-title" class="text-2xl font-bold text-white text-center mb-2">
+                    &#xA1;Obt&#xe9;n 10% de Descuento!
                 </h2>
                 <p class="text-zinc-400 text-center mb-6">
-                    Suscríbete a nuestro newsletter y recibe un código exclusivo
-                    para tu primera compra
+                    Suscr&#xED;bete a nuestro newsletter y recibe un c&#xF3;digo exclusivo para tu primera compra
                 </p>
 
-                <!-- Email Form -->
                 <form id="popup-newsletter-form" class="space-y-4">
                     <div>
                         <input
@@ -86,7 +102,6 @@
                             class="w-full px-4 py-3 bg-dark-300 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/20 transition-all"
                         />
                     </div>
-
                     <button
                         type="submit"
                         id="popup-submit-btn"
@@ -94,66 +109,31 @@
                         style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);"
                     >
                         <span>Obtener mi descuento</span>
-                        <svg
-                            class="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
                         </svg>
                     </button>
                 </form>
 
                 <p class="text-zinc-500 text-xs text-center mt-4">
-                    Al suscribirte, aceptas recibir emails con ofertas y
-                    novedades. Puedes cancelar en cualquier momento.
+                    Al suscribirte, aceptas recibir emails con ofertas y novedades. Puedes cancelar en cualquier momento.
                 </p>
             </div>
 
-            <!-- Success State (hidden by default) -->
+            <!-- Success State -->
             <div id="popup-success-section" class="p-6 hidden">
                 <div class="text-center">
-                    <div
-                        class="w-16 h-16 mx-auto mb-4 rounded-full bg-green-500/20 flex items-center justify-center"
-                    >
-                        <svg
-                            class="w-8 h-8 text-green-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M5 13l4 4L19 7"></path>
+                    <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-green-500/20 flex items-center justify-center">
+                        <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                         </svg>
                     </div>
-                    <h3 class="text-2xl font-bold text-white mb-2">
-                        ¡Gracias por suscribirte!
-                    </h3>
-                    <p class="text-zinc-400 mb-6">Tu código de descuento:</p>
+                    <h3 class="text-2xl font-bold text-white mb-2">&#xA1;Gracias por suscribirte!</h3>
+                    <p class="text-zinc-400 mb-6">Tu c&#xF3;digo de descuento:</p>
 
-                    <!-- Promo Code Display -->
-                    <div
-                        class="rounded-xl p-4 mb-6 border-2 border-dashed"
-                        style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.2) 0%, rgba(8, 145, 178, 0.2) 100%); border-color: #06b6d4;"
-                    >
-                        <p
-                            id="popup-promo-code"
-                            class="text-3xl font-bold font-mono tracking-wider"
-                            style="color: #06b6d4;"
-                        >
-                            WELCOME10
-                        </p>
-                        <p class="text-sm mt-1" style="color: #0891b2;">
-                            10% de descuento
-                        </p>
+                    <div class="rounded-xl p-4 mb-6 border-2 border-dashed" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.2) 0%, rgba(8, 145, 178, 0.2) 100%); border-color: #06b6d4;">
+                        <p id="popup-promo-code" class="text-3xl font-bold font-mono tracking-wider" style="color: #06b6d4;">WELCOME10</p>
+                        <p class="text-sm mt-1" style="color: #0891b2;">10% de descuento</p>
                     </div>
 
                     <button
@@ -161,27 +141,14 @@
                         id="copy-code-btn"
                         class="px-6 py-2 bg-dark-300 text-white rounded-xl hover:bg-dark-200 transition-colors flex items-center gap-2 mx-auto"
                     >
-                        <svg
-                            class="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                            ></path>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
                         </svg>
-                        <span>Copiar código</span>
+                        <span>Copiar c&#xF3;digo</span>
                     </button>
 
-                    <button
-                        onclick="closeNewsletterPopup()"
-                        class="mt-4 text-zinc-400 hover:text-white text-sm transition-colors"
-                    >
-                        Continuar comprando →
+                    <button onclick="closeNewsletterPopup()" class="mt-4 text-zinc-400 hover:text-white text-sm transition-colors block mx-auto">
+                        Continuar comprando &#x2192;
                     </button>
                 </div>
             </div>
@@ -189,44 +156,319 @@
     </div>
 </div>
 
+<style>
+    @keyframes giftPulse {
+        0%, 100% { transform: translateX(-50%) translateY(0); opacity: 0.7; }
+        50% { transform: translateX(-50%) translateY(-4px); opacity: 1; }
+    }
+    @keyframes giftBounceIn {
+        0% { transform: scale(0) rotate(-15deg); opacity: 0; }
+        50% { transform: scale(1.15) rotate(3deg); opacity: 1; }
+        70% { transform: scale(0.95) rotate(-1deg); }
+        100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+    @keyframes giftWiggle {
+        0%, 100% { transform: rotate(0deg); }
+        15% { transform: rotate(-5deg); }
+        30% { transform: rotate(5deg); }
+        45% { transform: rotate(-3deg); }
+        60% { transform: rotate(3deg); }
+        75% { transform: rotate(-1deg); }
+        90% { transform: rotate(1deg); }
+    }
+    @keyframes sparkle {
+        0% { transform: scale(0) rotate(0deg); opacity: 1; }
+        50% { transform: scale(1) rotate(180deg); opacity: 0.8; }
+        100% { transform: scale(0) rotate(360deg); opacity: 0; }
+    }
+    @keyframes emojiPop {
+        0% { opacity: 0; transform: scale(0) rotate(-20deg); }
+        60% { opacity: 1; transform: scale(1.3) rotate(5deg); }
+        100% { opacity: 1; transform: scale(1) rotate(0deg); }
+    }
+</style>
+
 <script>
-    const POPUP_DELAY_MS = 8000; // 8 segundos
+    const POPUP_DELAY_MS = 8000;
     const POPUP_STORAGE_KEY = "newsletter_popup_shown";
 
-    // Check if popup should be shown
+    let popupState: 'hidden' | 'gift' | 'opening' | 'content' = 'hidden';
+
     function shouldShowPopup(): boolean {
-        // Don't show if already shown in this session
-        if (sessionStorage.getItem(POPUP_STORAGE_KEY)) {
-            return false;
-        }
-        // Don't show if already subscribed (localStorage)
-        if (localStorage.getItem("newsletter_subscribed")) {
-            return false;
-        }
+        if (sessionStorage.getItem(POPUP_STORAGE_KEY)) return false;
+        if (localStorage.getItem("newsletter_subscribed")) return false;
         return true;
     }
 
-    function showNewsletterPopup() {
-        const popup = document.getElementById("newsletter-popup");
-        if (popup && shouldShowPopup()) {
-            popup.classList.remove("hidden");
-            document.body.style.overflow = "hidden";
-            sessionStorage.setItem(POPUP_STORAGE_KEY, "true");
+    // ─── Confetti Engine ───
+    function launchConfetti() {
+        const canvas = document.getElementById("confetti-canvas") as HTMLCanvasElement;
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d")!;
+        if (!ctx) return;
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const colors = ["#06b6d4", "#22d3ee", "#f59e0b", "#f97316", "#ec4899", "#a855f7", "#10b981", "#fbbf24", "#ef4444", "#ffffff"];
+
+        interface Particle {
+            x: number; y: number;
+            vx: number; vy: number;
+            size: number; color: string;
+            rotation: number; rotSpeed: number;
+            shape: 'rect' | 'circle' | 'star';
+            life: number; decay: number;
+            gravity: number;
+        }
+
+        const particles: Particle[] = [];
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+
+        for (let i = 0; i < 120; i++) {
+            const angle = (Math.PI * 2 * i) / 120 + (Math.random() - 0.5) * 0.5;
+            const speed = 4 + Math.random() * 12;
+            particles.push({
+                x: cx, y: cy,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed - 3,
+                size: 4 + Math.random() * 8,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                rotation: Math.random() * 360,
+                rotSpeed: (Math.random() - 0.5) * 12,
+                shape: (['rect', 'circle', 'star'] as const)[Math.floor(Math.random() * 3)],
+                life: 1,
+                decay: 0.008 + Math.random() * 0.008,
+                gravity: 0.12 + Math.random() * 0.08
+            });
+        }
+
+        function drawStar(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number) {
+            ctx.beginPath();
+            for (let i = 0; i < 5; i++) {
+                const a = (i * 4 * Math.PI) / 5 - Math.PI / 2;
+                const method = i === 0 ? 'moveTo' : 'lineTo';
+                ctx[method](cx + r * Math.cos(a), cy + r * Math.sin(a));
+            }
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        let animId: number;
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let alive = false;
+
+            for (const p of particles) {
+                if (p.life <= 0) continue;
+                alive = true;
+
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += p.gravity;
+                p.vx *= 0.99;
+                p.rotation += p.rotSpeed;
+                p.life -= p.decay;
+
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate((p.rotation * Math.PI) / 180);
+                ctx.globalAlpha = Math.max(0, p.life);
+                ctx.fillStyle = p.color;
+
+                if (p.shape === 'rect') {
+                    ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+                } else if (p.shape === 'circle') {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    drawStar(ctx, 0, 0, p.size / 2);
+                }
+
+                ctx.restore();
+            }
+
+            if (alive) {
+                animId = requestAnimationFrame(animate);
+            } else {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        animate();
+
+        setTimeout(() => {
+            cancelAnimationFrame(animId);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }, 4000);
+    }
+
+    // ─── Sparkles in header ───
+    function addHeaderSparkles() {
+        const container = document.getElementById("header-sparkles");
+        if (!container) return;
+        const sparkleChars = ['\u2726', '\u2727', '\u2b50', '\u2605', '\u2728'];
+        for (let i = 0; i < 8; i++) {
+            const s = document.createElement("span");
+            s.textContent = sparkleChars[Math.floor(Math.random() * sparkleChars.length)];
+            s.style.cssText = `
+                position: absolute;
+                color: rgba(255,255,255,0.8);
+                font-size: ${10 + Math.random() * 14}px;
+                left: ${Math.random() * 100}%;
+                top: ${Math.random() * 100}%;
+                animation: sparkle ${0.6 + Math.random() * 0.8}s ease-out ${i * 0.1}s forwards;
+                pointer-events: none;
+            `;
+            container.appendChild(s);
         }
     }
 
+    // ─── Gift Box Open Sequence ───
+    function openGiftBox() {
+        if (popupState !== 'gift') return;
+        popupState = 'opening';
+
+        const lid = document.getElementById("gift-lid");
+        const hint = document.getElementById("gift-hint");
+        const giftContainer = document.getElementById("gift-box-container");
+        const popupContent = document.getElementById("popup-content");
+        const emoji = document.getElementById("header-emoji");
+
+        // Hide hint
+        if (hint) hint.style.display = 'none';
+
+        // Open lid
+        if (lid) {
+            lid.style.transform = 'rotate(-110deg) translateY(-10px)';
+        }
+
+        // Launch confetti
+        setTimeout(() => launchConfetti(), 200);
+
+        // After lid opens, hide box and show content
+        setTimeout(() => {
+            if (giftContainer) {
+                giftContainer.style.transition = 'all 0.4s ease-in';
+                giftContainer.style.opacity = '0';
+                giftContainer.style.transform = 'scale(0.3)';
+            }
+
+            setTimeout(() => {
+                if (giftContainer) giftContainer.style.display = 'none';
+
+                if (popupContent) {
+                    popupContent.style.display = 'block';
+                    // Force reflow
+                    popupContent.offsetHeight;
+                    popupContent.style.opacity = '1';
+                    popupContent.style.transform = 'scale(1) translateY(0)';
+                }
+
+                // Animate emoji
+                setTimeout(() => {
+                    if (emoji) {
+                        emoji.style.animation = 'emojiPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards';
+                    }
+                    addHeaderSparkles();
+                }, 200);
+
+                popupState = 'content';
+            }, 350);
+        }, 600);
+    }
+
+    // ─── Show Popup (gift box stage) ───
+    function showNewsletterPopup() {
+        const popup = document.getElementById("newsletter-popup");
+        const backdrop = document.getElementById("popup-backdrop");
+        const giftBox = document.getElementById("gift-box");
+        const giftContainer = document.getElementById("gift-box-container");
+        const popupContent = document.getElementById("popup-content");
+
+        if (!popup || !shouldShowPopup()) return;
+
+        // Reset states
+        popupState = 'gift';
+        if (popupContent) {
+            popupContent.style.display = 'none';
+            popupContent.style.opacity = '0';
+            popupContent.style.transform = 'scale(0.5) translateY(30px)';
+        }
+        if (giftContainer) {
+            giftContainer.style.display = 'block';
+            giftContainer.style.opacity = '1';
+            giftContainer.style.transform = 'none';
+        }
+        const lid = document.getElementById("gift-lid");
+        if (lid) lid.style.transform = 'none';
+        const hint = document.getElementById("gift-hint");
+        if (hint) hint.style.display = 'block';
+
+        popup.classList.remove("hidden");
+        document.body.style.overflow = "hidden";
+        sessionStorage.setItem(POPUP_STORAGE_KEY, "true");
+
+        // Fade in backdrop
+        requestAnimationFrame(() => {
+            if (backdrop) backdrop.style.opacity = '1';
+        });
+
+        // Animate gift box entrance
+        if (giftBox) {
+            giftBox.style.animation = 'giftBounceIn 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards';
+            // Add wiggle after bounce
+            setTimeout(() => {
+                if (popupState === 'gift') {
+                    giftBox.style.animation = 'giftWiggle 1.5s ease-in-out infinite';
+                }
+            }, 1200);
+        }
+
+        // Click to open
+        if (giftContainer) {
+            giftContainer.onclick = () => openGiftBox();
+        }
+    }
+
+    // ─── Close Popup ───
     (window as any).closeNewsletterPopup = function () {
         const popup = document.getElementById("newsletter-popup");
-        if (popup) {
+        const backdrop = document.getElementById("popup-backdrop");
+        const popupContent = document.getElementById("popup-content");
+        const giftBox = document.getElementById("gift-box");
+
+        if (!popup) return;
+
+        if (backdrop) backdrop.style.opacity = '0';
+        if (popupContent) {
+            popupContent.style.opacity = '0';
+            popupContent.style.transform = 'scale(0.8) translateY(20px)';
+        }
+        if (giftBox) {
+            giftBox.style.animation = 'none';
+            giftBox.style.opacity = '0';
+        }
+
+        setTimeout(() => {
             popup.classList.add("hidden");
             document.body.style.overflow = "";
-        }
+            popupState = 'hidden';
+
+            // Clear confetti canvas
+            const canvas = document.getElementById("confetti-canvas") as HTMLCanvasElement;
+            if (canvas) {
+                const ctx = canvas.getContext("2d");
+                if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        }, 400);
     };
 
+    // ─── Copy Promo Code ───
     (window as any).copyPromoCode = function () {
-        const code =
-            document.getElementById("popup-promo-code")?.textContent ||
-            "WELCOME10";
+        const code = document.getElementById("popup-promo-code")?.textContent || "WELCOME10";
         navigator.clipboard.writeText(code.trim()).then(() => {
             const btn = document.getElementById("copy-code-btn");
             if (btn) {
@@ -234,40 +476,32 @@
                     <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                     </svg>
-                    <span>¡Copiado!</span>
+                    <span>\u00a1Copiado!</span>
                 `;
                 setTimeout(() => {
                     btn.innerHTML = `
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
                         </svg>
-                        <span>Copiar código</span>
+                        <span>Copiar c\u00f3digo</span>
                     `;
                 }, 2000);
             }
         });
     };
 
-    // Handle form submission
+    // ─── Form Submission ───
     document.addEventListener("DOMContentLoaded", () => {
-        const form = document.getElementById(
-            "popup-newsletter-form",
-        ) as HTMLFormElement;
+        const form = document.getElementById("popup-newsletter-form") as HTMLFormElement;
 
         form?.addEventListener("submit", async (e) => {
             e.preventDefault();
 
-            const emailInput = document.getElementById(
-                "popup-email",
-            ) as HTMLInputElement;
-            const submitBtn = document.getElementById(
-                "popup-submit-btn",
-            ) as HTMLButtonElement;
+            const emailInput = document.getElementById("popup-email") as HTMLInputElement;
+            const submitBtn = document.getElementById("popup-submit-btn") as HTMLButtonElement;
             const email = emailInput?.value;
-
             if (!email) return;
 
-            // Show loading state
             submitBtn.disabled = true;
             submitBtn.innerHTML = `
                 <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -283,25 +517,18 @@
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ email, source: "popup" }),
                 });
-
                 const data = await response.json();
 
                 if (data.success) {
-                    // Update promo code display
                     const promoEl = document.getElementById("popup-promo-code");
-                    if (promoEl && data.promo_code) {
-                        promoEl.textContent = data.promo_code;
-                    }
+                    if (promoEl && data.promo_code) promoEl.textContent = data.promo_code;
 
-                    // Show success state
-                    document
-                        .getElementById("popup-form-section")
-                        ?.classList.add("hidden");
-                    document
-                        .getElementById("popup-success-section")
-                        ?.classList.remove("hidden");
+                    document.getElementById("popup-form-section")?.classList.add("hidden");
+                    document.getElementById("popup-success-section")?.classList.remove("hidden");
 
-                    // Mark as subscribed
+                    // Extra confetti on success!
+                    launchConfetti();
+
                     localStorage.setItem("newsletter_subscribed", "true");
                 } else {
                     alert(data.error || "Error al suscribirse");
@@ -315,7 +542,7 @@
                 }
             } catch (error) {
                 console.error("Error:", error);
-                alert("Error de conexión");
+                alert("Error de conexi\u00f3n");
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = `
                     <span>Obtener mi descuento</span>
@@ -331,7 +558,7 @@
             setTimeout(showNewsletterPopup, POPUP_DELAY_MS);
         }
 
-        // Exit intent (optional - show when mouse leaves viewport)
+        // Exit intent
         document.addEventListener("mouseleave", (e) => {
             if (e.clientY <= 0 && shouldShowPopup()) {
                 showNewsletterPopup();
@@ -339,7 +566,7 @@
         });
     });
 
-    // Close on Escape key
+    // Close on Escape
     document.addEventListener("keydown", (e) => {
         if (e.key === "Escape") {
             (window as any).closeNewsletterPopup();

@@ -52,9 +52,21 @@ export async function sendNewOrderNotification(order: {
     try {
         const itemsHtml = (order.items || []).map(item => `
             <tr>
-                <td style="padding: 8px 0; border-bottom: 1px solid #2a2a3e; color: #e2e8f0;">${item.product_name}</td>
-                <td style="padding: 8px 0; border-bottom: 1px solid #2a2a3e; color: #71717a; text-align: center;">${item.quantity}</td>
-                <td style="padding: 8px 0; border-bottom: 1px solid #2a2a3e; color: #22d3ee; text-align: right;">${formatCurrency(item.price_at_purchase * item.quantity)}</td>
+                <td style="padding: 12px 8px; border-bottom: 1px solid #2a2a3e;">
+                    <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                        <tr>
+                            <td width="60" valign="top">
+                                ${item.product_image ? `<img src="${item.product_image}" alt="${item.product_name}" style="width: 56px; height: 56px; object-fit: cover; border-radius: 8px; background: #2a2a3e; display: block;" />` : `<div style="width: 56px; height: 56px; background: #2a2a3e; border-radius: 8px;"></div>`}
+                            </td>
+                            <td style="padding-left: 12px;" valign="middle">
+                                <div style="color: #e2e8f0; font-weight: 600; font-size: 14px;">${item.product_name}</div>
+                                ${item.size ? `<div style="color: #71717a; font-size: 12px; margin-top: 2px;">Talla: ${item.size}</div>` : ''}
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+                <td style="padding: 12px 8px; border-bottom: 1px solid #2a2a3e; color: #71717a; text-align: center; vertical-align: middle;">${item.quantity}</td>
+                <td style="padding: 12px 8px; border-bottom: 1px solid #2a2a3e; color: #22d3ee; text-align: right; font-weight: 600; vertical-align: middle;">${formatCurrency(item.price_at_purchase * item.quantity)}</td>
             </tr>
         `).join('');
 
@@ -74,23 +86,34 @@ export async function sendNewOrderNotification(order: {
                         </div>
                         <div style="${emailStyles.content}">
                             <div style="${emailStyles.card}">
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                                    <div>
-                                        <p style="${emailStyles.label}">Cliente</p>
-                                        <p style="${emailStyles.value}">${order.customer_name || 'Invitado'}</p>
-                                        <p style="color: #71717a; font-size: 13px; margin-top: 2px;">${order.customer_email || '-'}</p>
-                                    </div>
-                                    <div style="text-align: right;">
-                                        <p style="${emailStyles.label}">Total</p>
-                                        <p style="color: #22d3ee; font-size: 24px; font-weight: 700;">${formatCurrency(order.total_price)}</p>
-                                    </div>
-                                </div>
+                                <table width="100%">
+                                    <tr>
+                                        <td>
+                                            <p style="${emailStyles.label}">Cliente</p>
+                                            <p style="${emailStyles.value}">${order.customer_name || 'Invitado'}</p>
+                                            <p style="color: #71717a; font-size: 13px; margin: 2px 0 0 0;">${order.customer_email || '-'}</p>
+                                        </td>
+                                        <td style="text-align: right;">
+                                            <p style="${emailStyles.label}">Total</p>
+                                            <p style="color: #22d3ee; font-size: 24px; font-weight: 700; margin: 0;">${formatCurrency(order.total_price)}</p>
+                                        </td>
+                                    </tr>
+                                </table>
                             </div>
                             ${order.items && order.items.length > 0 ? `
                             <div style="${emailStyles.card}">
                                 <p style="${emailStyles.label}; margin-bottom: 12px;">Productos</p>
                                 <table style="width: 100%; border-collapse: collapse;">
-                                    ${itemsHtml}
+                                    <thead>
+                                        <tr>
+                                            <th style="padding: 8px; text-align: left; color: #71717a; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #2a2a3e;">Producto</th>
+                                            <th style="padding: 8px; text-align: center; color: #71717a; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #2a2a3e;">Cant.</th>
+                                            <th style="padding: 8px; text-align: right; color: #71717a; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #2a2a3e;">Precio</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${itemsHtml}
+                                    </tbody>
                                 </table>
                             </div>
                             ` : ''}
