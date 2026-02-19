@@ -320,3 +320,159 @@ export function buildInvoiceHTML(data: InvoiceEmailData): string {
 </body>
 </html>`;
 }
+
+// ============================================
+// Shipping Update Email — dark theme matching corporate identity
+// Uses text characters instead of SVGs to avoid spam filters
+// ============================================
+
+interface ShippingUpdateEmailData {
+    customerName: string;
+    orderRef: string;
+    carrierName: string;
+    trackingNumber: string;
+    trackingUrl?: string | null;
+}
+
+export function buildShippingUpdateHTML(data: ShippingUpdateEmailData): string {
+    const year = new Date().getFullYear();
+
+    const trackingButton = data.trackingUrl ? `
+            <a href="${data.trackingUrl}"
+               style="display: block; text-align: center; padding: 16px 32px; background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); color: white; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px; margin-bottom: 24px; box-shadow: 0 4px 14px rgba(6, 182, 212, 0.4);">
+                Rastrear mi pedido
+            </a>
+    ` : '';
+
+    return `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tu pedido est&aacute; en camino - ${data.orderRef}</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #e2e8f0; margin: 0; padding: 40px 20px; background-color: #0a0a0f;">
+<div style="max-width: 600px; margin: 0 auto; background-color: #0f0f1a; border-radius: 16px; overflow: hidden;">
+
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #0891b2 0%, #06b6d4 50%, #22d3ee 100%); padding: 48px 32px; text-align: center;">
+        <div style="width: 80px; height: 80px; margin: 0 auto 20px; background: rgba(255,255,255,0.2); border-radius: 50%;">
+            <table width="100%" height="80"><tr><td align="center" valign="middle" style="color: white; font-size: 36px;">&#128666;</td></tr></table>
+        </div>
+        <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">Tu pedido est&aacute; en camino</h1>
+        <p style="color: rgba(255,255,255,0.9); margin: 12px 0 0 0; font-size: 16px;">Pedido #${data.orderRef}</p>
+    </div>
+
+    <!-- Content -->
+    <div style="padding: 40px 32px;">
+        <p style="font-size: 16px; margin: 0 0 24px 0; color: #e2e8f0;">
+            Hola <strong style="color: #22d3ee;">${data.customerName}</strong>,
+        </p>
+
+        <p style="font-size: 16px; margin: 0 0 32px 0; color: #a1a1aa;">
+            Buenas noticias. Tu pedido ha sido enviado y est&aacute; en camino hacia ti.
+        </p>
+
+        <!-- Tracking Card -->
+        <div style="background: #0a0a0f; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; margin-bottom: 24px;">
+            <h2 style="font-size: 14px; color: #a1a1aa; margin: 0 0 20px 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Informaci&oacute;n de seguimiento</h2>
+
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 16px; border-bottom: 1px solid #2a2a3e; padding-bottom: 16px;">
+                <tr>
+                    <td width="48" valign="top">
+                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #06b6d4, #0891b2); border-radius: 10px;">
+                            <table width="40" height="40"><tr><td align="center" valign="middle" style="color: white; font-size: 18px;">&#128666;</td></tr></table>
+                        </div>
+                    </td>
+                    <td style="padding-left: 16px;">
+                        <div style="font-size: 12px; color: #71717a; margin-bottom: 4px;">Transportista</div>
+                        <div style="font-size: 16px; color: #f1f5f9; font-weight: 600;">${data.carrierName}</div>
+                    </td>
+                </tr>
+            </table>
+
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                    <td width="48" valign="top">
+                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #8b5cf6, #7c3aed); border-radius: 10px;">
+                            <table width="40" height="40"><tr><td align="center" valign="middle" style="color: white; font-size: 18px;">&#128231;</td></tr></table>
+                        </div>
+                    </td>
+                    <td style="padding-left: 16px;">
+                        <div style="font-size: 12px; color: #71717a; margin-bottom: 4px;">C&oacute;digo de seguimiento</div>
+                        <div style="font-size: 16px; color: #22d3ee; font-weight: 600; font-family: 'SF Mono', Monaco, monospace;">${data.trackingNumber}</div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- CTA Button -->
+        ${trackingButton}
+
+        <!-- Order Status Progress -->
+        <div style="background: #0a0a0f; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; margin-bottom: 24px;">
+            <h3 style="font-size: 14px; color: #a1a1aa; margin: 0 0 24px 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Estado del pedido</h3>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                    <td width="25%" align="center" style="padding-bottom: 8px;">
+                        <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #06b6d4, #0891b2); margin: 0 auto;">
+                            <table width="36" height="36"><tr><td align="center" valign="middle" style="color: white; font-size: 18px;">&#10003;</td></tr></table>
+                        </div>
+                    </td>
+                    <td width="25%" align="center" style="padding-bottom: 8px;">
+                        <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #06b6d4, #0891b2); margin: 0 auto;">
+                            <table width="36" height="36"><tr><td align="center" valign="middle" style="color: white; font-size: 18px;">&#10003;</td></tr></table>
+                        </div>
+                    </td>
+                    <td width="25%" align="center" style="padding-bottom: 8px;">
+                        <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #06b6d4, #0891b2); margin: 0 auto;">
+                            <table width="36" height="36"><tr><td align="center" valign="middle" style="color: white; font-size: 18px;">&#10003;</td></tr></table>
+                        </div>
+                    </td>
+                    <td width="25%" align="center" style="padding-bottom: 8px;">
+                        <div style="width: 36px; height: 36px; border-radius: 50%; background: #2a2a3e; margin: 0 auto;">
+                            <table width="36" height="36"><tr><td align="center" valign="middle" style="color: #71717a; font-weight: 600; font-size: 14px;">4</td></tr></table>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td align="center" style="font-size: 11px; color: #22d3ee; font-weight: 500;">Confirmado</td>
+                    <td align="center" style="font-size: 11px; color: #22d3ee; font-weight: 500;">Preparado</td>
+                    <td align="center" style="font-size: 11px; color: #22d3ee; font-weight: 500;">Enviado</td>
+                    <td align="center" style="font-size: 11px; color: #71717a;">Entregado</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Delivery Estimate -->
+        <div style="background: #0a0a0f; border: 1px solid #2a2a3e; border-radius: 16px; padding: 24px; margin-bottom: 24px;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                    <td width="56" valign="top">
+                        <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 12px;">
+                            <table width="48" height="48"><tr><td align="center" valign="middle" style="color: white; font-size: 22px;">&#9201;</td></tr></table>
+                        </div>
+                    </td>
+                    <td style="padding-left: 16px;" valign="middle">
+                        <div style="font-size: 12px; color: #71717a; margin-bottom: 4px;">Entrega estimada</div>
+                        <div style="font-size: 18px; color: #10b981; font-weight: 700;">2-5 d&iacute;as laborables</div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <p style="font-size: 14px; color: #71717a; margin: 24px 0 0 0; text-align: center;">
+            &iquest;Tienes alguna pregunta? Responde a este correo y te ayudaremos.
+        </p>
+    </div>
+
+    <!-- Footer -->
+    <div style="background-color: #0a0a0f; padding: 32px; text-align: center; border-top: 1px solid #2a2a3e;">
+        <p style="color: #71717a; margin: 0; font-size: 13px;">
+            &copy; ${year} FashionMarket. Todos los derechos reservados.
+        </p>
+    </div>
+</div>
+</body>
+</html>`;
+}
