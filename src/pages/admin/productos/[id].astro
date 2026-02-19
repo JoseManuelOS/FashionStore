@@ -5,7 +5,6 @@ import {
     getCategories,
     getProductVariants,
     updateProductVariants,
-    initProductStock,
     type ProductVariant,
 } from "../../../lib/supabase";
 import ProductImagesUploader from "../../../components/islands/ProductImagesUploader";
@@ -17,7 +16,6 @@ const { id } = Astro.params;
 let error: string | null = null;
 let product: any = null;
 let productImages: any[] = [];
-let stockBySize: Record<string, number> = {};
 
 const { data } = await supabaseAdmin
     .from("products")
@@ -29,16 +27,6 @@ product = data;
 
 if (!product) {
     return Astro.redirect("/admin/productos");
-}
-
-try {
-    const variants = await getProductVariants(id!);
-    // Initialize with 0/null for new sizes if not present
-    stockBySize = {};
-    // Storing full variant data in a map for easy access
-    // We'll use a new variable for this
-} catch (e) {
-    console.error("Error obteniendo variantes:", e);
 }
 
 // Prepare variants data for the UI
@@ -71,23 +59,11 @@ if (Astro.request.method === "POST") {
         const is_offer = formData.get("is_offer") === "on";
         const active = formData.get("active") === "on";
 
-        const variantsData: Record<
-            string,
-            { stock: number; price: number | null; is_offer: boolean }
-        > = {};
+        const variantsData: Record<string, { stock: number }> = {};
         for (const size of sizes) {
             const stockValue =
                 parseInt(formData.get(`stock_${size}`) as string) || 0;
-            const priceValue = formData.get(`price_${size}`)
-                ? parseFloat(formData.get(`price_${size}`) as string)
-                : null;
-            const isOfferValue = formData.get(`is_offer_${size}`) === "on";
-
-            variantsData[size] = {
-                stock: stockValue,
-                price: priceValue,
-                is_offer: isOfferValue,
-            };
+            variantsData[size] = { stock: stockValue };
         }
 
         const totalStock = Object.values(variantsData).reduce(
@@ -602,14 +578,6 @@ const currentImageUrls = productImages.map((img: any) => img.image_url);
                                             <div class="variant-size">
                                                 {size}
                                             </div>
-                                            <label class="variant-offer-toggle">
-                                                <input
-                                                    type="checkbox"
-                                                    name={`is_offer_${size}`}
-                                                    checked={variant.is_offer}
-                                                />
-                                                <span>Oferta</span>
-                                            </label>
                                         </div>
                                         <div class="variant-inputs">
                                             <div class="variant-input-group">
@@ -622,31 +590,7 @@ const currentImageUrls = productImages.map((img: any) => img.image_url);
                                                     class="stock-input"
                                                 />
                                             </div>
-                                            <div class="variant-input-group">
-                                                <label>Precio (€)</label>
-                                                <input
-                                                    type="number"
-                                                    name={`price_${size}`}
-                                                    min="0"
-                                                    step="0.01"
-                                                    value={variant.price ?? ""}
-                                                    placeholder="Heredar"
-                                                    class="stock-input"
-                                                />
-                                            </div>
                                         </div>
-                                        {variant.price && (
-                                            <div class="variant-price-preview">
-                                                Precio final:{" "}
-                                                {new Intl.NumberFormat(
-                                                    "es-ES",
-                                                    {
-                                                        style: "currency",
-                                                        currency: "EUR",
-                                                    },
-                                                ).format(variant.price)}
-                                            </div>
-                                        )}
                                     </div>
                                 );
                             })

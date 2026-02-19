@@ -12,8 +12,13 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../lib/supabase';
 import { sendPendingShipmentsSummary } from '../../../lib/admin-notifications';
+import { isAdminAuthenticated, unauthorizedResponse } from '../../../lib/admin-auth';
 
 export const GET: APIRoute = async ({ request }) => {
+    if (!isAdminAuthenticated(request)) {
+        return unauthorizedResponse();
+    }
+
     try {
         // Get orders that are paid but not shipped (older than 24 hours)
         const twentyFourHoursAgo = new Date();

@@ -2,7 +2,12 @@ import { defineMiddleware } from 'astro:middleware';
 
 export const onRequest = defineMiddleware(async ({ request, cookies, url, redirect }, next) => {
     // Protect /admin routes (except login)
-    if (url.pathname.startsWith('/admin') && url.pathname !== '/admin/login') {
+    const isAdminPage = url.pathname.startsWith('/admin') && url.pathname !== '/admin/login';
+    const isAdminApi = url.pathname.startsWith('/api/admin') || 
+                       url.pathname.startsWith('/api/products/delete') ||
+                       url.pathname.startsWith('/api/email/send-newsletter');
+
+    if (isAdminPage || isAdminApi) {
         // Check for admin-session cookie
         const cookieHeader = request.headers.get('cookie') || '';
         let isValidSession = false;
@@ -19,11 +24,17 @@ export const onRequest = defineMiddleware(async ({ request, cookies, url, redire
                     }
                 }
             } catch (e) {
-                console.error('Error parsing admin session:', e);
+                // Invalid session cookie
             }
         }
 
         if (!isValidSession) {
+            if (isAdminApi) {
+                return new Response(
+                    JSON.stringify({ error: 'No autorizado' }),
+                    { status: 401, headers: { 'Content-Type': 'application/json' } }
+                );
+            }
             return redirect('/admin/login');
         }
     }

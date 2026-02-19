@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import Stripe from 'stripe';
+import { getStockForSize } from '../../../lib/supabase';
 
 // Verificar que la clave existe
 if (!import.meta.env.STRIPE_SECRET_KEY) {
@@ -11,16 +12,12 @@ const stripe = new Stripe(import.meta.env.STRIPE_SECRET_KEY, {
 });
 
 export const POST: APIRoute = async ({ request }) => {
-    console.log('=== INICIO DE CHECKOUT ===');
-
     try {
         const body = await request.json();
-        console.log('Body recibido:', JSON.stringify(body, null, 2));
 
         const { items, customerEmail, customerPhone, customerName, shippingAddress, discount, shippingMethodId, shippingCost } = body;
 
         if (!items || items.length === 0) {
-            console.error('Carrito vacío');
             return new Response(
                 JSON.stringify({ error: 'El carrito está vacío' }),
                 {
@@ -30,15 +27,30 @@ export const POST: APIRoute = async ({ request }) => {
             );
         }
 
-        console.log('Items del carrito:', items.length);
-        if (discount) {
-            console.log('Descuento aplicado:', discount);
+        // Validate stock availability before creating payment session
+        for (const item of items) {
+            if (item.id && item.size) {
+                const available = await getStockForSize(item.id, item.size);
+                if (available < (item.quantity || 1)) {
+                    return new Response(
+                        JSON.stringify({
+                            error: `Stock insuficiente para ${item.name} (${item.size}). Disponible: ${available}`,
+                            outOfStock: true,
+                            productId: item.id,
+                            size: item.size
+                        }),
+                        {
+                            status: 409,
+                            headers: { 'Content-Type': 'application/json' }
+                        }
+                    );
+                }
+            }
         }
 
         // Convertir items del carrito a line_items de Stripe
         const lineItems = items.map((item: any) => {
             const unitAmount = Math.round(item.price * 100);
-            console.log(`Item: ${item.name}, Price: ${item.price}€ -> ${unitAmount} centavos`);
 
             return {
                 price_data: {
@@ -81,35 +93,34 @@ export const POST: APIRoute = async ({ request }) => {
             }
 
             if (discountAmount > 0) {
-                console.log(`Aplicando descuento: ${discount.code} - ${discountAmount} centavos`);
-                sessionConfig.discounts = [{
-                    coupon: await stripe.coupons.create(
-                        discount.type === 'percentage'
-                            ? {
-                                percent_off: discount.value,
-                                duration: 'once',
-                                name: discount.code,
-                            }
-                            : {
-                                amount_off: discountAmount,
-                                currency: 'eur',
-                                duration: 'once',
-                                name: discount.code,
-                            }
-                    ).then(coupon => coupon.id)
-                }];
+                const coupon = await stripe.coupons.create(
+                    discount.type === 'percentage'
+                        ? {
+                            percent_off: discount.value,
+                            duration: 'once',
+                            name: discount.code,
+                        }
+                        : {
+                            amount_off: discountAmount,
+                            currency: 'eur',
+                            duration: 'once',
+                            name: discount.code,
+                        }
+                );
+                sessionConfig.discounts = [{ coupon: coupon.id }];
+
+                // Schedule coupon cleanup after session creation
+                sessionConfig._couponId = coupon.id;
             }
         }
 
         // Add customer info if provided
         if (customerEmail) {
             sessionConfig.customer_email = customerEmail;
-            console.log('Email del cliente:', customerEmail);
         }
 
         // Add shipping options if complete address provided
         if (customerPhone && customerName && shippingAddress) {
-            console.log('Usando datos de envío proporcionados');
             sessionConfig.shipping_options = [
                 {
                     shipping_rate_data: {
@@ -140,7 +151,6 @@ export const POST: APIRoute = async ({ request }) => {
                 shipping_cost: shippingCost ? String(shippingCost) : '0',
             };
         } else {
-            console.log('Stripe recogerá dirección de envío');
             sessionConfig.shipping_address_collection = {
                 allowed_countries: ['ES', 'FR', 'IT', 'PT', 'DE', 'NL', 'BE'],
             };
@@ -161,7 +171,14 @@ export const POST: APIRoute = async ({ request }) => {
         // Crear sesión de Stripe Checkout
         const session = await stripe.checkout.sessions.create(sessionConfig);
 
-        console.log('Sesión creada exitosamente:', session.id);
+        console.log('Checkout session created:', session.id);
+
+        // Clean up Stripe coupon after session creation (one-time use)
+        if (sessionConfig._couponId) {
+            stripe.coupons.del(sessionConfig._couponId).catch(() => {
+                // Non-critical: coupon will expire naturally
+            });
+        }
 
         return new Response(
             JSON.stringify({
@@ -176,10 +193,7 @@ export const POST: APIRoute = async ({ request }) => {
             }
         );
     } catch (error: any) {
-        console.error('=== ERROR EN CHECKOUT ===');
-        console.error('Tipo de error:', error.constructor.name);
-        console.error('Mensaje:', error.message);
-        console.error('Stack:', error.stack);
+        console.error('Checkout error:', error.message);
 
         return new Response(
             JSON.stringify({

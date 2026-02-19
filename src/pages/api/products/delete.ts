@@ -1,7 +1,12 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../lib/supabase';
+import { isAdminAuthenticated, unauthorizedResponse } from '../../../lib/admin-auth';
 
 export const POST: APIRoute = async ({ request, redirect }) => {
+    if (!isAdminAuthenticated(request)) {
+        return unauthorizedResponse();
+    }
+
     try {
         const formData = await request.formData();
         const id = formData.get('id') as string;

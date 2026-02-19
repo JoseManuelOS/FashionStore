@@ -1,10 +1,15 @@
 import type { APIRoute } from 'astro';
 import { Resend } from 'resend';
 import { getAllEmailRecipients } from '../../../lib/supabase';
+import { isAdminAuthenticated, unauthorizedResponse } from '../../../lib/admin-auth';
 
 const resend = new Resend(import.meta.env.RESEND_API_KEY);
 
 export const POST: APIRoute = async ({ request }) => {
+    if (!isAdminAuthenticated(request)) {
+        return unauthorizedResponse();
+    }
+
     try {
         const body = await request.json();
         const {
@@ -61,7 +66,10 @@ export const POST: APIRoute = async ({ request }) => {
             </div>
         ` : '';
 
-        for (const subscriber of subscribers) {
+        // Send emails in batches of 10 for better performance
+        const BATCH_SIZE = 10;
+        
+        async function sendToSubscriber(subscriber: { email: string; name?: string }) {
             const email = subscriber.email;
             const name = subscriber.name || 'Cliente';
 
@@ -123,14 +131,31 @@ export const POST: APIRoute = async ({ request }) => {
                 });
 
                 if (error) {
-                    console.error(`Error enviando a ${email}:`, error);
-                    failedSends.push(email);
+                    return { email, success: false };
                 } else {
-                    successfulSends.push(email);
+                    return { email, success: true };
                 }
             } catch (err) {
-                console.error(`Error enviando a ${email}:`, err);
-                failedSends.push(email);
+                return { email, success: false };
+            }
+        }
+
+        // Process in batches
+        for (let i = 0; i < subscribers.length; i += BATCH_SIZE) {
+            const batch = subscribers.slice(i, i + BATCH_SIZE);
+            const results = await Promise.allSettled(
+                batch.map(sub => sendToSubscriber(sub))
+            );
+
+            for (const result of results) {
+                if (result.status === 'fulfilled' && result.value.success) {
+                    successfulSends.push(result.value.email);
+                } else if (result.status === 'fulfilled') {
+                    failedSends.push(result.value.email);
+                } else {
+                    // rejected promise
+                    failedSends.push('unknown');
+                }
             }
         }
 

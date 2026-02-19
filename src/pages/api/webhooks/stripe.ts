@@ -63,6 +63,18 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
     console.log('=== CREATING ORDER FROM PAYMENT ===');
 
     try {
+        // Check if order already exists (prevent duplicates from webhook + verify-session race)
+        const { data: existingOrder } = await supabaseAdmin
+            .from('orders')
+            .select('id')
+            .eq('stripe_session_id', session.id)
+            .single();
+
+        if (existingOrder) {
+            console.log('⚠️ Order already exists for session, skipping:', existingOrder.id);
+            return;
+        }
+
         // Obtener los line items de la sesión
         const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
             expand: ['data.price.product']

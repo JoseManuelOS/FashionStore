@@ -12,10 +12,10 @@ export const GET: APIRoute = async ({ url }) => {
             );
         }
 
-        // Obtener stock por talla
+        // Obtener stock por talla desde product_variants (tabla autoritativa)
         const { data: stockData, error } = await supabase
-            .from('product_stock')
-            .select('size, quantity')
+            .from('product_variants')
+            .select('size, stock')
             .eq('product_id', productId);
 
         if (error) {
@@ -29,7 +29,7 @@ export const GET: APIRoute = async ({ url }) => {
         // Convertir a objeto { talla: cantidad }
         const stockBySize: Record<string, number> = {};
         for (const item of stockData || []) {
-            stockBySize[item.size] = item.quantity;
+            stockBySize[item.size] = item.stock;
         }
 
         // Calcular total

@@ -11,13 +11,13 @@ export function slugify(text: string): string {
 }
 
 /**
- * Format price from cents to display format
+ * Format price for display (expects euros, not cents)
  */
-export function formatPrice(priceInCents: number): string {
+export function formatPrice(price: number): string {
     return new Intl.NumberFormat('es-ES', {
         style: 'currency',
         currency: 'EUR'
-    }).format(priceInCents / 100);
+    }).format(price);
 }
 
 /**

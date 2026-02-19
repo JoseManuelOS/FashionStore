@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { supabaseAdmin } from '../../../lib/supabase';
+import { supabaseAdmin, incrementStock } from '../../../lib/supabase';
 import { createClient } from '@supabase/supabase-js';
 import { sendCancellationNotification } from '../../../lib/admin-notifications';
 
@@ -98,44 +98,16 @@ export const POST: APIRoute = async ({ request }) => {
             console.error('Error fetching order items:', itemsError);
         }
 
-        // Restore stock for each item
+        // Restore stock for each item using atomic incrementStock
         let itemsRestored = 0;
         if (orderItems && orderItems.length > 0) {
             for (const item of orderItems) {
                 if (item.product_id && item.size) {
-                    // Update product_variants stock
-                    const { data: variant } = await supabaseAdmin
-                        .from('product_variants')
-                        .select('stock')
-                        .eq('product_id', item.product_id)
-                        .eq('size', item.size)
-                        .single();
-
-                    if (variant) {
-                        await supabaseAdmin
-                            .from('product_variants')
-                            .update({
-                                stock: variant.stock + item.quantity,
-                                updated_at: new Date().toISOString()
-                            })
-                            .eq('product_id', item.product_id)
-                            .eq('size', item.size);
-
+                    const success = await incrementStock(item.product_id, item.size, item.quantity);
+                    if (success) {
                         itemsRestored++;
-                    }
-
-                    // Also update main products table stock (legacy support)
-                    const { data: product } = await supabaseAdmin
-                        .from('products')
-                        .select('stock')
-                        .eq('id', item.product_id)
-                        .single();
-
-                    if (product) {
-                        await supabaseAdmin
-                            .from('products')
-                            .update({ stock: product.stock + item.quantity })
-                            .eq('id', item.product_id);
+                    } else {
+                        console.warn(`[CANCEL] Failed to restore stock for product ${item.product_id} size ${item.size}`);
                     }
                 }
             }

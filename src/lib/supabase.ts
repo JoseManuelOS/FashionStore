@@ -63,11 +63,8 @@ export interface ProductVariant {
     product_id: string;
     size: string;
     stock: number;
-    price: number | null;
-    is_offer: boolean;
     sku?: string;
     created_at: string;
-    updated_at?: string;
 }
 
 // Alias for backward compatibility if needed, though we should transition to ProductVariant
@@ -361,6 +358,22 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
         .eq('id', orderId);
 
     if (error) throw error;
+
+    // Si se cancela, restaurar el stock de cada item
+    if (status === 'cancelled') {
+        const { data: orderItems } = await supabaseAdmin
+            .from('order_items')
+            .select('product_id, size, quantity')
+            .eq('order_id', orderId);
+
+        if (orderItems) {
+            for (const item of orderItems) {
+                if (item.product_id && item.size) {
+                    await incrementStock(item.product_id, item.size, item.quantity);
+                }
+            }
+        }
+    }
 }
 
 export async function updateOrderShipping(orderId: string, shippingData: {
@@ -599,18 +612,29 @@ export async function getStockForSize(productId: string, size: string): Promise<
  * Actualizar stock de una talla específica
  */
 export async function updateStockForSize(productId: string, size: string, quantity: number): Promise<void> {
-    const { error } = await supabaseAdmin
+    // Try to update existing variant
+    const { data, error: updateError } = await supabaseAdmin
         .from('product_variants')
-        .upsert({
-            product_id: productId,
-            size: size,
-            stock: quantity,
-            updated_at: new Date().toISOString()
-        }, {
-            onConflict: 'product_id,size'
-        });
+        .update({ stock: quantity })
+        .eq('product_id', productId)
+        .eq('size', size)
+        .select('id')
+        .single();
 
-    if (error) throw error;
+    // If no row exists, insert a new one
+    if (!data) {
+        const { error: insertError } = await supabaseAdmin
+            .from('product_variants')
+            .insert({
+                product_id: productId,
+                size: size,
+                stock: quantity,
+            });
+
+        if (insertError) throw insertError;
+    } else if (updateError) {
+        throw updateError;
+    }
 }
 
 /**
@@ -631,26 +655,27 @@ export async function getProductVariants(productId: string): Promise<ProductVari
 }
 
 /**
- * Actualizar variantes de un producto (stock, precio, oferta)
+ * Actualizar variantes de un producto (stock por talla)
  */
 export async function updateProductVariants(
     productId: string,
-    variantsData: Record<string, { stock: number; price: number | null; is_offer: boolean }>
+    variantsData: Record<string, { stock: number; price?: number | null; is_offer?: boolean }>
 ): Promise<void> {
-    const upsertData = Object.entries(variantsData).map(([size, data]) => ({
+    // Delete existing variants and re-insert (product_variants has no unique constraint on product_id,size)
+    await supabaseAdmin
+        .from('product_variants')
+        .delete()
+        .eq('product_id', productId);
+
+    const insertData = Object.entries(variantsData).map(([size, data]) => ({
         product_id: productId,
         size,
         stock: data.stock,
-        price: data.price,
-        is_offer: data.is_offer,
-        updated_at: new Date().toISOString()
     }));
 
     const { error } = await supabaseAdmin
         .from('product_variants')
-        .upsert(upsertData, {
-            onConflict: 'product_id,size'
-        });
+        .insert(insertData);
 
     if (error) throw error;
 }
@@ -659,27 +684,21 @@ export async function updateProductVariants(
  * Legacy: Update stock only (adapts to new table structure)
  */
 export async function updateProductStockBulk(productId: string, stockBySize: Record<string, number>): Promise<void> {
-    // Fetch existing variants to preserve price/offer
-    const existing = await getProductVariants(productId);
-    const existingMap = new Map(existing.map(v => [v.size, v]));
+    // Delete existing variants and re-insert
+    await supabaseAdmin
+        .from('product_variants')
+        .delete()
+        .eq('product_id', productId);
 
-    const upsertData = Object.entries(stockBySize).map(([size, quantity]) => {
-        const current = existingMap.get(size);
-        return {
-            product_id: productId,
-            size,
-            stock: quantity,
-            price: current?.price || null,
-            is_offer: current?.is_offer || false,
-            updated_at: new Date().toISOString()
-        };
-    });
+    const insertData = Object.entries(stockBySize).map(([size, quantity]) => ({
+        product_id: productId,
+        size,
+        stock: quantity,
+    }));
 
     const { error } = await supabaseAdmin
         .from('product_variants')
-        .upsert(upsertData, {
-            onConflict: 'product_id,size'
-        });
+        .insert(insertData);
 
     if (error) throw error;
 }
@@ -695,71 +714,114 @@ export async function initProductStock(productId: string, sizes: string[] = ['XS
         product_id: productId,
         size,
         stock: 0,
-        price: null,
-        is_offer: false
     }));
 
     const { error } = await supabaseAdmin
         .from('product_variants')
-        .upsert(stockEntries, {
-            onConflict: 'product_id,size',
-            ignoreDuplicates: true
-        });
+        .insert(stockEntries);
 
     if (error) throw error;
 }
 
 /**
- * Decrementar stock después de una compra
+ * Decrementar stock después de una compra (operación atómica)
  */
 export async function decrementStock(productId: string, size: string, quantity: number = 1): Promise<boolean> {
-    // Primero verificar si hay suficiente stock
-    const currentStock = await getStockForSize(productId, size);
+    // Atomic: decrement only if enough stock, in a single query
+    const { data, error } = await supabaseAdmin
+        .rpc('decrement_variant_stock', {
+            p_product_id: productId,
+            p_size: size,
+            p_quantity: quantity
+        });
 
-    if (currentStock < quantity) {
-        return false; // No hay suficiente stock
+    // Fallback to non-RPC approach if function doesn't exist
+    if (error && error.message?.includes('function') && error.message?.includes('does not exist')) {
+        const currentStock = await getStockForSize(productId, size);
+        if (currentStock < quantity) return false;
+
+        const { error: updateError } = await supabaseAdmin
+            .from('product_variants')
+            .update({
+                stock: currentStock - quantity
+            })
+            .eq('product_id', productId)
+            .eq('size', size)
+            .gte('stock', quantity);
+
+        if (updateError) {
+            console.error('Error decrementando stock:', updateError);
+            return false;
+        }
+        await syncProductTotalStock(productId);
+        return true;
     }
-
-    const { error } = await supabaseAdmin
-        .from('product_variants')
-        .update({
-            stock: currentStock - quantity,
-            updated_at: new Date().toISOString()
-        })
-        .eq('product_id', productId)
-        .eq('size', size);
 
     if (error) {
         console.error('Error decrementando stock:', error);
         return false;
     }
 
-    return true;
+    if (data === true) {
+        // Sync products.stock total
+        await syncProductTotalStock(productId);
+    }
+    return data === true;
 }
 
 /**
- * Incrementar stock después de una devolución
+ * Incrementar stock después de una devolución (operación atómica)
  */
 export async function incrementStock(productId: string, size: string, quantity: number = 1): Promise<boolean> {
-    // Obtener stock actual
-    const currentStock = await getStockForSize(productId, size);
+    // Atomic: increment stock in a single query
+    const { data, error } = await supabaseAdmin
+        .rpc('increment_variant_stock', {
+            p_product_id: productId,
+            p_size: size,
+            p_quantity: quantity
+        });
 
-    const { error } = await supabaseAdmin
-        .from('product_variants')
-        .update({
-            stock: currentStock + quantity,
-            updated_at: new Date().toISOString()
-        })
-        .eq('product_id', productId)
-        .eq('size', size);
+    // Fallback if RPC function doesn't exist
+    if (error && error.message?.includes('function') && error.message?.includes('does not exist')) {
+        const currentStock = await getStockForSize(productId, size);
+
+        const { error: updateError } = await supabaseAdmin
+            .from('product_variants')
+            .update({
+                stock: currentStock + quantity
+            })
+            .eq('product_id', productId)
+            .eq('size', size);
+
+        if (updateError) {
+            console.error('Error incrementando stock:', updateError);
+            return false;
+        }
+        await syncProductTotalStock(productId);
+        return true;
+    }
 
     if (error) {
         console.error('Error incrementando stock:', error);
         return false;
     }
 
-    console.log(`[STOCK] Incrementado stock de producto ${productId} talla ${size}: +${quantity} (nuevo: ${currentStock + quantity})`);
-    return true;
+    if (data === true) {
+        // Sync products.stock total
+        await syncProductTotalStock(productId);
+    }
+    return data === true;
+}
+
+/**
+ * Sync products.stock with the sum of all product_variants stock
+ */
+export async function syncProductTotalStock(productId: string): Promise<void> {
+    const total = await getTotalStock(productId);
+    await supabaseAdmin
+        .from('products')
+        .update({ stock: total })
+        .eq('id', productId);
 }
 
 /**
@@ -870,10 +932,6 @@ export async function createCarouselSlide(slide: Omit<CarouselSlide, 'id' | 'cre
  * Update a carousel slide
  */
 export async function updateCarouselSlide(id: string, updates: Partial<CarouselSlide>): Promise<CarouselSlide> {
-    console.log('[DB UPDATE] Updating carousel slide:', id);
-    console.log('[DB UPDATE] Updates to save:', JSON.stringify(updates, null, 2));
-    console.log('[DB UPDATE] style_config being saved:', JSON.stringify(updates.style_config, null, 2));
-
     const { data, error } = await supabaseAdmin
         .from('carousel_slides')
         .update(updates)
@@ -882,12 +940,10 @@ export async function updateCarouselSlide(id: string, updates: Partial<CarouselS
         .single();
 
     if (error) {
-        console.error('[DB UPDATE] Error saving:', error);
+        console.error('Error updating carousel slide:', error);
         throw error;
     }
 
-    console.log('[DB UPDATE] Successfully saved! Returned data:', JSON.stringify(data, null, 2));
-    console.log('[DB UPDATE] Saved style_config:', JSON.stringify(data.style_config, null, 2));
     return data;
 }
 
