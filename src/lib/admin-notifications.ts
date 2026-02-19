@@ -70,6 +70,7 @@ export async function sendNewOrderNotification(order: {
             </tr>
         `).join('');
 
+        await new Promise(resolve => setTimeout(resolve, 500));
         await resend.emails.send({
             from: 'FashionMarket <noreply@roomieapp.info>',
             to: [ADMIN_EMAIL],
@@ -160,6 +161,7 @@ export async function sendLowStockAlert(products: Array<{
             </tr>
         `).join('');
 
+        await new Promise(resolve => setTimeout(resolve, 500));
         await resend.emails.send({
             from: 'FashionMarket <noreply@roomieapp.info>',
             to: [ADMIN_EMAIL],
@@ -219,6 +221,7 @@ export async function sendCancellationNotification(order: {
     total_price: number;
 }, reason?: string) {
     try {
+        await new Promise(resolve => setTimeout(resolve, 500));
         await resend.emails.send({
             from: 'FashionMarket <noreply@roomieapp.info>',
             to: [ADMIN_EMAIL],
@@ -283,6 +286,7 @@ export async function sendReturnRequestNotification(order: {
     total_price: number;
 }, reason: string) {
     try {
+        await new Promise(resolve => setTimeout(resolve, 500));
         await resend.emails.send({
             from: 'FashionMarket <noreply@roomieapp.info>',
             to: [ADMIN_EMAIL],
@@ -356,6 +360,7 @@ export async function sendPendingShipmentsSummary(orders: Array<{
             </tr>
         `).join('');
 
+        await new Promise(resolve => setTimeout(resolve, 500));
         await resend.emails.send({
             from: 'FashionMarket <noreply@roomieapp.info>',
             to: [ADMIN_EMAIL],

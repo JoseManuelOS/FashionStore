@@ -287,6 +287,7 @@ export const POST: APIRoute = async ({ request }) => {
         }
 
         // Send admin notification for new order
+        await new Promise(resolve => setTimeout(resolve, 1000));
         try {
             await sendNewOrderNotification({
                 id: order.id,
@@ -326,6 +327,7 @@ export const POST: APIRoute = async ({ request }) => {
             }
 
             if (lowStockProducts.length > 0) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
                 await sendLowStockAlert(lowStockProducts);
             }
         } catch (stockError) {
@@ -333,9 +335,9 @@ export const POST: APIRoute = async ({ request }) => {
         }
 
         // Send confirmation email with product details
-        // Wait 1.5s to respect Resend's 2 req/s rate limit (invoice + admin notifications sent above)
+        // Wait 1s to respect Resend's 2 req/s rate limit
         if (customerEmail && import.meta.env.RESEND_API_KEY) {
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            await new Promise(resolve => setTimeout(resolve, 1000));
             try {
                 const orderRef = order.order_number ? `#${order.order_number}` : `#${order.id.slice(0, 8).toUpperCase()}`;
 
