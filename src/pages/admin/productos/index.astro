@@ -4,16 +4,27 @@ import { supabaseAdmin, formatPrice } from "../../../lib/supabase";
 
 export const prerender = false;
 
-const { data: products } = await supabaseAdmin
+const { data: products, error: productsError } = await supabaseAdmin
     .from("products")
     .select(
         `
     *,
     category:categories(name, slug),
-    images:product_images(id, image_url, order)
+    images:product_images(id, image_url, order),
+    variants:product_variants(size, stock, sku)
   `,
     )
     .order("created_at", { ascending: false });
+
+if (productsError) {
+    console.error("Error loading products:", productsError);
+}
+
+// Debug: Log para verificar
+console.log("Products loaded:", products?.length || 0);
+if (productsError) {
+    console.error("Products error details:", productsError);
+}
 
 if (Astro.request.method === "POST") {
     const formData = await Astro.request.formData();
@@ -63,13 +74,29 @@ function getStockStatus(stock: number): string {
 
 // Preparar productos con datos pre-calculados
 const productsWithData =
-    products?.map((product) => ({
-        ...product,
-        mainImage: product.images?.sort(
-            (a: any, b: any) => a.order - b.order,
-        )[0]?.image_url,
-        stockStatus: getStockStatus(product.stock),
-    })) || [];
+    products?.map((product) => {
+        // Agrupar stock por tallas
+        const stockBySize: Record<string, number> = {};
+        let totalFromVariants = 0;
+        if (product.variants && product.variants.length > 0) {
+            product.variants.forEach((v: any) => {
+                stockBySize[v.size] = v.stock;
+                totalFromVariants += v.stock;
+            });
+        }
+        // Usar el total de variantes si hay variantes, si no el stock general
+        const effectiveStock = totalFromVariants > 0 ? totalFromVariants : product.stock;
+        
+        return {
+            ...product,
+            mainImage: product.images?.sort(
+                (a: any, b: any) => a.order - b.order,
+            )[0]?.image_url,
+            stockStatus: getStockStatus(effectiveStock),
+            stockBySize,
+            totalStock: effectiveStock,
+        };
+    }) || [];
 ---
 
 <AdminLayout title="Productos">
@@ -210,8 +237,9 @@ const productsWithData =
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            font-size: 13px;
-            color: #a1a1aa;
+            font-size: 12px;
+            color: #71717a;
+            margin-top: 6px;
         }
 
         .stock-dot {
@@ -231,6 +259,59 @@ const productsWithData =
         .stock-dot.red {
             background: #ef4444;
             box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+        }
+
+        .stock-sizes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .size-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #a1a1aa;
+            transition: all 0.2s;
+        }
+
+        .size-badge:hover {
+            background: rgba(6, 182, 212, 0.1);
+            border-color: rgba(6, 182, 212, 0.3);
+        }
+
+        .size-badge .size-name {
+            color: #71717a;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .size-badge .size-stock {
+            color: #06b6d4;
+            font-weight: 700;
+        }
+
+        .size-badge.out-of-stock {
+            opacity: 0.4;
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .size-badge.out-of-stock .size-stock {
+            color: #ef4444;
+        }
+
+        .size-badge.low-stock {
+            border-color: rgba(245, 158, 11, 0.3);
+        }
+
+        .size-badge.low-stock .size-stock {
+            color: #f59e0b;
         }
 
         .status-badges {
@@ -449,6 +530,7 @@ const productsWithData =
 
     <div class="page-header">
         <div>
+            <h1 style="font-size: 24px; font-weight: 600; color: #f4f4f5; margin-bottom: 4px;">Productos</h1>
             <div class="page-subtitle">
                 {products?.length || 0} productos registrados
             </div>
@@ -465,22 +547,40 @@ const productsWithData =
         </a>
     </div>
 
+    {productsError && (
+        <div style="padding: 16px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; color: #ef4444; margin-bottom: 24px;">
+            <strong>Error al cargar productos:</strong> {productsError.message}
+        </div>
+    )}
+
     <div class="table-container">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Producto</th>
-                    <th>Categoría</th>
-                    <th>Precio</th>
-                    <th>Stock</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {
-                    productsWithData.length > 0 ? (
-                        productsWithData.map((product) => (
+        {productsError ? (
+            <div style="padding: 60px 20px; text-align: center;">
+                <div style="display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; background: rgba(239, 68, 68, 0.1); border-radius: 50%; margin-bottom: 16px;">
+                    <svg style="width: 32px; height: 32px; color: #ef4444;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+                <p style="color: #ef4444; font-size: 16px; font-weight: 600; margin-bottom: 8px;">Error al cargar productos</p>
+                <p style="color: #71717a; font-size: 14px; margin-bottom: 20px;">{productsError.message}</p>
+                <p style="color: #a1a1aa; font-size: 13px;">Verifica tu conexión a Supabase y que SUPABASE_SERVICE_ROLE_KEY esté configurada</p>
+            </div>
+        ) : (
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Categoría</th>
+                        <th>Precio</th>
+                        <th>Stock</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {
+                        productsWithData.length > 0 ? (
+                            productsWithData.map((product) => (
                             <tr>
                                 <td>
                                     <div class="product-cell">
@@ -518,12 +618,37 @@ const productsWithData =
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="stock-badge">
-                                        <span
-                                            class={`stock-dot ${product.stockStatus}`}
-                                        />
-                                        {product.stock}
-                                    </span>
+                                    <div>
+                                        {Object.keys(product.stockBySize).length > 0 ? (
+                                            <>
+                                                <div class="stock-sizes">
+                                                    {Object.entries(product.stockBySize)
+                                                        .sort((a: [string, unknown], b: [string, unknown]) => {
+                                                            const order = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+                                                            const indexA = order.indexOf(a[0]);
+                                                            const indexB = order.indexOf(b[0]);
+                                                            if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                                                            return a[0].localeCompare(b[0]);
+                                                        })
+                                                        .map(([size, stock]: [string, any]) => (
+                                                            <span class={`size-badge ${stock === 0 ? 'out-of-stock' : stock <= 3 ? 'low-stock' : ''}`}>
+                                                                <span class="size-name">{size}</span>
+                                                                <span class="size-stock">{stock}</span>
+                                                            </span>
+                                                        ))}
+                                                </div>
+                                                <div class="stock-badge">
+                                                    <span class={`stock-dot ${product.stockStatus}`} />
+                                                    {product.totalStock} total
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div class="stock-badge">
+                                                <span class={`stock-dot ${product.stockStatus}`} />
+                                                {product.totalStock} total
+                                            </div>
+                                        )}
+                                    </div>
                                 </td>
                                 <td>
                                     <div class="status-badges">
@@ -629,19 +754,49 @@ const productsWithData =
                         <tr>
                             <td colspan={6}>
                                 <div class="empty-state">
-                                    <p>
-                                        No hay productos.{" "}
-                                        <a href="/admin/productos/nuevo">
-                                            Crea el primero →
-                                        </a>
+                                    <div style="display: inline-flex; align-items: center; justify-content: center; width: 80px; height: 80px; background: rgba(6, 182, 212, 0.1); border-radius: 50%; margin-bottom: 20px;">
+                                        <svg style="width: 40px; height: 40px; color: #06b6d4;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                        </svg>
+                                    </div>
+                                    <p style="color: #f4f4f5; font-size: 18px; font-weight: 600; margin-bottom: 8px;">
+                                        No hay productos en la base de datos
                                     </p>
+                                    <p style="color: #a1a1aa; font-size: 14px; margin-bottom: 24px;">
+                                        Puedes crear productos manualmente o ejecutar el seed de datos
+                                    </p>
+                                    <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                                        <a href="/admin/productos/nuevo" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; background: linear-gradient(135deg, #06b6d4, #8b5cf6); color: #fff; font-size: 14px; font-weight: 500; border-radius: 10px; text-decoration: none;">
+                                            <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                            </svg>
+                                            Crear primer producto
+                                        </a>
+                                        <details style="display: inline-block;">
+                                            <summary style="padding: 12px 24px; background: rgba(255, 255, 255, 0.05); color: #06b6d4; font-size: 14px; font-weight: 500; border-radius: 10px; cursor: pointer; list-style: none; border: 1px solid rgba(6, 182, 212, 0.3);">
+                                                📦 Ejecutar seed de datos
+                                            </summary>
+                                            <div style="margin-top: 16px; padding: 16px; background: rgba(0, 0, 0, 0.3); border-radius: 10px; text-align: left; max-width: 600px; margin-left: auto; margin-right: auto;">
+                                                <p style="color: #a1a1aa; font-size: 13px; margin-bottom: 12px;">
+                                                    Ejecuta este script SQL en el SQL Editor de Supabase:
+                                                </p>
+                                                <code style="display: block; padding: 12px; background: #0a0a0f; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: #06b6d4; font-size: 12px; overflow-x: auto; white-space: nowrap;">
+                                                    supabase/seed-products.sql
+                                                </code>
+                                                <p style="color: #71717a; font-size: 12px; margin-top: 12px;">
+                                                    Esto creará 100 productos de ejemplo con imágenes
+                                                </p>
+                                            </div>
+                                        </details>
+                                    </div>
                                 </div>
                             </td>
                         </tr>
                     )
                 }
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        )}
     </div>
 
     <!-- Delete Modal -->

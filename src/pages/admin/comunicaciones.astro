@@ -63,10 +63,10 @@ if (Astro.request.method === "POST") {
                     failedTo = result.stats.failedEmails || [];
 
                     if (failedTo.length === 0) {
-                        message = `✅ Newsletter enviado correctamente a ${result.stats.sent} suscriptores`;
+                        message = `Newsletter enviado correctamente a ${result.stats.sent} suscriptores`;
                         messageType = "success";
                     } else {
-                        message = `⚠️ Newsletter enviado a ${result.stats.sent} de ${result.stats.total} suscriptores. ${result.stats.failed} fallaron.`;
+                        message = `Newsletter enviado a ${result.stats.sent} de ${result.stats.total} suscriptores. ${result.stats.failed} fallaron.`;
                         messageType = "warning";
                     }
                 } else {

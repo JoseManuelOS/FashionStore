@@ -436,7 +436,7 @@ const formattedMonthlySales = new Intl.NumberFormat('es-ES', {
             align-items: center;
             gap: 12px;
             padding: 14px 16px; /* Aumentado para mejor touch target */
-            min-height: 44px; /* ✓ Accesibilidad táctil: mínimo recomendado */
+            min-height: 44px; /* Accesibilidad táctil: mínimo recomendado */
             background: rgba(6, 182, 212, 0.1);
             border: 1px solid rgba(6, 182, 212, 0.3);
             border-radius: 10px;
@@ -517,7 +517,7 @@ const formattedMonthlySales = new Intl.NumberFormat('es-ES', {
             <div class="kpi-label">Pedidos Pendientes</div>
             <div class="kpi-value">{stats.pendingOrders}</div>
             <div class="kpi-subtext">
-                {stats.pendingOrders === 0 ? '✓ ¡Todo al día!' : '⚡ Requieren atención'}
+                {stats.pendingOrders === 0 ? 'Todo al día' : 'Requieren atención'}
             </div>
         </div>
 
@@ -534,7 +534,7 @@ const formattedMonthlySales = new Intl.NumberFormat('es-ES', {
             </div>
             <div class="kpi-subtext">
                 {stats.topProduct 
-                    ? `🔥 ${stats.topProduct.quantity} unidades vendidas` 
+                    ? `${stats.topProduct.quantity} unidades vendidas` 
                     : 'No hay ventas registradas'}
             </div>
         </div>
@@ -550,8 +550,8 @@ const formattedMonthlySales = new Intl.NumberFormat('es-ES', {
             <div class="kpi-value">{stats.lowStockCount}</div>
             <div class="kpi-subtext">
                 {stats.lowStockCount > 0 
-                    ? '⚠️ Necesitan reposición' 
-                    : '✓ Inventario saludable'}
+                    ? 'Necesitan reposición' 
+                    : 'Inventario saludable'}
             </div>
         </div>
     </div>
@@ -569,7 +569,7 @@ const formattedMonthlySales = new Intl.NumberFormat('es-ES', {
 
         <!-- Quick Stats Sidebar -->
         <div class="quick-stats">
-            <h3 class="quick-stats-title">📊 Resumen Rápido</h3>
+            <h3 class="quick-stats-title">Resumen Rápido</h3>
             
             <div class="stat-item">
                 <span class="stat-name">Total productos</span>
@@ -590,7 +590,7 @@ const formattedMonthlySales = new Intl.NumberFormat('es-ES', {
                 <span class={`badge ${stats.lowStockCount > 0 ? 'warning' : 'success'}`}>
                     {stats.lowStockCount > 0 
                         ? `${stats.lowStockCount} productos` 
-                        : '✓ OK'}
+                        : 'OK'}
                 </span>
             </div>
             
@@ -599,7 +599,7 @@ const formattedMonthlySales = new Intl.NumberFormat('es-ES', {
                 <span class={`badge ${stats.pendingOrders > 0 ? 'warning' : 'success'}`}>
                     {stats.pendingOrders > 0 
                         ? `${stats.pendingOrders} pedidos` 
-                        : '✓ Al día'}
+                        : 'Al día'}
                 </span>
             </div>
 
