@@ -94,10 +94,14 @@ export const POST: APIRoute = async ({ request }) => {
 
         // Enviar email de bienvenida con código promocional
         try {
-            const { Resend } = await import('resend');
-            const resend = new Resend(import.meta.env.RESEND_API_KEY);
+            const resendKey = import.meta.env.RESEND_API_KEY;
+            if (!resendKey) {
+                console.error('[NEWSLETTER] RESEND_API_KEY no configurada - email no enviado');
+            } else {
+                const { Resend } = await import('resend');
+                const resend = new Resend(resendKey);
 
-            await resend.emails.send({
+                const { data: emailData, error: emailError } = await resend.emails.send({
                 from: 'FashionMarket <noreply@roomieapp.info>',
                 to: [normalizedEmail],
                 subject: 'Bienvenido a FashionMarket - Tu código de descuento exclusivo',
@@ -166,9 +170,16 @@ export const POST: APIRoute = async ({ request }) => {
                     </body>
                     </html>
                 `
-            });
-        } catch (emailError) {
-            console.error('Error sending welcome email:', emailError);
+                });
+
+                if (emailError) {
+                    console.error('[NEWSLETTER] Resend error:', emailError);
+                } else {
+                    console.log('[NEWSLETTER] Email enviado a:', normalizedEmail, 'ID:', emailData?.id);
+                }
+            }
+        } catch (emailErr) {
+            console.error('[NEWSLETTER] Error sending welcome email:', emailErr);
             // Continue even if email fails
         }
 

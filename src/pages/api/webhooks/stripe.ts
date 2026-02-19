@@ -258,15 +258,19 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
 
         // Enviar email de confirmación
         if (customerEmail) {
-            await sendOrderConfirmationEmail({
-                to: customerEmail,
-                customerName: customerName || 'Cliente',
-                orderId: order.id,
-                orderNumber: order.order_number,
-                orderItems: orderItems,
-                total: totalPrice,
-                shippingAddress: shippingAddress
-            });
+            try {
+                await sendOrderConfirmationEmail({
+                    to: customerEmail,
+                    customerName: customerName || 'Cliente',
+                    orderId: order.id,
+                    orderNumber: order.order_number,
+                    orderItems: orderItems,
+                    total: totalPrice,
+                    shippingAddress: shippingAddress
+                });
+            } catch (confirmError) {
+                console.error('Error sending confirmation email (non-fatal):', confirmError);
+            }
 
             // Enviar factura por email
             try {
@@ -368,7 +372,7 @@ async function sendOrderConfirmationEmail(data: {
             </div>
         ` : '';
 
-        await resend.emails.send({
+        const { data: emailResult, error: emailError } = await resend.emails.send({
             from: 'FashionMarket <noreply@roomieapp.info>',
             to: [data.to],
             subject: `Confirmación de Pedido #${data.orderNumber || data.orderId.slice(0, 8)} - FashionMarket`,
@@ -520,9 +524,13 @@ async function sendOrderConfirmationEmail(data: {
             `
         });
 
-        console.log('Order confirmation email sent to:', data.to);
+        if (emailError) {
+            console.error('[EMAIL] Error sending order confirmation:', emailError);
+        } else {
+            console.log('[EMAIL] Order confirmation sent to:', data.to, 'ID:', emailResult?.id);
+        }
     } catch (error) {
-        console.error('Error sending order confirmation email:', error);
+        console.error('[EMAIL] Exception sending order confirmation:', error);
     }
 }
 
