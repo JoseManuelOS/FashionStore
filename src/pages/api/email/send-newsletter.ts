@@ -48,7 +48,9 @@ export const POST: APIRoute = async ({ request }) => {
         const successfulSends: string[] = [];
         const failedSends: string[] = [];
         const siteUrl = import.meta.env.PUBLIC_SITE_URL || 'https://fashionmarket.com';
-        const finalButtonUrl = buttonUrl || `${siteUrl}/productos`;
+        const finalButtonUrl = buttonUrl
+            ? (buttonUrl.startsWith('/') ? `${siteUrl}${buttonUrl}` : buttonUrl)
+            : `${siteUrl}/productos`;
 
         // Generate promo section if code exists
         const promoSection = promoCode ? `

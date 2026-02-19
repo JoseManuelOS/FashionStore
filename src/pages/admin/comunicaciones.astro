@@ -410,14 +410,34 @@ Puedes incluir información sobre nuevos productos, descuentos especiales o nove
                                 <label
                                     for="buttonUrl"
                                     class="block text-xs text-neon-cyan/80 mb-1"
-                                    >URL del botón</label
+                                    >Destino del botón</label
                                 >
+                                <select
+                                    id="buttonUrlSelect"
+                                    class="w-full px-3 py-2 bg-dark-300 border border-neon-cyan/20 rounded-lg text-zinc-100 focus:outline-none focus:border-neon-cyan text-sm"
+                                    onchange="handleButtonUrlChange(this)"
+                                >
+                                    <option value="/productos">🛍️ Todos los productos</option>
+                                    <option value="/ofertas">🔥 Ofertas y descuentos</option>
+                                    <option value="/categoria/camisas">👔 Camisas</option>
+                                    <option value="/categoria/pantalones">👖 Pantalones</option>
+                                    <option value="/categoria/chaquetas">🧥 Chaquetas</option>
+                                    <option value="/categoria/zapatos">👟 Zapatos</option>
+                                    <option value="/categoria/accesorios">👜 Accesorios</option>
+                                    <option value="/">🏠 Inicio</option>
+                                    <option value="custom">✏️ URL personalizada...</option>
+                                </select>
                                 <input
                                     type="url"
+                                    id="buttonUrlCustom"
+                                    placeholder="https://..."
+                                    class="hidden w-full mt-2 px-3 py-2 bg-dark-300 border border-neon-cyan/20 rounded-lg text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-neon-cyan text-sm"
+                                />
+                                <input
+                                    type="hidden"
                                     id="buttonUrl"
                                     name="buttonUrl"
-                                    placeholder="https://fashionmarket.com/ofertas"
-                                    class="w-full px-3 py-2 bg-dark-300 border border-neon-cyan/20 rounded-lg text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-neon-cyan text-sm"
+                                    value="/productos"
                                 />
                             </div>
                         </div>
@@ -634,3 +654,27 @@ Puedes incluir información sobre nuevos productos, descuentos especiales o nove
         </div>
     </div>
 </AdminLayout>
+
+<script is:inline>
+function handleButtonUrlChange(select) {
+    const customInput = document.getElementById('buttonUrlCustom');
+    const hiddenInput = document.getElementById('buttonUrl');
+
+    if (select.value === 'custom') {
+        customInput.classList.remove('hidden');
+        customInput.required = true;
+        customInput.focus();
+        hiddenInput.value = customInput.value || '';
+    } else {
+        customInput.classList.add('hidden');
+        customInput.required = false;
+        hiddenInput.value = select.value;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('buttonUrlCustom')?.addEventListener('input', (e) => {
+        document.getElementById('buttonUrl').value = e.target.value;
+    });
+});
+</script>
