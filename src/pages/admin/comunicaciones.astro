@@ -406,27 +406,69 @@ Puedes incluir información sobre nuevos productos, descuentos especiales o nove
                                     class="w-full px-3 py-2 bg-dark-300 border border-neon-cyan/20 rounded-lg text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-neon-cyan text-sm"
                                 />
                             </div>
-                            <div>
-                                <label
-                                    for="buttonUrl"
-                                    class="block text-xs text-neon-cyan/80 mb-1"
-                                    >Destino del botón</label
+                            <div class="relative">
+                                <label class="block text-xs text-neon-cyan/80 mb-1">Destino del botón</label>
+
+                                <!-- Custom dropdown trigger -->
+                                <button
+                                    type="button"
+                                    id="urlDropdownBtn"
+                                    onclick="toggleUrlDropdown()"
+                                    class="w-full px-3 py-2 bg-dark-300 border border-neon-cyan/20 rounded-lg text-zinc-100 focus:outline-none focus:border-neon-cyan text-sm flex items-center justify-between gap-2"
                                 >
-                                <select
-                                    id="buttonUrlSelect"
-                                    class="w-full px-3 py-2 bg-dark-300 border border-neon-cyan/20 rounded-lg text-zinc-100 focus:outline-none focus:border-neon-cyan text-sm"
-                                    onchange="handleButtonUrlChange(this)"
+                                    <span id="urlDropdownLabel" class="flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-neon-cyan flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 11H4L5 9z"/></svg>
+                                        Todos los productos
+                                    </span>
+                                    <svg id="urlDropdownChevron" class="w-4 h-4 text-zinc-400 flex-shrink-0 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                </button>
+
+                                <!-- Dropdown list -->
+                                <div
+                                    id="urlDropdownList"
+                                    class="hidden absolute z-50 w-full mt-1 bg-dark-200 border border-neon-cyan/20 rounded-lg shadow-xl overflow-hidden"
                                 >
-                                    <option value="/productos">🛍️ Todos los productos</option>
-                                    <option value="/ofertas">🔥 Ofertas y descuentos</option>
-                                    <option value="/categoria/camisas">👔 Camisas</option>
-                                    <option value="/categoria/pantalones">👖 Pantalones</option>
-                                    <option value="/categoria/chaquetas">🧥 Chaquetas</option>
-                                    <option value="/categoria/zapatos">👟 Zapatos</option>
-                                    <option value="/categoria/accesorios">👜 Accesorios</option>
-                                    <option value="/">🏠 Inicio</option>
-                                    <option value="custom">✏️ URL personalizada...</option>
-                                </select>
+                                    <div class="py-1">
+                                        <button type="button" onclick="selectUrlOption('/productos', this)" data-value="/productos" class="url-option w-full px-3 py-2 text-sm text-left flex items-center gap-3 hover:bg-neon-cyan/10 text-zinc-100 transition-colors bg-neon-cyan/5">
+                                            <svg class="w-4 h-4 text-neon-cyan flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 11H4L5 9z"/></svg>
+                                            Todos los productos
+                                        </button>
+                                        <button type="button" onclick="selectUrlOption('/ofertas', this)" data-value="/ofertas" class="url-option w-full px-3 py-2 text-sm text-left flex items-center gap-3 hover:bg-neon-cyan/10 text-zinc-100 transition-colors">
+                                            <svg class="w-4 h-4 text-orange-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                                            Ofertas y descuentos
+                                        </button>
+                                        <button type="button" onclick="selectUrlOption('/categoria/camisas', this)" data-value="/categoria/camisas" class="url-option w-full px-3 py-2 text-sm text-left flex items-center gap-3 hover:bg-neon-cyan/10 text-zinc-100 transition-colors">
+                                            <svg class="w-4 h-4 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                                            Camisas
+                                        </button>
+                                        <button type="button" onclick="selectUrlOption('/categoria/pantalones', this)" data-value="/categoria/pantalones" class="url-option w-full px-3 py-2 text-sm text-left flex items-center gap-3 hover:bg-neon-cyan/10 text-zinc-100 transition-colors">
+                                            <svg class="w-4 h-4 text-indigo-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2 2z"/></svg>
+                                            Pantalones
+                                        </button>
+                                        <button type="button" onclick="selectUrlOption('/categoria/chaquetas', this)" data-value="/categoria/chaquetas" class="url-option w-full px-3 py-2 text-sm text-left flex items-center gap-3 hover:bg-neon-cyan/10 text-zinc-100 transition-colors">
+                                            <svg class="w-4 h-4 text-purple-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3l4 4-4 4M3 12h18M19 3l-4 4 4 4"/></svg>
+                                            Chaquetas
+                                        </button>
+                                        <button type="button" onclick="selectUrlOption('/categoria/zapatos', this)" data-value="/categoria/zapatos" class="url-option w-full px-3 py-2 text-sm text-left flex items-center gap-3 hover:bg-neon-cyan/10 text-zinc-100 transition-colors">
+                                            <svg class="w-4 h-4 text-yellow-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+                                            Zapatos
+                                        </button>
+                                        <button type="button" onclick="selectUrlOption('/categoria/accesorios', this)" data-value="/categoria/accesorios" class="url-option w-full px-3 py-2 text-sm text-left flex items-center gap-3 hover:bg-neon-cyan/10 text-zinc-100 transition-colors">
+                                            <svg class="w-4 h-4 text-pink-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+                                            Accesorios
+                                        </button>
+                                        <button type="button" onclick="selectUrlOption('/', this)" data-value="/" class="url-option w-full px-3 py-2 text-sm text-left flex items-center gap-3 hover:bg-neon-cyan/10 text-zinc-100 transition-colors">
+                                            <svg class="w-4 h-4 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                                            Inicio
+                                        </button>
+                                        <div class="border-t border-neon-cyan/10 my-1"></div>
+                                        <button type="button" onclick="selectUrlOption('custom', this)" data-value="custom" class="url-option w-full px-3 py-2 text-sm text-left flex items-center gap-3 hover:bg-neon-cyan/10 text-zinc-400 transition-colors">
+                                            <svg class="w-4 h-4 text-zinc-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                                            URL personalizada...
+                                        </button>
+                                    </div>
+                                </div>
+
                                 <input
                                     type="url"
                                     id="buttonUrlCustom"
@@ -656,11 +698,43 @@ Puedes incluir información sobre nuevos productos, descuentos especiales o nove
 </AdminLayout>
 
 <script is:inline>
-function handleButtonUrlChange(select) {
-    const customInput = document.getElementById('buttonUrlCustom');
-    const hiddenInput = document.getElementById('buttonUrl');
+function toggleUrlDropdown() {
+    const list = document.getElementById('urlDropdownList');
+    const chevron = document.getElementById('urlDropdownChevron');
+    const isOpen = !list.classList.contains('hidden');
+    if (isOpen) {
+        list.classList.add('hidden');
+        chevron.style.transform = 'rotate(0deg)';
+    } else {
+        list.classList.remove('hidden');
+        chevron.style.transform = 'rotate(180deg)';
+    }
+}
 
-    if (select.value === 'custom') {
+function selectUrlOption(value, btn) {
+    const list = document.getElementById('urlDropdownList');
+    const chevron = document.getElementById('urlDropdownChevron');
+    const label = document.getElementById('urlDropdownLabel');
+    const hiddenInput = document.getElementById('buttonUrl');
+    const customInput = document.getElementById('buttonUrlCustom');
+
+    // Update active styling
+    document.querySelectorAll('.url-option').forEach(el => {
+        el.classList.remove('bg-neon-cyan/5');
+    });
+    btn.classList.add('bg-neon-cyan/5');
+
+    // Update trigger label (clone the svg + text)
+    const svgEl = btn.querySelector('svg');
+    const text = btn.textContent.trim();
+    label.innerHTML = (svgEl ? svgEl.outerHTML : '') + '<span>' + text + '</span>';
+
+    // Close dropdown
+    list.classList.add('hidden');
+    chevron.style.transform = 'rotate(0deg)';
+
+    // Handle custom URL
+    if (value === 'custom') {
         customInput.classList.remove('hidden');
         customInput.required = true;
         customInput.focus();
@@ -668,11 +742,21 @@ function handleButtonUrlChange(select) {
     } else {
         customInput.classList.add('hidden');
         customInput.required = false;
-        hiddenInput.value = select.value;
+        hiddenInput.value = value;
     }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        const btn = document.getElementById('urlDropdownBtn');
+        const list = document.getElementById('urlDropdownList');
+        if (btn && list && !btn.contains(e.target) && !list.contains(e.target)) {
+            list.classList.add('hidden');
+            document.getElementById('urlDropdownChevron').style.transform = 'rotate(0deg)';
+        }
+    });
+
     document.getElementById('buttonUrlCustom')?.addEventListener('input', (e) => {
         document.getElementById('buttonUrl').value = e.target.value;
     });
