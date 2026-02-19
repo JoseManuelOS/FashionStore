@@ -333,7 +333,9 @@ export const POST: APIRoute = async ({ request }) => {
         }
 
         // Send confirmation email with product details
+        // Wait 1.5s to respect Resend's 2 req/s rate limit (invoice + admin notifications sent above)
         if (customerEmail && import.meta.env.RESEND_API_KEY) {
+            await new Promise(resolve => setTimeout(resolve, 1500));
             try {
                 const orderRef = order.order_number ? `#${order.order_number}` : `#${order.id.slice(0, 8).toUpperCase()}`;
 
