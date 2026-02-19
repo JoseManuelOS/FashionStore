@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import Stripe from 'stripe';
-import { supabaseAdmin, createFacturacion } from '../../../lib/supabase';
+import { supabaseAdmin, createFacturacion, decrementStock } from '../../../lib/supabase';
 import { Resend } from 'resend';
 import { sendNewOrderNotification, sendLowStockAlert } from '../../../lib/admin-notifications';
 
@@ -218,6 +218,21 @@ export const POST: APIRoute = async ({ request }) => {
 
             if (itemsError) {
                 console.error('❌ Error creating order items:', itemsError);
+            }
+        }
+
+        // 📦 Decrementar stock por cada item
+        console.log('[STOCK] Decrementing stock for order items...');
+        for (const item of orderItems) {
+            if (item.product_id && item.size) {
+                const success = await decrementStock(item.product_id, item.size, item.quantity);
+                if (success) {
+                    console.log(`[STOCK] Decremented ${item.quantity} of ${item.product_name} (${item.size})`);
+                } else {
+                    console.warn(`[STOCK] Failed to decrement stock for ${item.product_name} (${item.size})`);
+                }
+            } else {
+                console.warn(`[STOCK] Skipped stock decrement - missing product_id or size for: ${item.product_name}`);
             }
         }
 
