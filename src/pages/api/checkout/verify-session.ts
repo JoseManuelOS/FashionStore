@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { supabaseAdmin, createFacturacion, decrementStock } from '../../../lib/supabase';
 import { Resend } from 'resend';
 import { sendNewOrderNotification, sendLowStockAlert } from '../../../lib/admin-notifications';
+import { buildOrderConfirmationHTML, buildInvoiceHTML } from '../../../lib/email-templates';
 
 const stripe = new Stripe(import.meta.env.STRIPE_SECRET_KEY, {
     apiVersion: '2025-12-15.clover',
@@ -250,72 +251,35 @@ export const POST: APIRoute = async ({ request }) => {
         // Send invoice email to customer automatically
         if (invoiceCreated && customerEmail) {
             try {
-                // Import the send function directly to avoid fetch
-                const { getFacturacionByOrderId, getOrderById } = await import('../../../lib/supabase');
+                const { getFacturacionByOrderId } = await import('../../../lib/supabase');
                 const invoiceData = await getFacturacionByOrderId(order.id);
 
                 if (invoiceData) {
-                    const formatCurrency = (amount: number) =>
-                        new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(amount);
-
-                    const items = invoiceData.items || [];
-                    const itemsHtml = items.map((item: any) => `
-                        <tr>
-                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; color: #374151;">
-                                <div style="font-weight: 600;">${item.product_name}</div>
-                                ${item.size ? `<div style="font-size: 12px; color: #6b7280;">Talla: ${item.size}</div>` : ''}
-                            </td>
-                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center; color: #374151;">${item.quantity}</td>
-                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600; color: #111827;">${formatCurrency(item.total || item.price * item.quantity)}</td>
-                        </tr>
-                    `).join('');
-
                     const invoiceDate = new Date().toLocaleDateString('es-ES', {
                         day: '2-digit', month: 'long', year: 'numeric'
                     });
 
-                    await resend.emails.send({
+                    const { data: invoiceEmailResult, error: invoiceEmailErr } = await resend.emails.send({
                         from: 'FashionMarket <noreply@roomieapp.info>',
                         to: customerEmail,
                         subject: `Factura ${invoiceData.invoice_number} - Pedido #${order.order_number}`,
-                        html: `
-                            <!DOCTYPE html>
-                            <html>
-                            <head><meta charset="UTF-8"></head>
-                            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: #f3f4f6;">
-                                <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 16px; overflow: hidden;">
-                                    <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 32px; text-align: center;">
-                                        <h1 style="font-size: 22px; font-weight: 700; color: #06b6d4; margin: 0 0 8px 0;">FASHIONMARKET</h1>
-                                        <p style="color: #94a3b8; font-size: 14px; margin: 0;">Factura ${invoiceData.invoice_number}</p>
-                                    </div>
-                                    <div style="padding: 24px;">
-                                        <p style="color: #374151; margin: 0 0 20px;">Hola <strong>${customerName || 'Cliente'}</strong>,</p>
-                                        <p style="color: #6b7280; margin: 0 0 24px;">Adjuntamos la factura de tu pedido #${order.order_number}.</p>
-                                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-                                            <thead><tr style="background: #f1f5f9;">
-                                                <th style="padding: 10px; text-align: left; font-size: 11px; color: #64748b; text-transform: uppercase;">Producto</th>
-                                                <th style="padding: 10px; text-align: center; font-size: 11px; color: #64748b; text-transform: uppercase;">Cant.</th>
-                                                <th style="padding: 10px; text-align: right; font-size: 11px; color: #64748b; text-transform: uppercase;">Total</th>
-                                            </tr></thead>
-                                            <tbody>${itemsHtml}</tbody>
-                                        </table>
-                                        <div style="background: #f9fafb; padding: 16px; border-radius: 8px;">
-                                            <table style="width: 100%;">
-                                                <tr><td style="color: #6b7280;">Base imponible</td><td style="text-align: right;">${formatCurrency(invoiceData.subtotal || 0)}</td></tr>
-                                                <tr><td style="color: #6b7280;">IVA (21%)</td><td style="text-align: right;">${formatCurrency(invoiceData.iva_amount || 0)}</td></tr>
-                                                <tr style="font-weight: 700; font-size: 18px;"><td style="padding-top: 12px;">TOTAL</td><td style="text-align: right; color: #06b6d4; padding-top: 12px;">${formatCurrency(invoiceData.total || 0)}</td></tr>
-                                            </table>
-                                        </div>
-                                    </div>
-                                    <div style="padding: 16px; text-align: center; border-top: 1px solid #e5e7eb; color: #9ca3af; font-size: 12px;">
-                                        Gracias por tu compra en FashionMarket
-                                    </div>
-                                </div>
-                            </body>
-                            </html>
-                        `
+                        html: buildInvoiceHTML({
+                            customerName: customerName || 'Cliente',
+                            customerEmail: customerEmail,
+                            invoiceNumber: invoiceData.invoice_number,
+                            invoiceDate,
+                            items: invoiceData.items || [],
+                            subtotal: invoiceData.subtotal || 0,
+                            ivaAmount: invoiceData.iva_amount || 0,
+                            total: invoiceData.total || 0
+                        })
                     });
-                    console.log('📧 Invoice email sent to:', customerEmail);
+
+                    if (invoiceEmailErr) {
+                        console.error('[EMAIL] Error sending invoice:', invoiceEmailErr);
+                    } else {
+                        console.log('[EMAIL] Invoice sent to:', customerEmail, 'ID:', invoiceEmailResult?.id);
+                    }
                 }
             } catch (invoiceEmailError) {
                 console.error('⚠️ Error sending invoice email (non-fatal):', invoiceEmailError);
@@ -371,172 +335,28 @@ export const POST: APIRoute = async ({ request }) => {
         // Send confirmation email with product details
         if (customerEmail && import.meta.env.RESEND_API_KEY) {
             try {
-                const productsHtml = orderItems.map(item => `
-                    <tr>
-                        <td style="padding: 12px; border-bottom: 1px solid #2a2a3e;">
-                            <table cellpadding="0" cellspacing="0" border="0" width="100%">
-                                <tr>
-                                    <td width="64" valign="top">
-                                        ${item.product_image ? `<img src="${item.product_image}" alt="${item.product_name}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; background: #2a2a3e; display: block;" />` : '<div style="width: 60px; height: 60px; background: #2a2a3e; border-radius: 8px;"></div>'}
-                                    </td>
-                                    <td style="padding-left: 12px;" valign="middle">
-                                        <p style="margin: 0; font-weight: 600; color: #f1f5f9;">${item.product_name}</p>
-                                        ${item.size ? `<p style="margin: 4px 0 0; font-size: 12px; color: #71717a;">Talla: ${item.size}</p>` : ''}
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                        <td style="padding: 12px; border-bottom: 1px solid #2a2a3e; text-align: center; color: #a1a1aa; vertical-align: middle;">${item.quantity}</td>
-                        <td style="padding: 12px; border-bottom: 1px solid #2a2a3e; text-align: right; color: #22d3ee; font-weight: 600; vertical-align: middle;">${new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(item.price_at_purchase * item.quantity)}</td>
-                    </tr>
-                `).join('');
+                const orderRef = order.order_number ? `#${order.order_number}` : `#${order.id.slice(0, 8).toUpperCase()}`;
 
-                await resend.emails.send({
+                const { data: emailResult, error: emailError } = await resend.emails.send({
                     from: 'FashionMarket <noreply@roomieapp.info>',
                     to: customerEmail,
-                    subject: `Confirmación de pedido #${order.order_number ? order.order_number : order.id.slice(0, 8).toUpperCase()}`,
-                    html: `
-                        <!DOCTYPE html>
-                        <html>
-                        <head>
-                            <meta charset="UTF-8">
-                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                        </head>
-                        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #e2e8f0; margin: 0; padding: 0; background-color: #0a0a0f;">
-                            <div style="max-width: 600px; margin: 0 auto; background-color: #0f0f1a;">
-                                <!-- Header -->
-                                <div style="background: linear-gradient(135deg, #0891b2 0%, #06b6d4 50%, #22d3ee 100%); padding: 48px 32px; text-align: center;">
-                                    <div style="width: 80px; height: 80px; margin: 0 auto 20px; background: rgba(255,255,255,0.2); border-radius: 50%;">
-                                        <table width="100%" height="80"><tr><td align="center" valign="middle" style="color: white; font-size: 40px; font-weight: 300;">✓</td></tr></table>
-                                    </div>
-                                    <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">Pedido Confirmado</h1>
-                                    <p style="color: rgba(255,255,255,0.9); margin: 12px 0 0 0; font-size: 16px;">Gracias por tu compra</p>
-                                    <div style="margin-top: 24px; background: rgba(255, 255, 255, 0.15); display: inline-block; padding: 12px 24px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.2);">
-                                        <p style="color: rgba(255,255,255,0.8); font-size: 12px; font-weight: 500; margin: 0; text-transform: uppercase; letter-spacing: 1px;">Referencia del pedido</p>
-                                        <p style="color: #ffffff; font-size: 20px; font-weight: 700; margin: 4px 0 0;">#${order.order_number ? order.order_number : order.id.slice(0, 8).toUpperCase()}</p>
-                                    </div>
-                                </div>
-                                
-                                <!-- Content -->
-                                <div style="padding: 40px 32px;">
-                                    <!-- Order Info Card -->
-                                    <div style="background: #0a0a0f; border: 1px solid #2a2a3e; border-radius: 16px; padding: 24px; margin-bottom: 24px;">
-                                        <table width="100%" style="margin-bottom: 16px; border-bottom: 1px solid #2a2a3e; padding-bottom: 16px;">
-                                            <tr>
-                                                <td>
-                                                    <p style="color: #71717a; font-size: 12px; margin: 0; text-transform: uppercase;">Número de pedido</p>
-                                                    <p style="color: #22d3ee; font-size: 18px; font-weight: 700; margin: 4px 0 0;">#${order.order_number ? order.order_number : order.id.slice(0, 8).toUpperCase()}</p>
-                                                </td>
-                                                <td style="text-align: right;">
-                                                    <p style="color: #71717a; font-size: 12px; margin: 0; text-transform: uppercase;">Total</p>
-                                                    <p style="color: #f1f5f9; font-size: 24px; font-weight: 700; margin: 4px 0 0;">${new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(totalPrice)}</p>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                        
-                                        <!-- Products Table -->
-                                        <table style="width: 100%; border-collapse: collapse;">
-                                            <thead>
-                                                <tr>
-                                                    <th style="padding: 12px; text-align: left; color: #71717a; font-size: 12px; text-transform: uppercase; border-bottom: 1px solid #2a2a3e;">Producto</th>
-                                                    <th style="padding: 12px; text-align: center; color: #71717a; font-size: 12px; text-transform: uppercase; border-bottom: 1px solid #2a2a3e;">Cant.</th>
-                                                    <th style="padding: 12px; text-align: right; color: #71717a; font-size: 12px; text-transform: uppercase; border-bottom: 1px solid #2a2a3e;">Precio</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                ${productsHtml}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    
-                                    ${shippingAddress ? `
-                                    <!-- Shipping Address -->
-                                    <div style="background: #0a0a0f; border: 1px solid #2a2a3e; border-radius: 16px; padding: 24px; margin-bottom: 24px;">
-                                        <table cellpadding="0" cellspacing="0" border="0" width="100%">
-                                            <tr>
-                                                <td width="48" valign="top">
-                                                    <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #f97316, #ea580c); border-radius: 10px; text-align: center; line-height: 40px;">
-                                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" style="vertical-align: middle;">
-                                                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                                                            <circle cx="12" cy="10" r="3"></circle>
-                                                        </svg>
-                                                    </div>
-                                                </td>
-                                                <td style="padding-left: 16px;">
-                                                    <div style="font-size: 12px; color: #71717a; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Dirección de envío</div>
-                                                    <div style="color: #e2e8f0; line-height: 1.6; white-space: pre-line;">${shippingAddress}</div>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                    </div>
-                                    ` : ''}
-                                    
-                                    <!-- Order Status Progress -->
-                                    <div style="background: #0a0a0f; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; margin-bottom: 24px;">
-                                        <h3 style="font-size: 14px; color: #a1a1aa; margin: 0 0 24px 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Estado del pedido</h3>
-                                        
-                                        <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                                            <tr>
-                                                <td width="25%" align="center" style="padding-bottom: 8px;">
-                                                    <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #06b6d4, #0891b2); margin: 0 auto;">
-                                                        <table width="36" height="36"><tr><td align="center" valign="middle" style="color: white; font-size: 18px;">✓</td></tr></table>
-                                                    </div>
-                                                </td>
-                                                <td width="25%" align="center" style="padding-bottom: 8px;">
-                                                    <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #06b6d4, #0891b2); margin: 0 auto;">
-                                                        <table width="36" height="36"><tr><td align="center" valign="middle" style="color: white; font-size: 18px;">✓</td></tr></table>
-                                                    </div>
-                                                </td>
-                                                <td width="25%" align="center" style="padding-bottom: 8px;">
-                                                    <div style="width: 36px; height: 36px; border-radius: 50%; border: 3px solid #06b6d4; background: #0f0f1a; margin: 0 auto; box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.2);">
-                                                        <table width="36" height="36"><tr><td align="center" valign="middle" style="color: #22d3ee; font-weight: 700; font-size: 14px;">3</td></tr></table>
-                                                    </div>
-                                                </td>
-                                                <td width="25%" align="center" style="padding-bottom: 8px;">
-                                                    <div style="width: 36px; height: 36px; border-radius: 50%; background: #2a2a3e; margin: 0 auto;">
-                                                        <table width="36" height="36"><tr><td align="center" valign="middle" style="color: #71717a; font-weight: 600; font-size: 14px;">4</td></tr></table>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td align="center" style="font-size: 11px; color: #22d3ee; font-weight: 500;">Confirmado</td>
-                                                <td align="center" style="font-size: 11px; color: #22d3ee; font-weight: 500;">Pagado</td>
-                                                <td align="center" style="font-size: 11px; color: #22d3ee; font-weight: 500;">Preparando</td>
-                                                <td align="center" style="font-size: 11px; color: #71717a;">Enviado</td>
-                                            </tr>
-                                        </table>
-                                        
-                                        <p style="margin: 20px 0 0 0; font-size: 13px; color: #71717a; text-align: center;">
-                                            Te notificaremos cuando tu pedido sea enviado.
-                                        </p>
-                                    </div>
-                                    
-                                    <!-- CTA Button -->
-                                    <div style="text-align: center; margin: 32px 0;">
-                                        <a href="${import.meta.env.PUBLIC_SITE_URL || 'http://localhost:4321'}/cuenta/pedidos" style="display: inline-block; background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 12px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 14px rgba(6, 182, 212, 0.4);">
-                                            Ver mis pedidos
-                                        </a>
-                                    </div>
-                                    
-                                    <p style="font-size: 14px; color: #71717a; margin: 24px 0 0 0; text-align: center;">
-                                        ¿Tienes alguna pregunta? Responde a este correo y te ayudaremos.
-                                    </p>
-                                </div>
-                                
-                                <!-- Footer -->
-                                <div style="background-color: #0a0a0f; padding: 32px; text-align: center; border-top: 1px solid #2a2a3e;">
-                                    <p style="color: #71717a; margin: 0; font-size: 13px;">
-                                        © ${new Date().getFullYear()} FashionMarket. Todos los derechos reservados.
-                                    </p>
-                                </div>
-                            </div>
-                        </body>
-                        </html>
-                    `
+                    subject: `Pedido confirmado ${orderRef} - FashionMarket`,
+                    html: buildOrderConfirmationHTML({
+                        customerName: customerName || 'Cliente',
+                        orderRef,
+                        orderItems,
+                        totalPrice,
+                        shippingAddress
+                    })
                 });
-                console.log('✅ Email sent to:', customerEmail);
+
+                if (emailError) {
+                    console.error('[EMAIL] Error sending order confirmation:', emailError);
+                } else {
+                    console.log('[EMAIL] Order confirmation sent to:', customerEmail, 'ID:', emailResult?.id);
+                }
             } catch (emailError) {
-                console.error('❌ Error sending email:', emailError);
+                console.error('[EMAIL] Exception sending confirmation email:', emailError);
             }
         }
 
