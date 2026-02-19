@@ -1,0 +1,4 @@
+# Security Policy for FashionStore
+Contact: mailto:security@victoriafp.online
+Expires: 2027-02-19T00:00:00.000Z
+Preferred-Languages: es, en
