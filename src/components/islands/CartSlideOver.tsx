@@ -7,6 +7,8 @@ export default function CartSlideOver() {
     const cart = useStore($cart);
     const count = useStore($cartCount);
     const total = useStore($cartTotal);
+    // Stock disponible por clave "productId-size"
+    const [stockByItem, setStockByItem] = useState<Record<string, number | undefined>>({});
 
     const openCart = useCallback(() => setIsOpen(true), []);
     const closeCart = useCallback(() => setIsOpen(false), []);
@@ -28,6 +30,31 @@ export default function CartSlideOver() {
         }
         return () => { document.body.style.overflow = ''; };
     }, [isOpen]);
+
+    // Cargar stock cuando el carrito se abre o cambia
+    useEffect(() => {
+        if (!isOpen || cart.length === 0) return;
+        const uniqueProductIds = [...new Set(cart.map(item => item.id))];
+        uniqueProductIds.forEach(productId => {
+            fetch(`/api/products/stock?productId=${productId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.stockBySize) {
+                        setStockByItem(prev => {
+                            const updated = { ...prev };
+                            cart.forEach(item => {
+                                if (item.id === productId) {
+                                    const key = `${item.id}-${item.size}`;
+                                    updated[key] = data.stockBySize[item.size] ?? 0;
+                                }
+                            });
+                            return updated;
+                        });
+                    }
+                })
+                .catch(console.error);
+        });
+    }, [isOpen, cart.length]);
 
     const formatPrice = (price: number) => {
         return new Intl.NumberFormat('es-ES', {
@@ -124,8 +151,16 @@ export default function CartSlideOver() {
                                                     </button>
                                                     <span className="w-8 text-center text-sm text-white">{item.quantity}</span>
                                                     <button
-                                                        onClick={() => updateQuantity(item.id, item.size || '', item.quantity + 1)}
-                                                        className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/5 transition-colors"
+                                                        onClick={() => {
+                                                            const maxStock = stockByItem[`${item.id}-${item.size}`];
+                                                            if (maxStock !== undefined && item.quantity >= maxStock) return;
+                                                            updateQuantity(item.id, item.size || '', item.quantity + 1);
+                                                        }}
+                                                        disabled={(() => {
+                                                            const maxStock = stockByItem[`${item.id}-${item.size}`];
+                                                            return maxStock !== undefined && item.quantity >= maxStock;
+                                                        })()}
+                                                        className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                                                     >
                                                         +
                                                     </button>

@@ -50,16 +50,19 @@ export default function AddToCartButton({ product, stockBySize: initialStockBySi
     const isOutOfStock = currentSizeStock <= 0;
     const totalStock = Object.values(stockBySize).reduce((sum, qty) => sum + qty, 0) || product.stock;
 
+    // Cantidad ya en el carrito para esta talla
+    const existingItem = cart.find(i => i.id === product.id && i.size === selectedSize);
+    const currentQty = existingItem?.quantity || 0;
+    // Máximo que se puede añadir: stock disponible menos lo que ya hay en el carrito
+    const maxAddable = Math.max(0, currentSizeStock - currentQty);
+
     // Resetear cantidad si cambia la talla
     useEffect(() => {
         setQuantity(1);
     }, [selectedSize]);
 
     const handleAddToCart = () => {
-        if (isOutOfStock) return;
-
-        const existingItem = cart.find(i => i.id === product.id && i.size === selectedSize);
-        const currentQty = existingItem?.quantity || 0;
+        if (isOutOfStock || maxAddable <= 0) return;
 
         if (currentQty + quantity > currentSizeStock) {
             alert(`Solo hay ${currentSizeStock} unidades de talla ${selectedSize} disponibles`);
@@ -84,9 +87,7 @@ export default function AddToCartButton({ product, stockBySize: initialStockBySi
         }, 300);
     };
 
-    const itemInCart = cart.find(
-        (item) => item.id === product.id && item.size === selectedSize
-    );
+    const itemInCart = existingItem;
 
     // Función para determinar el estado de stock de una talla
     const getSizeStockStatus = (size: string) => {
@@ -171,8 +172,8 @@ export default function AddToCartButton({ product, stockBySize: initialStockBySi
                         {quantity}
                     </span>
                     <button
-                        onClick={() => setQuantity(Math.min(currentSizeStock, quantity + 1))}
-                        disabled={quantity >= currentSizeStock}
+                        onClick={() => setQuantity(Math.min(maxAddable, quantity + 1))}
+                        disabled={quantity >= maxAddable}
                         className="w-12 h-12 flex items-center justify-center border border-white/10 rounded-xl text-zinc-400 hover:border-white/30 hover:text-white transition-colors disabled:opacity-30"
                     >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -208,11 +209,11 @@ export default function AddToCartButton({ product, stockBySize: initialStockBySi
             {/* Add to Cart Button */}
             <button
                 onClick={handleAddToCart}
-                disabled={isOutOfStock || isAdding || isLoadingStock}
+                disabled={isOutOfStock || isAdding || isLoadingStock || maxAddable <= 0}
                 className={`
           w-full py-4 px-6 rounded-xl font-semibold text-lg
           transition-all duration-300 transform
-          ${isOutOfStock
+          ${(isOutOfStock || maxAddable <= 0)
                         ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
                         : showSuccess
                             ? 'bg-green-500 text-white'
@@ -236,8 +237,8 @@ export default function AddToCartButton({ product, stockBySize: initialStockBySi
                         </svg>
                         ¡Añadido al carrito!
                     </span>
-                ) : isOutOfStock ? (
-                    'Agotado'
+                ) : (isOutOfStock || maxAddable <= 0) ? (
+                    maxAddable <= 0 && !isOutOfStock ? 'Máximo en carrito' : 'Agotado'
                 ) : (
                     'Añadir al Carrito'
                 )}
