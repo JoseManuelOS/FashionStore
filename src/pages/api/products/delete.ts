@@ -17,12 +17,12 @@ export const POST: APIRoute = async ({ request, redirect }) => {
 
         const { error } = await supabaseAdmin
             .from('products')
-            .delete()
+            .update({ active: false })
             .eq('id', id);
 
         if (error) {
-            console.error('Delete error:', error);
-            return new Response('Error deleting product', { status: 500 });
+            console.error('Soft-delete error:', error);
+            return new Response('Error hiding product', { status: 500 });
         }
 
         return redirect('/admin/productos?deleted=true');

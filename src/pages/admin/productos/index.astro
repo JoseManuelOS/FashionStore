@@ -33,10 +33,9 @@ if (Astro.request.method === "POST") {
 
     if (action === "delete" && id) {
         await supabaseAdmin
-            .from("product_images")
-            .delete()
-            .eq("product_id", id);
-        await supabaseAdmin.from("products").delete().eq("id", id);
+            .from("products")
+            .update({ active: false })
+            .eq("id", id);
         return Astro.redirect("/admin/productos?deleted=true");
     }
 
@@ -58,7 +57,7 @@ const showNotification =
     urlParams.get("created") ||
     urlParams.get("updated");
 const notificationMessage = urlParams.get("deleted")
-    ? "Producto eliminado"
+    ? "Producto ocultado de la tienda"
     : urlParams.get("created")
       ? "Producto creado"
       : urlParams.get("updated")
@@ -811,10 +810,11 @@ const productsWithData =
     <!-- Delete Modal -->
     <div id="delete-modal" class="modal-overlay">
         <div class="modal">
-            <div class="modal-title">Eliminar Producto</div>
+            <div class="modal-title">Ocultar Producto</div>
             <p class="modal-text">
-                ¿Estás seguro de eliminar <strong id="product-name"></strong>?
-                Esta acción no se puede deshacer.
+                ¿Estás seguro de ocultar <strong id="product-name"></strong>?
+                El producto dejará de ser visible en la tienda pero se mantendrá en la base de datos.
+                Puedes reactivarlo editándolo y marcándolo como activo.
             </p>
             <form method="POST">
                 <input type="hidden" name="action" value="delete" />
@@ -826,7 +826,7 @@ const productsWithData =
                         class="modal-btn cancel">Cancelar</button
                     >
                     <button type="submit" class="modal-btn danger"
-                        >Eliminar</button
+                        >Ocultar</button
                     >
                 </div>
             </form>

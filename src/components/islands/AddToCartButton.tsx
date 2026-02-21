@@ -107,6 +107,10 @@ export default function AddToCartButton({ product, stockBySize: initialStockBySi
 
         setIsAdding(true);
 
+        // Use the currently displayed main image from the DOM (reflects thumbnail selection)
+        const mainImgEl = document.getElementById('main-image') as HTMLImageElement | null;
+        const currentImage = mainImgEl?.src || image;
+
         addToCart({
             id: product.id,
             name: product.name,
@@ -114,7 +118,7 @@ export default function AddToCartButton({ product, stockBySize: initialStockBySi
             price: product.price,
             size: selectedSize,
             color: selectedColor,
-            image: image
+            image: currentImage
         }, quantity);
 
         setTimeout(() => {
