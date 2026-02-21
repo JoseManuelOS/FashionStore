@@ -55,7 +55,8 @@ export const POST: APIRoute = async ({ request }) => {
         // 1.1 s between sends to stay within Resend's rate limit (1 req/s)
         const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-        // Generate promo section if code exists        const promoSection = promoCode ? `
+        // Generate promo section if code exists
+        const promoSection = promoCode ? `
             <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px dashed #f59e0b; border-radius: 12px; padding: 25px; margin: 25px 0; text-align: center;">
                 <p style="margin: 0 0 10px 0; color: #92400e; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Codigo de descuento exclusivo</p>
                 <div style="font-size: 32px; font-weight: bold; color: #1f2937; font-family: monospace; letter-spacing: 3px;">${promoCode}</div>
@@ -74,13 +75,15 @@ export const POST: APIRoute = async ({ request }) => {
         async function sendToSubscriber(subscriber: { email: string; name?: string }) {
             const email = subscriber.email;
             const name = subscriber.name || 'Cliente';
+            const MAX_ATTEMPTS = 3;
 
-            try {
-                const { data, error } = await resend.emails.send({
-                    from: 'FashionMarket <noreply@roomieapp.info>',
-                    to: [email],
-                    subject: subject,
-                    html: `
+            for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+                try {
+                    const { error } = await resend.emails.send({
+                        from: 'FashionMarket <noreply@roomieapp.info>',
+                        to: [email],
+                        subject: subject,
+                        html: `
 <!DOCTYPE html>
 <html>
 <head>
@@ -132,14 +135,22 @@ export const POST: APIRoute = async ({ request }) => {
                     `
                 });
 
-                if (error) {
-                    return { email, success: false };
-                } else {
-                    return { email, success: true };
+                    if (!error) {
+                        return { email, success: true };
+                    }
+                    // Resend returned an error — wait before retrying
+                    console.warn(`[NEWSLETTER] Attempt ${attempt}/${MAX_ATTEMPTS} failed for ${email}:`, error);
+                } catch (err) {
+                    console.warn(`[NEWSLETTER] Attempt ${attempt}/${MAX_ATTEMPTS} threw for ${email}:`, err);
                 }
-            } catch (err) {
-                return { email, success: false };
+
+                // Wait longer on each retry: 2 s, then 4 s
+                if (attempt < MAX_ATTEMPTS) {
+                    await sleep(attempt * 2000);
+                }
             }
+
+            return { email, success: false };
         }
 
         // Send emails sequentially with a delay to respect Resend's rate limit
