@@ -23,6 +23,9 @@ export interface Category {
     id: string;
     name: string;
     slug: string;
+    image_url?: string;
+    description?: string;
+    display_order: number;
     created_at: string;
 }
 
@@ -147,6 +150,7 @@ export async function getCategories(): Promise<Category[]> {
     const { data, error } = await supabase
         .from('categories')
         .select('*')
+        .order('display_order')
         .order('name');
 
     if (error) throw error;

@@ -1,0 +1,482 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { supabaseAdmin } from "../../../lib/supabase";
+
+export const prerender = false;
+
+let categories: any[] = [];
+let notification = "";
+let notificationType: "success" | "error" = "success";
+
+// Handle POST actions (delete)
+if (Astro.request.method === "POST") {
+    try {
+        const formData = await Astro.request.formData();
+        const action = formData.get("action");
+        const id = formData.get("id") as string;
+
+        if (action === "delete" && id) {
+            // Check if category has products
+            const { count } = await supabaseAdmin
+                .from("products")
+                .select("*", { count: "exact", head: true })
+                .eq("category_id", id);
+
+            if (count && count > 0) {
+                notification = `No se puede eliminar: tiene ${count} producto(s) asociado(s). Reasigna los productos primero.`;
+                notificationType = "error";
+            } else {
+                const { error } = await supabaseAdmin
+                    .from("categories")
+                    .delete()
+                    .eq("id", id);
+
+                if (error) throw error;
+                return Astro.redirect("/admin/categorias?deleted=true");
+            }
+        }
+    } catch (e: any) {
+        notification = e.message || "Error al procesar la acción";
+        notificationType = "error";
+    }
+}
+
+// URL param notifications
+const url = Astro.url;
+if (url.searchParams.get("deleted") === "true") {
+    notification = "Categoría eliminada correctamente";
+    notificationType = "success";
+}
+if (url.searchParams.get("created") === "true") {
+    notification = "Categoría creada correctamente";
+    notificationType = "success";
+}
+if (url.searchParams.get("updated") === "true") {
+    notification = "Categoría actualizada correctamente";
+    notificationType = "success";
+}
+
+// Fetch categories with product count
+try {
+    const { data, error } = await supabaseAdmin
+        .from("categories")
+        .select("*")
+        .order("display_order")
+        .order("name");
+
+    if (error) throw error;
+    categories = data || [];
+
+    // Get product count per category
+    for (const cat of categories) {
+        const { count } = await supabaseAdmin
+            .from("products")
+            .select("*", { count: "exact", head: true })
+            .eq("category_id", cat.id);
+        cat.product_count = count || 0;
+    }
+} catch (e) {
+    console.error("Error fetching categories:", e);
+}
+---
+
+<AdminLayout title="Categorías">
+    <style>
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .page-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #f4f4f5;
+        }
+        .page-subtitle {
+            font-size: 14px;
+            color: #71717a;
+            margin-top: 4px;
+        }
+        .btn-new {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            color: #fff;
+            background: linear-gradient(135deg, #06b6d4, #8b5cf6);
+            border: none;
+            transition: all 0.2s ease;
+        }
+        .btn-new:hover {
+            box-shadow: 0 0 25px rgba(6, 182, 212, 0.4);
+            transform: translateY(-1px);
+        }
+        .notification {
+            padding: 12px 20px;
+            border-radius: 10px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .notification.success {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #34d399;
+        }
+        .notification.error {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #f87171;
+        }
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+        .category-card {
+            background: #12121a;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .category-card:hover {
+            border-color: rgba(6, 182, 212, 0.3);
+            box-shadow: 0 0 30px rgba(6, 182, 212, 0.08);
+        }
+        .card-image {
+            width: 100%;
+            height: 180px;
+            background: #1f1f28;
+            overflow: hidden;
+            position: relative;
+        }
+        .card-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .card-image .no-image {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            color: #52525b;
+            font-size: 13px;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .card-order-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #a1a1aa;
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+        .card-body {
+            padding: 20px;
+        }
+        .card-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #f4f4f5;
+            margin-bottom: 4px;
+        }
+        .card-slug {
+            font-size: 13px;
+            color: #52525b;
+            margin-bottom: 12px;
+            font-family: monospace;
+        }
+        .card-description {
+            font-size: 13px;
+            color: #a1a1aa;
+            margin-bottom: 16px;
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .card-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .meta-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 500;
+            background: rgba(6, 182, 212, 0.12);
+            color: #06b6d4;
+            border: 1px solid rgba(6, 182, 212, 0.2);
+        }
+        .card-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .btn-edit, .btn-delete {
+            flex: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid;
+        }
+        .btn-edit {
+            background: rgba(6, 182, 212, 0.1);
+            border-color: rgba(6, 182, 212, 0.2);
+            color: #06b6d4;
+        }
+        .btn-edit:hover {
+            background: rgba(6, 182, 212, 0.2);
+            border-color: rgba(6, 182, 212, 0.4);
+        }
+        .btn-delete {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+        }
+        .btn-delete:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.4);
+        }
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: #71717a;
+        }
+        .empty-state svg {
+            margin: 0 auto 16px;
+        }
+        .empty-state p {
+            font-size: 15px;
+            margin-bottom: 20px;
+        }
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal {
+            background: #1a1a24;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 420px;
+            width: 90%;
+        }
+        .modal h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #f4f4f5;
+            margin-bottom: 8px;
+        }
+        .modal p {
+            font-size: 14px;
+            color: #a1a1aa;
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+        .modal-btn {
+            padding: 8px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid;
+        }
+        .modal-btn.cancel {
+            background: transparent;
+            border-color: rgba(255, 255, 255, 0.1);
+            color: #a1a1aa;
+        }
+        .modal-btn.cancel:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .modal-btn.confirm {
+            background: rgba(239, 68, 68, 0.9);
+            border-color: #ef4444;
+            color: #fff;
+        }
+        .modal-btn.confirm:hover {
+            background: #ef4444;
+        }
+    </style>
+
+    {notification && (
+        <div class={`notification ${notificationType}`}>
+            {notificationType === "success" ? (
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+            ) : (
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            )}
+            {notification}
+        </div>
+    )}
+
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Categorías</h1>
+            <p class="page-subtitle">{categories.length} categoría(s) registrada(s)</p>
+        </div>
+        <a href="/admin/categorias/nuevo" class="btn-new">
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Nueva Categoría
+        </a>
+    </div>
+
+    {categories.length > 0 ? (
+        <div class="categories-grid">
+            {categories.map((cat) => (
+                <div class="category-card">
+                    <div class="card-image">
+                        {cat.image_url ? (
+                            <img src={cat.image_url} alt={cat.name} loading="lazy" />
+                        ) : (
+                            <div class="no-image">
+                                <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                Sin imagen
+                            </div>
+                        )}
+                        <div class="card-order-badge">#{cat.display_order || 0}</div>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-name">{cat.name}</div>
+                        <div class="card-slug">/{cat.slug}</div>
+                        {cat.description && (
+                            <div class="card-description">{cat.description}</div>
+                        )}
+                        <div class="card-meta">
+                            <span class="meta-badge">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                </svg>
+                                {cat.product_count} producto(s)
+                            </span>
+                        </div>
+                        <div class="card-actions">
+                            <a href={`/admin/categorias/${cat.id}`} class="btn-edit">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                                Editar
+                            </a>
+                            <button type="button" class="btn-delete" data-id={cat.id} data-name={cat.name} data-count={cat.product_count} onclick="openDeleteModal(this)">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                Eliminar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    ) : (
+        <div class="empty-state">
+            <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            <p>No hay categorías creadas</p>
+            <a href="/admin/categorias/nuevo" class="btn-new">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Crear primera categoría
+            </a>
+        </div>
+    )}
+
+    <!-- Delete Modal -->
+    <div id="delete-modal" class="modal-overlay">
+        <div class="modal">
+            <h3>¿Eliminar categoría?</h3>
+            <p id="delete-message">Esta acción no se puede deshacer.</p>
+            <div class="modal-actions">
+                <button type="button" class="modal-btn cancel" onclick="closeDeleteModal()">Cancelar</button>
+                <form method="POST" id="delete-form" style="margin: 0;">
+                    <input type="hidden" name="action" value="delete" />
+                    <input type="hidden" name="id" id="delete-id" value="" />
+                    <button type="submit" class="modal-btn confirm">Eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script is:inline>
+        function openDeleteModal(btn) {
+            const id = btn.dataset.id;
+            const name = btn.dataset.name;
+            const count = parseInt(btn.dataset.count);
+            
+            document.getElementById('delete-id').value = id;
+            
+            if (count > 0) {
+                document.getElementById('delete-message').textContent = 
+                    `La categoría "${name}" tiene ${count} producto(s). Debes reasignarlos antes de eliminarla.`;
+            } else {
+                document.getElementById('delete-message').textContent = 
+                    `¿Estás seguro de que quieres eliminar "${name}"? Esta acción no se puede deshacer.`;
+            }
+            
+            document.getElementById('delete-modal').classList.add('active');
+        }
+        
+        function closeDeleteModal() {
+            document.getElementById('delete-modal').classList.remove('active');
+        }
+        
+        document.getElementById('delete-modal')?.addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeDeleteModal();
+        });
+    </script>
+</AdminLayout>

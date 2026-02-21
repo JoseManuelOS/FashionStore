@@ -1,0 +1,239 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { supabaseAdmin } from "../../../lib/supabase";
+import { slugify } from "../../../lib/utils";
+
+export const prerender = false;
+
+let error: string | null = null;
+
+if (Astro.request.method === "POST") {
+    try {
+        const formData = await Astro.request.formData();
+        const name = (formData.get("name") as string)?.trim();
+        const slug = slugify(name);
+        const description = (formData.get("description") as string)?.trim() || null;
+        const image_url = (formData.get("image_url") as string)?.trim() || null;
+        const display_order = parseInt(formData.get("display_order") as string) || 0;
+
+        if (!name) {
+            error = "El nombre es obligatorio";
+        } else {
+            // Check if slug already exists
+            const { data: existing } = await supabaseAdmin
+                .from("categories")
+                .select("id")
+                .eq("slug", slug)
+                .single();
+
+            if (existing) {
+                error = `Ya existe una categoría con el slug "${slug}"`;
+            } else {
+                const { error: insertError } = await supabaseAdmin
+                    .from("categories")
+                    .insert({ name, slug, description, image_url, display_order });
+
+                if (insertError) throw insertError;
+                return Astro.redirect("/admin/categorias?created=true");
+            }
+        }
+    } catch (e: any) {
+        error = e.message || "Error al crear la categoría";
+    }
+}
+
+// Get max display_order for suggestion
+let suggestedOrder = 1;
+try {
+    const { data } = await supabaseAdmin
+        .from("categories")
+        .select("display_order")
+        .order("display_order", { ascending: false })
+        .limit(1);
+    if (data?.[0]?.display_order) {
+        suggestedOrder = data[0].display_order + 1;
+    }
+} catch (_) {}
+---
+
+<AdminLayout title="Nueva Categoría">
+    <style>
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #a1a1aa;
+            text-decoration: none;
+            font-size: 14px;
+            margin-bottom: 24px;
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: #06b6d4; }
+        .page-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #f4f4f5;
+            margin-bottom: 32px;
+        }
+        .form-card {
+            background: #12121a;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 700px;
+        }
+        .form-group {
+            margin-bottom: 24px;
+        }
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: #a1a1aa;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .form-input, .form-textarea {
+            width: 100%;
+            padding: 10px 14px;
+            background: #0a0a12;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #f4f4f5;
+            font-size: 14px;
+            transition: border-color 0.2s;
+            box-sizing: border-box;
+        }
+        .form-input:focus, .form-textarea:focus {
+            outline: none;
+            border-color: rgba(6, 182, 212, 0.5);
+        }
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+            font-family: inherit;
+        }
+        .form-hint {
+            font-size: 12px;
+            color: #52525b;
+            margin-top: 4px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 120px;
+            gap: 16px;
+        }
+        .error-msg {
+            padding: 12px 20px;
+            border-radius: 10px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #f87171;
+        }
+        .btn-submit {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 28px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+            background: linear-gradient(135deg, #06b6d4, #8b5cf6);
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-submit:hover {
+            box-shadow: 0 0 25px rgba(6, 182, 212, 0.4);
+            transform: translateY(-1px);
+        }
+        .slug-preview {
+            font-size: 13px;
+            color: #52525b;
+            font-family: monospace;
+            margin-top: 4px;
+        }
+    </style>
+
+    <a href="/admin/categorias" class="back-link">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        Volver a categorías
+    </a>
+
+    <h1 class="page-title">Nueva Categoría</h1>
+
+    {error && <div class="error-msg">{error}</div>}
+
+    <div class="form-card">
+        <form method="POST">
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="name">Nombre *</label>
+                    <input type="text" id="name" name="name" class="form-input" required placeholder="Ej: Camisas" />
+                    <div id="slug-preview" class="slug-preview"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="display_order">Orden</label>
+                    <input type="number" id="display_order" name="display_order" class="form-input" value={suggestedOrder} min="0" />
+                    <div class="form-hint">Posición</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="description">Descripción</label>
+                <textarea id="description" name="description" class="form-textarea" placeholder="Descripción opcional de la categoría"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Imagen de categoría</label>
+                <div id="image-uploader-root"></div>
+            </div>
+
+            <button type="submit" class="btn-submit">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                Crear Categoría
+            </button>
+        </form>
+    </div>
+
+    <script>
+        // Slug preview
+        const nameInput = document.getElementById('name') as HTMLInputElement;
+        const slugPreview = document.getElementById('slug-preview');
+        nameInput?.addEventListener('input', () => {
+            const slug = nameInput.value
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/(^-|-$)+/g, '');
+            if (slugPreview) {
+                slugPreview.textContent = slug ? `Slug: /${slug}` : '';
+            }
+        });
+    </script>
+
+    <script>
+        import { createRoot } from 'react-dom/client';
+        import { createElement } from 'react';
+        import CategoryImageUploader from '../../../components/islands/CategoryImageUploader';
+        
+        const container = document.getElementById('image-uploader-root');
+        if (container) {
+            const root = createRoot(container);
+            root.render(createElement(CategoryImageUploader, {
+                onImageChange: (_url: string) => {
+                    // Hidden input is handled inside the component
+                }
+            }));
+        }
+    </script>
+</AdminLayout>
