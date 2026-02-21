@@ -116,7 +116,7 @@ if (product.category) {
                             <div class="flex gap-3 overflow-x-auto pb-2">
                                 {images.map((img: any, idx: number) => (
                                     <button
-                                        class={`flex-shrink-0 w-20 h-24 rounded-lg overflow-hidden border-2 transition-all thumbnail-btn ${idx === 0 ? "border-neon-cyan shadow-glow-cyan" : "border-white/10 hover:border-white/30"}`}
+                                        class={`cursor-pointer flex-shrink-0 w-20 h-24 rounded-lg overflow-hidden border-2 transition-all thumbnail-btn ${idx === 0 ? "border-neon-cyan shadow-glow-cyan" : "border-white/10 hover:border-white/30"}`}
                                         data-image={img.image_url}
                                     >
                                         <img
@@ -268,32 +268,44 @@ if (product.category) {
     </section>
 
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const mainImage = document.getElementById(
-                "main-image",
-            ) as HTMLImageElement;
-            const thumbnails = document.querySelectorAll(".thumbnail-btn");
+        function initGallery() {
+            const mainImage = document.getElementById("main-image") as HTMLImageElement | null;
+            const thumbnails = document.querySelectorAll<HTMLElement>(".thumbnail-btn");
+            if (!mainImage || thumbnails.length === 0) return;
 
             thumbnails.forEach((btn) => {
+                // Remove previous listener by cloning (avoids duplicates on astro:page-load)
+                const fresh = btn.cloneNode(true) as HTMLElement;
+                btn.replaceWith(fresh);
+            });
+
+            // Re-query after clone
+            document.querySelectorAll<HTMLElement>(".thumbnail-btn").forEach((btn) => {
                 btn.addEventListener("click", () => {
-                    const newSrc = (btn as HTMLElement).dataset.image;
-                    if (newSrc && mainImage) {
-                        mainImage.src = newSrc;
-                        thumbnails.forEach((t) => {
-                            t.classList.remove(
-                                "border-neon-cyan",
-                                "shadow-glow-cyan",
-                            );
-                            t.classList.add("border-white/10");
-                        });
-                        btn.classList.remove("border-white/10");
-                        btn.classList.add(
-                            "border-neon-cyan",
-                            "shadow-glow-cyan",
-                        );
-                    }
+                    const newSrc = btn.dataset.image;
+                    if (!newSrc || !mainImage) return;
+
+                    mainImage.src = newSrc;
+
+                    document.querySelectorAll<HTMLElement>(".thumbnail-btn").forEach((t) => {
+                        t.classList.remove("border-neon-cyan", "shadow-glow-cyan");
+                        t.classList.add("border-white/10");
+                    });
+                    btn.classList.remove("border-white/10");
+                    btn.classList.add("border-neon-cyan", "shadow-glow-cyan");
                 });
             });
-        });
+        }
+
+        // Run immediately if DOM is ready (Astro module scripts are deferred),
+        // or wait for DOMContentLoaded as a fallback.
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", initGallery);
+        } else {
+            initGallery();
+        }
+
+        // Re-init after Astro client-side navigations (view transitions)
+        document.addEventListener("astro:page-load", initGallery);
     </script>
 </PublicLayout>
