@@ -817,6 +817,47 @@ export const prerender = false;
     sessionStorage.setItem(returnRequestedKey, JSON.stringify([...returnRequestedOrders]));
   }
 
+  // Update the order card in the DOM to reflect a new status
+  function updateOrderCardStatus(orderId: string, newStatus: string) {
+    const uniqueId = `order-${orderId}`;
+    const container = document.getElementById(`${uniqueId}-container`);
+    if (!container) return;
+
+    const statusBadge = container.querySelector('[class*="rounded-full"][class*="text-xs"]');
+    if (statusBadge) {
+      const config: Record<string, {label: string, color: string}> = {
+        return_requested: {
+          label: "Devolución Solicitada",
+          color: "bg-orange-500/20 text-orange-400 border-orange-500/30",
+        },
+        returned: {
+          label: "Devuelto",
+          color: "bg-pink-500/20 text-pink-400 border-pink-500/30",
+        },
+      };
+      const statusInfo = config[newStatus];
+      if (statusInfo) {
+        statusBadge.className = `inline-flex px-2 py-0.5 rounded-full text-xs font-medium border ${statusInfo.color} mt-1`;
+        statusBadge.textContent = statusInfo.label;
+      }
+    }
+
+    // Update the expanded content progress bar if visible
+    const expandedContent = document.getElementById(`${uniqueId}-content`);
+    if (expandedContent) {
+      const progressSection = expandedContent.querySelector('.mt-4.p-3');
+      if (progressSection && newStatus === 'return_requested') {
+        progressSection.className = 'mt-4 p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl';
+        progressSection.innerHTML = `
+          <div class="flex items-center justify-center gap-2">
+            <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
+            <p class="text-orange-400 text-sm font-medium">Devolución solicitada - En proceso de revisión</p>
+          </div>
+        `;
+      }
+    }
+  }
+
   function showReturnSuccessState() {
     const modalContent = document.getElementById("return-modal-content");
     if (!modalContent) return;
@@ -904,6 +945,8 @@ export const prerender = false;
       if (response.ok && data.success) {
         // Mark this order as having a return requested (persists in sessionStorage)
         if (currentReturnOrderId) markReturnRequested(currentReturnOrderId);
+        // Update the order card in the DOM to reflect the new status
+        updateOrderCardStatus(currentReturnOrderId, "return_requested");
         // Update modal to show success with resend option
         showReturnSuccessState();
       } else {

@@ -88,15 +88,18 @@ export const POST: APIRoute = async ({ request }) => {
             );
         }
 
-        // Update order status to return_requested (only on first request, not resends)
-        if (!isResend && order.status === 'delivered') {
-            const { error: statusError } = await supabaseAdmin
+        // Update order status to return_requested (always attempt if status is 'delivered')
+        if (order.status === 'delivered') {
+            console.log('Attempting to update order status to return_requested. Order ID:', order.id, 'Type:', typeof order.id);
+            
+            const { data: updateData, error: statusError } = await supabaseAdmin
                 .from('orders')
                 .update({ 
                     status: 'return_requested',
                     updated_at: new Date().toISOString()
                 })
-                .eq('id', orderId);
+                .eq('id', order.id)
+                .select('id, status');
 
             if (statusError) {
                 console.error('Error updating order status to return_requested:', statusError);
@@ -105,7 +108,27 @@ export const POST: APIRoute = async ({ request }) => {
                     { status: 500, headers: { 'Content-Type': 'application/json' } }
                 );
             }
-            console.log('Order status updated to return_requested:', orderId);
+
+            // Verify the update actually took effect
+            if (!updateData || updateData.length === 0) {
+                console.error('Status update did not affect any rows. Order ID:', order.id);
+                // Force update with explicit type cast
+                const { error: retryError } = await supabaseAdmin
+                    .from('orders')
+                    .update({ status: 'return_requested' })
+                    .eq('order_number', order.order_number);
+
+                if (retryError) {
+                    console.error('Retry update also failed:', retryError);
+                    return new Response(
+                        JSON.stringify({ error: 'Error al actualizar el estado del pedido' }),
+                        { status: 500, headers: { 'Content-Type': 'application/json' } }
+                    );
+                }
+                console.log('Order status updated via order_number fallback:', order.order_number);
+            } else {
+                console.log('Order status successfully updated to return_requested:', updateData);
+            }
         }
 
         // Send return instructions email
@@ -222,7 +245,9 @@ export const POST: APIRoute = async ({ request }) => {
             JSON.stringify({
                 success: true,
                 message: 'Solicitud de devolución procesada. Se ha enviado un email con las instrucciones.',
-                email_sent_to: customerEmail
+                email_sent_to: customerEmail,
+                new_status: 'return_requested',
+                order_id: order.id
             }),
             { status: 200, headers: { 'Content-Type': 'application/json' } }
         );
