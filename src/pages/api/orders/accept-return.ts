@@ -63,8 +63,9 @@ export const POST: APIRoute = async ({ request }) => {
             );
         }
 
-        // 1. Process Stripe refund
+        // 1. Process Stripe refund (non-blocking — if it fails, continue with the rest)
         let refundId = null;
+        let refundWarning = '';
         if (order.stripe_payment_intent) {
             try {
                 const refund = await stripe.refunds.create({
@@ -74,14 +75,18 @@ export const POST: APIRoute = async ({ request }) => {
                 console.log('Stripe refund processed:', refundId);
             } catch (stripeError: any) {
                 console.error('Stripe refund error:', stripeError);
-                return new Response(
-                    JSON.stringify({
-                        error: 'Failed to process Stripe refund',
-                        details: stripeError.message
-                    }),
-                    { status: 500, headers: { 'Content-Type': 'application/json' } }
-                );
+                // Check if already refunded
+                if (stripeError.code === 'charge_already_refunded') {
+                    refundWarning = 'El pago ya había sido reembolsado anteriormente en Stripe.';
+                    console.log('Payment was already refunded, continuing...');
+                } else {
+                    refundWarning = `No se pudo procesar el reembolso automático en Stripe: ${stripeError.message}. Puedes procesarlo manualmente desde el panel de Stripe.`;
+                    console.log('Stripe refund failed but continuing with return process...');
+                }
             }
+        } else {
+            refundWarning = 'No se encontró el Payment Intent de Stripe. El reembolso deberá procesarse manualmente.';
+            console.log('No stripe_payment_intent found, skipping refund...');
         }
 
         // 2. Create credit note (factura rectificativa)
@@ -176,8 +181,11 @@ export const POST: APIRoute = async ({ request }) => {
         return new Response(
             JSON.stringify({
                 success: true,
-                message: 'Devolución aceptada. Reembolso procesado y email enviado.',
+                message: refundWarning 
+                    ? `Devolución aceptada. ${refundWarning}` 
+                    : 'Devolución aceptada. Reembolso procesado y email enviado.',
                 refund_id: refundId,
+                refund_warning: refundWarning || null,
                 credit_note: creditNote.invoice_number,
                 status: 'returned'
             }),

@@ -1206,8 +1206,15 @@ const currentStatus = statusLabels[order?.status || "pending"];
                         `;
                         acceptReturnBtn.className = 'w-full px-4 py-3 bg-emerald-700 text-white font-semibold rounded-xl flex items-center justify-center gap-2 pointer-events-none';
                         
-                        // Reload page after a short delay
-                        setTimeout(() => window.location.reload(), 1500);
+                        // Show warning toast if Stripe refund had issues
+                        if (result.refund_warning) {
+                            showAdminToast(result.refund_warning, 'error');
+                            // Give more time to read the warning before reload
+                            setTimeout(() => window.location.reload(), 4000);
+                        } else {
+                            showAdminToast('Devolución procesada correctamente', 'success');
+                            setTimeout(() => window.location.reload(), 1500);
+                        }
                     } else {
                         throw new Error(result.error || 'Error desconocido');
                     }
