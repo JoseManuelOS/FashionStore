@@ -74,7 +74,7 @@ try {
     const { data: orders } = await supabaseAdmin
         .from("orders")
         .select("status")
-        .eq("status", "pending");
+        .eq("status", "paid");
 
     if (orders) {
         stats.pendingOrders = orders.length;
@@ -429,6 +429,35 @@ try {
         .low-stock-item:hover .edit-icon {
             color: #f59e0b;
         }
+
+        /* Collapsible */
+        .collapse-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: none;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 6px 12px;
+            color: #a1a1aa;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .collapse-toggle:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #f4f4f5;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        .collapse-toggle svg {
+            transition: transform 0.3s ease;
+        }
+        .collapse-toggle.collapsed svg {
+            transform: rotate(-90deg);
+        }
+        .low-stock-grid.collapsed {
+            display: none;
+        }
     </style>
 
     <!-- Stats -->
@@ -445,10 +474,10 @@ try {
             <div class="stat-label">Tallas Stock Bajo / Agotadas</div>
             <div class="stat-value amber">{stats.lowStockProducts}</div>
         </div>
-        <div class="stat-card fuchsia">
-            <div class="stat-label">Pedidos Pendientes</div>
+        <a href="/admin/pedidos" class="stat-card fuchsia" style="text-decoration: none;">
+            <div class="stat-label">Pedidos por Enviar</div>
             <div class="stat-value fuchsia">{stats.pendingOrders}</div>
-        </div>
+        </a>
     </div>
 
     <!-- Low Stock Alert Section -->
@@ -462,9 +491,17 @@ try {
                         </svg>
                         <span>Productos con Stock Bajo o Agotado</span>
                     </div>
-                    <a href="/admin/productos" class="view-all">Ver inventario →</a>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <button id="toggle-low-stock" class="collapse-toggle" title="Contraer/Expandir">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                            <span>Contraer</span>
+                        </button>
+                        <a href="/admin/productos" class="view-all">Ver inventario →</a>
+                    </div>
                 </div>
-                <div class="low-stock-grid">
+                <div id="low-stock-list" class="low-stock-grid">
                     {lowStockItems.map((item) => (
                         <a href={`/admin/productos/${item.id}`} class="low-stock-item">
                             <div class="low-stock-thumb">
@@ -563,4 +600,23 @@ try {
             )}
         </div>
     </div>
+
+    <script>
+        const toggleBtn = document.getElementById('toggle-low-stock');
+        const stockList = document.getElementById('low-stock-list');
+        if (toggleBtn && stockList) {
+            const saved = localStorage.getItem('dashboard-low-stock-collapsed');
+            if (saved === 'true') {
+                stockList.classList.add('collapsed');
+                toggleBtn.classList.add('collapsed');
+                toggleBtn.querySelector('span')!.textContent = 'Expandir';
+            }
+            toggleBtn.addEventListener('click', () => {
+                const isCollapsed = stockList.classList.toggle('collapsed');
+                toggleBtn.classList.toggle('collapsed', isCollapsed);
+                toggleBtn.querySelector('span')!.textContent = isCollapsed ? 'Expandir' : 'Contraer';
+                localStorage.setItem('dashboard-low-stock-collapsed', String(isCollapsed));
+            });
+        }
+    </script>
 </AdminLayout>

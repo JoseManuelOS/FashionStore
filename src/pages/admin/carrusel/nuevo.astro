@@ -486,21 +486,75 @@ if (Astro.request.method === "POST") {
                                 />
                             </div>
 
-                            <div>
+                            <div class="relative">
                                 <label
                                     for="cta_link"
                                     class="block text-sm font-medium text-zinc-300 mb-2"
                                 >
                                     Enlace del botón
                                 </label>
-                                <input
-                                    type="text"
-                                    id="cta_link"
-                                    name="cta_link"
-                                    value="/productos"
-                                    placeholder="/productos"
-                                    class="w-full px-4 py-3 bg-dark-300 border border-white/10 rounded-xl text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/20 transition-all"
-                                />
+                                <!-- Custom dropdown trigger -->
+                                <button
+                                    type="button"
+                                    id="ctaDropdownBtn"
+                                    onclick="toggleCtaDropdown()"
+                                    class="w-full px-4 py-3 bg-dark-300 border border-white/10 rounded-xl text-zinc-100 focus:outline-none focus:border-neon-cyan text-sm flex items-center justify-between gap-2"
+                                >
+                                    <span id="ctaDropdownLabel" class="flex items-center gap-2 truncate text-left">
+                                        <svg class="w-4 h-4 text-neon-cyan flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 11H4L5 9z"/></svg>
+                                        Todos los productos
+                                    </span>
+                                    <svg id="ctaDropdownChevron" class="w-4 h-4 text-zinc-400 flex-shrink-0 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                    </svg>
+                                </button>
+                                <!-- Dropdown list -->
+                                <div id="ctaDropdownList" class="hidden absolute z-50 w-full mt-1 bg-dark-200 border border-white/10 rounded-lg shadow-xl overflow-hidden">
+                                    <div class="py-1">
+                                        <button type="button" onclick="selectCtaOption('/productos', this)" data-value="/productos" class="cta-option w-full px-3 py-2 text-sm text-left flex items-center gap-3 hover:bg-neon-cyan/10 text-zinc-100 transition-colors bg-neon-cyan/5">
+                                            <svg class="w-4 h-4 text-neon-cyan flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 11H4L5 9z"/></svg>
+                                            Todos los productos
+                                        </button>
+                                        <button type="button" onclick="selectCtaOption('/ofertas', this)" data-value="/ofertas" class="cta-option w-full px-3 py-2 text-sm text-left flex items-center gap-3 hover:bg-neon-cyan/10 text-zinc-100 transition-colors">
+                                            <svg class="w-4 h-4 text-orange-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                                            Ofertas y descuentos
+                                        </button>
+                                        <button type="button" onclick="selectCtaOption('/categoria/camisas', this)" data-value="/categoria/camisas" class="cta-option w-full px-3 py-2 text-sm text-left flex items-center gap-3 hover:bg-neon-cyan/10 text-zinc-100 transition-colors">
+                                            <svg class="w-4 h-4 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                                            Camisas
+                                        </button>
+                                        <button type="button" onclick="selectCtaOption('/categoria/pantalones', this)" data-value="/categoria/pantalones" class="cta-option w-full px-3 py-2 text-sm text-left flex items-center gap-3 hover:bg-neon-cyan/10 text-zinc-100 transition-colors">
+                                            <svg class="w-4 h-4 text-indigo-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2 2z"/></svg>
+                                            Pantalones
+                                        </button>
+                                        <button type="button" onclick="selectCtaOption('/categoria/chaquetas', this)" data-value="/categoria/chaquetas" class="cta-option w-full px-3 py-2 text-sm text-left flex items-center gap-3 hover:bg-neon-cyan/10 text-zinc-100 transition-colors">
+                                            <svg class="w-4 h-4 text-purple-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3l4 4-4 4M3 12h18M19 3l-4 4 4 4"/></svg>
+                                            Chaquetas
+                                        </button>
+                                        <button type="button" onclick="selectCtaOption('/categoria/zapatos', this)" data-value="/categoria/zapatos" class="cta-option w-full px-3 py-2 text-sm text-left flex items-center gap-3 hover:bg-neon-cyan/10 text-zinc-100 transition-colors">
+                                            <svg class="w-4 h-4 text-yellow-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+                                            Zapatos
+                                        </button>
+                                        <button type="button" onclick="selectCtaOption('/categoria/accesorios', this)" data-value="/categoria/accesorios" class="cta-option w-full px-3 py-2 text-sm text-left flex items-center gap-3 hover:bg-neon-cyan/10 text-zinc-100 transition-colors">
+                                            <svg class="w-4 h-4 text-pink-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+                                            Accesorios
+                                        </button>
+                                        <button type="button" onclick="selectCtaOption('/', this)" data-value="/" class="cta-option w-full px-3 py-2 text-sm text-left flex items-center gap-3 hover:bg-neon-cyan/10 text-zinc-100 transition-colors">
+                                            <svg class="w-4 h-4 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                                            Inicio
+                                        </button>
+                                        <div class="border-t border-white/10 my-1"></div>
+                                        <button type="button" onclick="selectCtaOption('custom', this)" data-value="custom" class="cta-option w-full px-3 py-2 text-sm text-left flex items-center gap-3 hover:bg-neon-cyan/10 text-zinc-400 transition-colors">
+                                            <svg class="w-4 h-4 text-zinc-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                                            URL personalizada...
+                                        </button>
+                                    </div>
+                                </div>
+                                <!-- Custom URL text input (hidden by default) -->
+                                <input type="text" id="ctaCustomInput" placeholder="/mi-pagina"
+                                    class="hidden w-full mt-2 px-3 py-2 bg-dark-300 border border-white/10 rounded-lg text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan/20 text-sm" />
+                                <!-- Hidden field submitted with form -->
+                                <input type="hidden" id="cta_link" name="cta_link" value="/productos" />
                             </div>
                         </div>
                     </div>
@@ -725,7 +779,7 @@ if (Astro.request.method === "POST") {
 
             closeFullscreen.addEventListener("click", () => {
                 fullscreenOverlay.classList.add("hidden");
-                originalParent.prepend(previewWrapper); // Restore to original location
+                if (originalParent) originalParent.prepend(previewWrapper); // Restore to original location
 
                 // Restore styles
                 // Check which mode was active
@@ -743,33 +797,41 @@ if (Astro.request.method === "POST") {
 
         // Granular Drag and Drop Logic
         const container = document.getElementById("preview-container");
-        const draggables = document.querySelectorAll(".draggable-item");
-        const styleInput = document.getElementById("style_config");
+        const draggables = document.querySelectorAll<HTMLElement>(".draggable-item");
+        const styleInput = document.getElementById("style_config") as HTMLInputElement | null;
 
-        let activeDraggable = null;
-        let currentX;
-        let currentY;
-        let initialX;
-        let initialY;
-        let xOffset = 0;
-        let yOffset = 0;
+        let activeDraggable: HTMLElement | null = null;
+        let initialMouseX: number = 0;
+        let initialMouseY: number = 0;
+        let startTopPercent: number = 0;
+        let startLeftPercent: number = 0;
 
-        // Load initial config
-        let currentConfig = {};
+        // Load initial config (use desktop/mobile structure for public page compatibility)
+        interface PositionConfig { top: string; left: string; }
+        interface ViewConfig { [key: string]: PositionConfig; }
+        interface StyleConfig { desktop?: ViewConfig; mobile?: ViewConfig; }
+        
+        let currentConfig: StyleConfig = { desktop: {}, mobile: {} };
         try {
-            currentConfig = JSON.parse(styleInput.value || "{}");
+            const raw = JSON.parse(styleInput?.value || "{}");
+            // Handle flat legacy config → convert to desktop/mobile
+            if (raw.desktop || raw.mobile) {
+                currentConfig = raw;
+            } else {
+                currentConfig = { desktop: raw, mobile: raw };
+            }
         } catch (e) {
-            currentConfig = {};
+            currentConfig = { desktop: {}, mobile: {} };
         }
 
         // Apply initial styles from config
         draggables.forEach((el) => {
-            const key = el.dataset.key;
-            if (currentConfig[key]) {
-                el.style.top = currentConfig[key].top;
-                el.style.left = currentConfig[key].left;
-                // Reset transform if it was set by JS before
-                el.style.transform = "translate3d(0px, 0px, 0px)";
+            const key = (el as HTMLElement).dataset.key;
+            const cfg = currentConfig.desktop?.[key || ""];
+            if (key && cfg) {
+                (el as HTMLElement).style.top = cfg.top;
+                (el as HTMLElement).style.left = cfg.left;
+                (el as HTMLElement).style.transform = "";
             }
         });
 
@@ -780,85 +842,128 @@ if (Astro.request.method === "POST") {
             container.addEventListener("mouseleave", dragEnd);
         }
 
-        function dragStart(e) {
-            const target = e.target.closest(".draggable-item");
-            if (target) {
+        function dragStart(e: MouseEvent) {
+            const target = (e.target as HTMLElement).closest<HTMLElement>(".draggable-item");
+            if (target && container) {
                 activeDraggable = target;
-
-                const style = window.getComputedStyle(activeDraggable);
-                const matrix = new WebKitCSSMatrix(style.transform);
-                xOffset = matrix.m41;
-                yOffset = matrix.m42;
-
-                initialX = e.clientX - xOffset;
-                initialY = e.clientY - yOffset;
+                // Store initial mouse position
+                initialMouseX = e.clientX;
+                initialMouseY = e.clientY;
+                // Calculate current element position as percentage of container
+                const containerRect = container.getBoundingClientRect();
+                const elRect = activeDraggable.getBoundingClientRect();
+                startTopPercent = ((elRect.top - containerRect.top) / containerRect.height) * 100;
+                startLeftPercent = ((elRect.left - containerRect.left) / containerRect.width) * 100;
+                activeDraggable.style.transform = "";
             }
         }
 
-        function dragEnd(e) {
+        function dragEnd(_e: MouseEvent) {
             if (!activeDraggable) return;
-
-            initialX = currentX;
-            initialY = currentY;
-
-            // Update styling config
             updateConfig(activeDraggable);
-
             activeDraggable = null;
         }
 
-        function drag(e) {
-            if (activeDraggable) {
-                e.preventDefault();
-                currentX = e.clientX - initialX;
-                currentY = e.clientY - initialY;
-
-                setTranslate(currentX, currentY, activeDraggable);
-            }
+        function drag(e: MouseEvent) {
+            if (!activeDraggable || !container) return;
+            e.preventDefault();
+            // Calculate mouse delta as percentage of container
+            const containerRect = container.getBoundingClientRect();
+            const deltaXPercent = ((e.clientX - initialMouseX) / containerRect.width) * 100;
+            const deltaYPercent = ((e.clientY - initialMouseY) / containerRect.height) * 100;
+            // Apply new position directly as percentage
+            const newTop = Math.max(0, Math.min(95, startTopPercent + deltaYPercent));
+            const newLeft = Math.max(0, Math.min(95, startLeftPercent + deltaXPercent));
+            activeDraggable.style.top = `${newTop.toFixed(2)}%`;
+            activeDraggable.style.left = `${newLeft.toFixed(2)}%`;
         }
 
-        function setTranslate(xPos, yPos, el) {
-            el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`;
-        }
-
-        function updateConfig(element) {
+        function updateConfig(element: HTMLElement) {
             if (!container || !styleInput) return;
-
-            const rect = container.getBoundingClientRect();
-            const dragRect = element.getBoundingClientRect();
             const key = element.dataset.key;
-
-            // Calculate percentage relative to container
-            const topPercent = ((dragRect.top - rect.top) / rect.height) * 100;
-            const leftPercent =
-                ((dragRect.left - rect.left) / rect.width) * 100;
-
-            const clampedTop = Math.max(0, Math.min(98, topPercent));
-            const clampedLeft = Math.max(0, Math.min(98, leftPercent));
-
-            // Update config object
-            currentConfig[key] = {
-                top: `${clampedTop.toFixed(2)}%`,
-                left: `${clampedLeft.toFixed(2)}%`,
-            };
-
+            if (!key) return;
+            // Read percentage values directly from CSS
+            const top = element.style.top || "0%";
+            const left = element.style.left || "0%";
+            // Save to both desktop and mobile
+            if (!currentConfig.desktop) currentConfig.desktop = {};
+            if (!currentConfig.mobile) currentConfig.mobile = {};
+            currentConfig.desktop[key] = { top, left };
+            currentConfig.mobile[key] = { top, left };
             // Update hidden input
             styleInput.value = JSON.stringify(currentConfig);
         }
 
-        function updatePreviewImage(input) {
-            const previewImage = document.getElementById("preview-image");
+        function updatePreviewImage(input: HTMLInputElement) {
+            const previewImage = document.getElementById("preview-image") as HTMLImageElement | null;
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = function (e) {
-                    previewImage.src = e.target.result;
-                    previewImage.style.opacity = "1"; // Ensure image is visible
+                    if (previewImage && e.target) {
+                        previewImage.src = e.target.result as string;
+                        previewImage.style.opacity = "1"; // Ensure image is visible
+                    }
                 };
                 reader.readAsDataURL(input.files[0]);
             } else {
-                previewImage.src = "/placeholder-image.jpg";
-                previewImage.style.opacity = "0"; // Hide placeholder
+                if (previewImage) {
+                    previewImage.src = "/placeholder-image.jpg";
+                    previewImage.style.opacity = "0"; // Hide placeholder
+                }
             }
         }
     </script>
 </AdminLayout>
+<script is:inline>
+function toggleCtaDropdown() {
+    const list = document.getElementById('ctaDropdownList');
+    const chevron = document.getElementById('ctaDropdownChevron');
+    const isOpen = !list.classList.contains('hidden');
+    if (isOpen) {
+        list.classList.add('hidden');
+        chevron.style.transform = 'rotate(0deg)';
+    } else {
+        list.classList.remove('hidden');
+        chevron.style.transform = 'rotate(180deg)';
+    }
+}
+
+function selectCtaOption(value, btn) {
+    const list = document.getElementById('ctaDropdownList');
+    const chevron = document.getElementById('ctaDropdownChevron');
+    const label = document.getElementById('ctaDropdownLabel');
+    const hiddenInput = document.getElementById('cta_link');
+    const customInput = document.getElementById('ctaCustomInput');
+
+    document.querySelectorAll('.cta-option').forEach(el => el.classList.remove('bg-neon-cyan/5'));
+    btn.classList.add('bg-neon-cyan/5');
+
+    const svgEl = btn.querySelector('svg');
+    const text = btn.textContent.trim();
+    label.innerHTML = (svgEl ? svgEl.outerHTML : '') + '<span>' + text + '</span>';
+
+    list.classList.add('hidden');
+    chevron.style.transform = 'rotate(0deg)';
+
+    if (value === 'custom') {
+        customInput.classList.remove('hidden');
+        customInput.focus();
+        hiddenInput.value = customInput.value || '';
+        customInput.oninput = function() { hiddenInput.value = customInput.value; };
+    } else {
+        customInput.classList.add('hidden');
+        hiddenInput.value = value;
+    }
+}
+
+// Close dropdown on outside click
+document.addEventListener('click', function(e) {
+    const btn = document.getElementById('ctaDropdownBtn');
+    const list = document.getElementById('ctaDropdownList');
+    if (btn && list && !btn.contains(e.target) && !list.contains(e.target)) {
+        list.classList.add('hidden');
+        const ch = document.getElementById('ctaDropdownChevron');
+        if (ch) ch.style.transform = 'rotate(0deg)';
+    }
+});
+</script>
