@@ -1,7 +1,23 @@
 import type { APIRoute } from 'astro';
-import { supabaseAdmin, incrementStock } from '../../../lib/supabase';
+import Stripe from 'stripe';
+import { Resend } from 'resend';
+import {
+    supabaseAdmin,
+    incrementStock,
+    getFacturacionByOrderId,
+    createCreditNote,
+    createFacturacion,
+} from '../../../lib/supabase';
 import { createClient } from '@supabase/supabase-js';
 import { sendCancellationNotification } from '../../../lib/admin-notifications';
+import { buildCancellationHTML } from '../../../lib/email-templates';
+import { generateInvoicePDFBase64 } from '../../../lib/pdf-generator';
+
+const stripe = new Stripe(import.meta.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2025-12-15.clover',
+});
+
+const resend = new Resend(import.meta.env.RESEND_API_KEY);
 
 export const POST: APIRoute = async ({ request }) => {
     try {
@@ -56,7 +72,7 @@ export const POST: APIRoute = async ({ request }) => {
         // Find the order and verify it belongs to this user (by customer_email)
         const { data: order, error: orderError } = await supabaseAdmin
             .from('orders')
-            .select('id, customer_email, customer_name, status, order_number, total_price')
+            .select('id, customer_email, customer_name, status, order_number, total_price, stripe_payment_intent')
             .eq('id', orderId)
             .single();
 
@@ -88,17 +104,59 @@ export const POST: APIRoute = async ({ request }) => {
             );
         }
 
-        // Get order items to restore stock
+        // Get or create original invoice
+        let originalInvoice = await getFacturacionByOrderId(orderId);
+        if (!originalInvoice) {
+            try {
+                originalInvoice = await createFacturacion(orderId);
+            } catch (invoiceError) {
+                console.error('Error creating invoice:', invoiceError);
+            }
+        }
+
+        // 1. Process Stripe refund
+        let refundId = null;
+        if (order.stripe_payment_intent) {
+            try {
+                const refund = await stripe.refunds.create({
+                    payment_intent: order.stripe_payment_intent,
+                });
+                refundId = refund.id;
+                console.log('Stripe refund processed:', refundId);
+            } catch (stripeError: any) {
+                console.error('Stripe refund error:', stripeError);
+                return new Response(
+                    JSON.stringify({
+                        error: 'Error al procesar el reembolso',
+                        details: stripeError.message
+                    }),
+                    { status: 500, headers: { 'Content-Type': 'application/json' } }
+                );
+            }
+        }
+
+        // 2. Create credit note (factura rectificativa)
+        let creditNote = null;
+        if (originalInvoice) {
+            try {
+                creditNote = await createCreditNote(orderId);
+                console.log('Credit note created:', creditNote.invoice_number);
+            } catch (creditError) {
+                console.error('Error creating credit note:', creditError);
+            }
+        }
+
+        // 3. Get order items to restore stock
         const { data: orderItems, error: itemsError } = await supabaseAdmin
             .from('order_items')
-            .select('product_id, size, quantity')
+            .select('product_id, product_name, size, quantity, price_at_purchase')
             .eq('order_id', orderId);
 
         if (itemsError) {
             console.error('Error fetching order items:', itemsError);
         }
 
-        // Restore stock for each item using atomic incrementStock
+        // 4. Restore stock for each item
         let itemsRestored = 0;
         if (orderItems && orderItems.length > 0) {
             for (const item of orderItems) {
@@ -113,7 +171,7 @@ export const POST: APIRoute = async ({ request }) => {
             }
         }
 
-        // Update order status to cancelled
+        // 5. Update order status to cancelled
         const { error: updateError } = await supabaseAdmin
             .from('orders')
             .update({
@@ -130,100 +188,78 @@ export const POST: APIRoute = async ({ request }) => {
             );
         }
 
-        // Send cancellation confirmation email
+        // 6. Send cancellation email with PDFs
         const customerEmail = order.customer_email || userEmail;
         const customerName = order.customer_name || 'Cliente';
+        const orderNumber = order.order_number || order.id;
+        const orderRef = `#${orderNumber}`;
 
         try {
-            const { Resend } = await import('resend');
-            const resend = new Resend(import.meta.env.RESEND_API_KEY);
+            if (originalInvoice && creditNote) {
+                // Send premium email with PDF attachments
+                const originalPDF = Buffer.from(generateInvoicePDFBase64(originalInvoice, orderNumber, false), 'base64');
+                const creditNotePDF = Buffer.from(generateInvoicePDFBase64(creditNote, orderNumber, true), 'base64');
 
-            await resend.emails.send({
-                from: 'FashionMarket <noreply@roomieapp.info>',
-                to: [customerEmail],
-                subject: `Pedido #${order.order_number || order.id} Cancelado`,
-                html: `
-                    <!DOCTYPE html>
-                    <html>
-                    <head>
-                        <meta charset="UTF-8">
-                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    </head>
-                    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f3f4f6;">
-                        <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-                            <!-- Header -->
-                            <div style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); padding: 40px 20px; text-align: center;">
-                                <div style="width: 70px; height: 70px; background: white; border-radius: 50%; margin: 0 auto 15px auto;">
-                                    <table width="70" height="70"><tr><td align="center" valign="middle" style="color: #ef4444; font-size: 36px; font-weight: bold;">✕</td></tr></table>
-                                </div>
-                                <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: bold;">Pedido Cancelado</h1>
-                                <p style="color: #fecaca; margin: 10px 0 0 0;">Pedido #${order.order_number || order.id}</p>
-                            </div>
-                            
-                            <!-- Content -->
-                            <div style="padding: 40px 30px;">
-                                <p style="font-size: 16px; margin-bottom: 20px;">Hola <strong>${customerName}</strong>,</p>
-                                
-                                <p style="font-size: 16px; margin-bottom: 25px;">
-                                    Te confirmamos que tu pedido ha sido cancelado correctamente.
-                                </p>
-                                
-                                <!-- Order Summary -->
-                                <div style="background-color: #f9fafb; border-radius: 12px; padding: 20px; margin-bottom: 25px;">
-                                    <h3 style="font-size: 14px; color: #6b7280; margin: 0 0 15px 0; text-transform: uppercase; letter-spacing: 0.5px;">Resumen</h3>
-                                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                                        <span style="color: #6b7280;">Número de pedido:</span>
-                                        <span style="font-weight: 600; color: #1f2937;">#${order.order_number || order.id}</span>
-                                    </div>
-                                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                                        <span style="color: #6b7280;">Importe:</span>
-                                        <span style="font-weight: 600; color: #1f2937;">${order.total_price?.toFixed(2) || '0.00'}€</span>
-                                    </div>
-                                    <div style="display: flex; justify-content: space-between;">
-                                        <span style="color: #6b7280;">Estado:</span>
-                                        <span style="font-weight: 600; color: #ef4444;">Cancelado</span>
-                                    </div>
-                                </div>
-                                
-                                <!-- Refund Notice -->
-                                <div style="background-color: #ecfdf5; border-left: 4px solid #10b981; padding: 15px 20px; margin-bottom: 25px; border-radius: 4px;">
-                                    <h4 style="color: #065f46; margin: 0 0 8px 0; font-size: 14px;">Sobre el reembolso</h4>
-                                    <p style="color: #047857; margin: 0; font-size: 14px;">
-                                        El importe se reembolsará automáticamente a tu método de pago original en un plazo de <strong>5-10 días hábiles</strong>.
-                                    </p>
-                                </div>
-                                
-                                <p style="font-size: 14px; color: #6b7280;">
-                                    Si tienes alguna pregunta, no dudes en contactarnos. ¡Esperamos verte pronto de nuevo!
-                                </p>
-                                
-                                <div style="text-align: center; margin-top: 30px;">
-                                    <a href="${import.meta.env.PUBLIC_SITE_URL || 'https://j4o0084kg0ssoo0wc0ocw0g8.victoriafp.online'}/productos" 
-                                       style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); color: white; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 16px;">
-                                        Seguir comprando
-                                    </a>
-                                </div>
-                            </div>
-                            
-                            <!-- Footer -->
-                            <div style="background-color: #1f2937; padding: 25px; text-align: center;">
-                                <p style="color: #9ca3af; margin: 0; font-size: 14px;">
-                                    © 2026 FashionMarket. Todos los derechos reservados.
-                                </p>
-                            </div>
-                        </div>
-                    </body>
-                    </html>
-                `
-            });
+                const emailHtml = buildCancellationHTML({
+                    customerName,
+                    orderRef,
+                    orderItems: (creditNote.items || []).map((item: any) => ({
+                        product_name: item.product_name,
+                        size: item.size,
+                        quantity: item.quantity,
+                        price: Math.abs(item.price),
+                    })),
+                    totalRefund: Math.abs(creditNote.total),
+                    originalInvoiceNumber: originalInvoice.invoice_number,
+                    creditNoteNumber: creditNote.invoice_number,
+                });
+
+                await resend.emails.send({
+                    from: 'FashionMarket <noreply@roomieapp.info>',
+                    to: [customerEmail],
+                    subject: `Pedido ${orderRef} Cancelado - Reembolso Procesado - FashionMarket`,
+                    html: emailHtml,
+                    attachments: [
+                        {
+                            filename: `Factura_${originalInvoice.invoice_number}.pdf`,
+                            content: originalPDF,
+                        },
+                        {
+                            filename: `Factura_Rectificativa_${creditNote.invoice_number}.pdf`,
+                            content: creditNotePDF,
+                        },
+                    ],
+                });
+            } else {
+                // Fallback: send simple cancellation email without PDFs
+                const emailHtml = buildCancellationHTML({
+                    customerName,
+                    orderRef,
+                    orderItems: (orderItems || []).map((item: any) => ({
+                        product_name: item.product_name,
+                        size: item.size,
+                        quantity: item.quantity,
+                        price: item.price_at_purchase,
+                    })),
+                    totalRefund: order.total_price || 0,
+                    originalInvoiceNumber: '-',
+                    creditNoteNumber: '-',
+                });
+
+                await resend.emails.send({
+                    from: 'FashionMarket <noreply@roomieapp.info>',
+                    to: [customerEmail],
+                    subject: `Pedido ${orderRef} Cancelado - Reembolso Procesado - FashionMarket`,
+                    html: emailHtml,
+                });
+            }
 
             console.log('Cancellation email sent to:', customerEmail);
         } catch (emailError) {
             console.error('Error sending cancellation email:', emailError);
-            // Continue even if email fails
         }
 
-        // Notify admin about cancellation
+        // 7. Notify admin about cancellation
         try {
             await sendCancellationNotification({
                 id: order.id,
@@ -239,8 +275,9 @@ export const POST: APIRoute = async ({ request }) => {
         return new Response(
             JSON.stringify({
                 success: true,
-                message: 'Pedido cancelado correctamente',
-                items_restored: itemsRestored
+                message: 'Pedido cancelado correctamente. Reembolso procesado.',
+                items_restored: itemsRestored,
+                refund_id: refundId
             }),
             { status: 200, headers: { 'Content-Type': 'application/json' } }
         );

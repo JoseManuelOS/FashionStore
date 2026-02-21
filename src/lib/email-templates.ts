@@ -684,6 +684,131 @@ export function buildShippingUpdateHTML(data: ShippingUpdateEmailData): string {
 }
 
 // ============================================
+// Order Cancellation Email Template
+// ============================================
+
+interface CancellationEmailData {
+    customerName: string;
+    orderRef: string;
+    orderItems: Array<{
+        product_name: string;
+        size?: string | null;
+        quantity: number;
+        price: number;
+    }>;
+    totalRefund: number;
+    originalInvoiceNumber: string;
+    creditNoteNumber: string;
+}
+
+/**
+ * Order cancellation email — dark premium theme matching corporate identity.
+ * Informs customer that their order has been cancelled and refund is being processed.
+ */
+export function buildCancellationHTML(data: CancellationEmailData): string {
+    const year = new Date().getFullYear();
+
+    const formatCurrency = (amount: number) =>
+        new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(Math.abs(amount));
+
+    const itemsHTML = data.orderItems.map((item) => `
+        <tr>
+            <td style="padding: 12px; border-bottom: 1px solid #2a2a3e;">
+                <p style="margin: 0; font-weight: 600; color: #f1f5f9;">${item.product_name}</p>
+                ${item.size ? `<p style="margin: 4px 0 0; font-size: 12px; color: #71717a;">Talla: ${item.size}</p>` : ''}
+            </td>
+            <td style="padding: 12px; border-bottom: 1px solid #2a2a3e; text-align: center; color: #a1a1aa; vertical-align: middle;">${Math.abs(item.quantity)}</td>
+            <td style="padding: 12px; border-bottom: 1px solid #2a2a3e; text-align: right; color: #22d3ee; font-weight: 600; vertical-align: middle;">${formatCurrency(item.price * Math.abs(item.quantity))}</td>
+        </tr>
+    `).join('');
+
+    return `<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #09090b; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+<div style="max-width: 600px; margin: 0 auto; background-color: #111113; border: 1px solid #2a2a3e;">
+
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 50%, #991b1b 100%); padding: 40px 32px; text-align: center;">
+        <div style="width: 64px; height: 64px; margin: 0 auto 16px; background: rgba(255,255,255,0.15); border-radius: 50%;">
+            <table width="64" height="64"><tr><td align="center" valign="middle" style="color: white; font-size: 32px; font-weight: bold;">&#10005;</td></tr></table>
+        </div>
+        <h1 style="margin: 0; font-size: 26px; font-weight: 700; color: white; letter-spacing: -0.5px;">Pedido Cancelado</h1>
+        <p style="margin: 10px 0 0; font-size: 15px; color: rgba(255,255,255,0.8);">Pedido ${data.orderRef}</p>
+    </div>
+
+    <!-- Content -->
+    <div style="padding: 32px;">
+        <p style="color: #e2e8f0; font-size: 16px; margin: 0 0 24px;">
+            Hola <strong>${data.customerName}</strong>,
+        </p>
+        <p style="color: #a1a1aa; font-size: 15px; margin: 0 0 32px; line-height: 1.6;">
+            Tu pedido ha sido <strong style="color: #ef4444;">cancelado</strong>. 
+            Hemos procesado el reembolso que se reflejar&aacute; en tu m&eacute;todo de pago original en un plazo de <strong style="color: #e2e8f0;">5 a 10 d&iacute;as h&aacute;biles</strong>.
+        </p>
+
+        <!-- Refund Amount Card -->
+        <div style="background: linear-gradient(135deg, #7f1d1d, #991b1b); border: 1px solid #ef4444; border-radius: 16px; padding: 24px; margin-bottom: 24px; text-align: center;">
+            <p style="margin: 0 0 8px; font-size: 12px; color: #fca5a5; text-transform: uppercase; letter-spacing: 1px;">Importe reembolsado</p>
+            <p style="margin: 0; font-size: 32px; font-weight: 700; color: #ffffff;">${formatCurrency(data.totalRefund)}</p>
+        </div>
+
+        <!-- Products Table -->
+        <div style="background: #0a0a0f; border: 1px solid #2a2a3e; border-radius: 16px; overflow: hidden; margin-bottom: 24px;">
+            <div style="padding: 16px 16px 8px; border-bottom: 1px solid #2a2a3e;">
+                <p style="margin: 0; font-size: 14px; font-weight: 600; color: #e2e8f0;">Art&iacute;culos cancelados</p>
+            </div>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <thead>
+                    <tr style="background: #0f0f14;">
+                        <th style="padding: 10px 12px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #71717a; font-weight: 600; border-bottom: 1px solid #2a2a3e;">Producto</th>
+                        <th style="padding: 10px 12px; text-align: center; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #71717a; font-weight: 600; border-bottom: 1px solid #2a2a3e;">Cant.</th>
+                        <th style="padding: 10px 12px; text-align: right; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #71717a; font-weight: 600; border-bottom: 1px solid #2a2a3e;">Importe</th>
+                    </tr>
+                </thead>
+                <tbody>${itemsHTML}</tbody>
+            </table>
+        </div>
+
+        <!-- Documents Info -->
+        <div style="background: #0a0a0f; border: 1px solid #2a2a3e; border-radius: 16px; padding: 20px; margin-bottom: 24px;">
+            <p style="margin: 0 0 12px; font-size: 14px; font-weight: 600; color: #e2e8f0;">&#128196; Documentos adjuntos</p>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                    <td style="padding: 8px 0;">
+                        <span style="color: #22d3ee; font-size: 14px;">&#9679;</span>
+                        <span style="color: #a1a1aa; font-size: 14px; margin-left: 8px;">Factura original: <strong style="color: #e2e8f0;">${data.originalInvoiceNumber}</strong></span>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0;">
+                        <span style="color: #ef4444; font-size: 14px;">&#9679;</span>
+                        <span style="color: #a1a1aa; font-size: 14px; margin-left: 8px;">Factura rectificativa: <strong style="color: #e2e8f0;">${data.creditNoteNumber}</strong></span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <p style="font-size: 14px; color: #71717a; margin: 24px 0 0 0; text-align: center;">
+            &iquest;Tienes alguna pregunta? Responde a este correo y te ayudaremos.
+        </p>
+    </div>
+
+    <!-- Footer -->
+    <div style="background-color: #0a0a0f; padding: 32px; text-align: center; border-top: 1px solid #2a2a3e;">
+        <p style="color: #71717a; margin: 0; font-size: 13px;">
+            &copy; ${year} FashionMarket. Todos los derechos reservados.
+        </p>
+    </div>
+</div>
+</body>
+</html>`;
+}
+
+// ============================================
 // Return Accepted Email Template
 // ============================================
 
