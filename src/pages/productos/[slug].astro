@@ -9,18 +9,10 @@ import {
     getProductMainImage,
 } from "../../lib/supabase";
 
-// SSG - Generate at build time
-export const prerender = true;
+export const prerender = false;
 
-export async function getStaticPaths() {
-    const products = await getProducts();
-    return products.map((product) => ({
-        params: { slug: product.slug },
-        props: { product },
-    }));
-}
-
-const { product } = Astro.props;
+const { slug } = Astro.params;
+const product = slug ? await getProductBySlug(slug) : null;
 
 if (!product) {
     return Astro.redirect("/productos");
