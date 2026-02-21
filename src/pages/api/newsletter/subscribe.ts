@@ -132,7 +132,7 @@ export const POST: APIRoute = async ({ request }) => {
                                     <p style="margin: 15px 0 0 0; color: #b45309; font-size: 16px; font-weight: 600;">10% de descuento en tu primera compra</p>
                                 </div>
                                 
-                                <a href="https://fashionmarket.com/productos" 
+                                <a href="https://j4o0084kg0ssoo0wc0ocw0g8.victoriafp.online/productos" 
                                    style="display: inline-block; margin-top: 25px; padding: 16px 40px; background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); color: white; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 16px;">
                                     Explorar Colección
                                 </a>

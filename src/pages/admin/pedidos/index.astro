@@ -34,6 +34,16 @@ const statusLabels: Record<
         color: "text-red-400",
         bg: "bg-red-500/10 border-red-500/30",
     },
+    return_requested: {
+        label: "Devolución Solicitada",
+        color: "text-orange-400",
+        bg: "bg-orange-500/10 border-orange-500/30",
+    },
+    returned: {
+        label: "Devuelto",
+        color: "text-pink-400",
+        bg: "bg-pink-500/10 border-pink-500/30",
+    },
 };
 
 function formatDate(dateStr: string) {
@@ -49,7 +59,7 @@ function formatDate(dateStr: string) {
 
 <AdminLayout title="Gestión de Pedidos">
     <!-- Stats Cards -->
-    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
         <div class="bg-dark-400 rounded-xl border border-white/10 p-4">
             <div class="text-2xl font-bold text-zinc-100">{stats.total}</div>
             <div class="text-sm text-zinc-500">Total Pedidos</div>
@@ -73,6 +83,12 @@ function formatDate(dateStr: string) {
                 {stats.delivered}
             </div>
             <div class="text-sm text-emerald-400/70">Entregados</div>
+        </div>
+        <div class="bg-dark-400 rounded-xl border border-orange-500/30 p-4">
+            <div class="text-2xl font-bold text-orange-400">
+                {stats.return_requested}
+            </div>
+            <div class="text-sm text-orange-400/70">Devoluciones</div>
         </div>
         <div class="bg-gradient-to-br from-neon-cyan/20 to-neon-purple/20 rounded-xl border border-neon-cyan/30 p-4">
             <div class="text-2xl font-bold text-neon-cyan">

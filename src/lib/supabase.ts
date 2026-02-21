@@ -84,7 +84,7 @@ export interface Order {
     id: string; // UUID - kept for compatibility with existing data
     order_number: number;
     total_price: number;
-    status: 'pending' | 'paid' | 'shipped' | 'delivered' | 'cancelled';
+    status: 'pending' | 'paid' | 'shipped' | 'delivered' | 'cancelled' | 'return_requested' | 'returned';
     customer_email: string | null;
     customer_name: string | null;
     shipping_address: string | null;
@@ -359,6 +359,14 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
 
     if (error) throw error;
 
+    // Si se marca como entregado, enviar email de notificación
+    if (status === 'delivered') {
+        const order = await getOrderById(orderId);
+        if (order?.customer_email) {
+            await sendDeliveredNotificationEmail(order);
+        }
+    }
+
     // Si se cancela, restaurar el stock de cada item
     if (status === 'cancelled') {
         const { data: orderItems } = await supabaseAdmin
@@ -449,6 +457,41 @@ async function sendShippingNotificationEmail(order: Order) {
         console.log('Shipping notification email sent to:', order.customer_email);
     } catch (error) {
         console.error('Error sending shipping notification email:', error);
+    }
+}
+
+async function sendDeliveredNotificationEmail(order: Order) {
+    try {
+        const { Resend } = await import('resend');
+        const resend = new Resend(import.meta.env.RESEND_API_KEY);
+        const { buildOrderDeliveredHTML } = await import('./email-templates');
+
+        const orderItems = (order.items || []).map(item => ({
+            product_image: item.product_image || null,
+            product_name: item.product_name,
+            size: item.size || null,
+            quantity: item.quantity,
+            price_at_purchase: item.price_at_purchase
+        }));
+
+        const html = buildOrderDeliveredHTML({
+            customerName: order.customer_name || 'Cliente',
+            orderRef: String(order.order_number || order.id),
+            orderItems,
+            totalPrice: order.total_price,
+            deliveredDate: order.delivered_at || new Date().toISOString()
+        });
+
+        await resend.emails.send({
+            from: 'FashionMarket <noreply@roomieapp.info>',
+            to: [order.customer_email!],
+            subject: `Tu pedido #${order.order_number || order.id} ha sido entregado - FashionMarket`,
+            html
+        });
+
+        console.log('Delivered notification email sent to:', order.customer_email);
+    } catch (error) {
+        console.error('Error sending delivered notification email:', error);
     }
 }
 
@@ -1041,7 +1084,9 @@ export async function getOrdersStats() {
         shipped: orders?.filter(o => o.status === 'shipped').length || 0,
         delivered: orders?.filter(o => o.status === 'delivered').length || 0,
         cancelled: orders?.filter(o => o.status === 'cancelled').length || 0,
-        totalRevenue: orders?.filter(o => o.status !== 'cancelled').reduce((sum, o) => sum + Number(o.total_price), 0) || 0
+        return_requested: orders?.filter(o => o.status === 'return_requested').length || 0,
+        returned: orders?.filter(o => o.status === 'returned').length || 0,
+        totalRevenue: orders?.filter(o => o.status !== 'cancelled' && o.status !== 'returned').reduce((sum, o) => sum + Number(o.total_price), 0) || 0
     };
 
     return stats;
@@ -1169,6 +1214,73 @@ export async function getFacturacionByOrderId(orderId: string): Promise<Facturac
         .single();
 
     if (error && error.code !== 'PGRST116') throw error;
+    return data;
+}
+
+/**
+ * Generate next credit note number in format FR-YYYY-XXXXXX
+ */
+async function generateCreditNoteNumber(): Promise<string> {
+    const year = new Date().getFullYear().toString();
+
+    const { data } = await supabaseAdmin
+        .from('facturacion')
+        .select('invoice_number')
+        .like('invoice_number', `FR-${year}-%`)
+        .order('invoice_number', { ascending: false })
+        .limit(1);
+
+    let nextSeq = 1;
+    if (data && data.length > 0 && data[0].invoice_number) {
+        const parts = data[0].invoice_number.split('-');
+        if (parts.length === 3) {
+            nextSeq = parseInt(parts[2], 10) + 1;
+        }
+    }
+
+    return `FR-${year}-${nextSeq.toString().padStart(6, '0')}`;
+}
+
+/**
+ * Create a credit note (factura rectificativa) referencing the original invoice.
+ * Amounts are negative to indicate a refund.
+ */
+export async function createCreditNote(orderId: string): Promise<Facturacion> {
+    // Get the original invoice
+    const originalInvoice = await getFacturacionByOrderId(orderId);
+    if (!originalInvoice) {
+        throw new Error(`Original invoice not found for order: ${orderId}`);
+    }
+
+    const creditNoteNumber = await generateCreditNoteNumber();
+
+    // Items with negative amounts
+    const items = (originalInvoice.items || []).map((item: any) => ({
+        product_name: item.product_name,
+        quantity: -item.quantity,
+        size: item.size,
+        price: item.price,
+        total: -(item.total || item.price * Math.abs(item.quantity))
+    }));
+
+    const { data, error } = await supabaseAdmin
+        .from('facturacion')
+        .insert({
+            order_id: orderId,
+            invoice_number: creditNoteNumber,
+            customer_name: originalInvoice.customer_name,
+            customer_email: originalInvoice.customer_email,
+            shipping_address: originalInvoice.shipping_address,
+            items: items,
+            subtotal: -originalInvoice.subtotal,
+            iva_amount: -originalInvoice.iva_amount,
+            shipping_cost: -originalInvoice.shipping_cost,
+            total: -originalInvoice.total
+        })
+        .select()
+        .single();
+
+    if (error) throw error;
     return data;
 }
 

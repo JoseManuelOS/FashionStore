@@ -149,14 +149,28 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         getTopProduct()
     ]);
 
-    // Get product stats
+    // Get product stats using product_variants for accurate per-size stock
     const { data: products } = await supabaseAdmin
         .from('products')
-        .select('stock')
+        .select('id')
         .eq('active', true);
 
     const totalProducts = products?.length || 0;
-    const lowStockCount = products?.filter(p => p.stock <= 5 && p.stock > 0).length || 0;
+
+    // Count products that have at least one variant with stock between 1-5 or stock = 0
+    const { data: variants } = await supabaseAdmin
+        .from('product_variants')
+        .select('product_id, stock')
+        .in('product_id', (products || []).map(p => p.id));
+
+    // A product has "low stock" if any of its variants has stock <= 5 (including 0 = out of stock)
+    const productsWithLowStock = new Set<string>();
+    for (const v of variants || []) {
+        if (v.stock <= 5) {
+            productsWithLowStock.add(v.product_id);
+        }
+    }
+    const lowStockCount = productsWithLowStock.size;
 
     return {
         monthlySales,

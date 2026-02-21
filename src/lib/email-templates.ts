@@ -202,6 +202,212 @@ export function buildOrderConfirmationHTML(data: OrderEmailData): string {
 </html>`;
 }
 
+// ============================================
+// Order Delivered Email — dark premium theme matching corporate identity
+// ============================================
+
+interface OrderDeliveredEmailData {
+    customerName: string;
+    orderRef: string;
+    orderItems: Array<{
+        product_image?: string | null;
+        product_name: string;
+        size?: string | null;
+        quantity: number;
+        price_at_purchase: number;
+    }>;
+    totalPrice: number;
+    deliveredDate?: string;
+    siteUrl?: string;
+}
+
+export function buildOrderDeliveredHTML(data: OrderDeliveredEmailData): string {
+    const year = new Date().getFullYear();
+    const siteUrl = data.siteUrl || 'https://j4o0084kg0ssoo0wc0ocw0g8.victoriafp.online';
+
+    const deliveredDate = data.deliveredDate
+        ? new Date(data.deliveredDate).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+        : new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+    const itemsHTML = data.orderItems.map((item) => `
+        <tr>
+            <td style="padding: 16px; border-bottom: 1px solid #2a2a3e;">
+                <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                    <tr>
+                        <td width="72" valign="top">
+                            ${item.product_image
+                                ? `<img src="${item.product_image}" alt="${item.product_name}" style="width: 68px; height: 68px; object-fit: cover; border-radius: 10px; background: #2a2a3e; display: block;">`
+                                : `<div style="width: 68px; height: 68px; background: #2a2a3e; border-radius: 10px;"></div>`
+                            }
+                        </td>
+                        <td style="padding-left: 14px;" valign="middle">
+                            <p style="margin: 0; font-weight: 600; color: #f1f5f9; font-size: 15px;">${item.product_name}</p>
+                            ${item.size ? `<p style="margin: 4px 0 0; font-size: 12px; color: #71717a;">Talla: ${item.size}</p>` : ''}
+                            <p style="margin: 4px 0 0; font-size: 12px; color: #a1a1aa;">Cantidad: ${item.quantity}</p>
+                        </td>
+                        <td style="text-align: right; vertical-align: middle;">
+                            <p style="margin: 0; color: #10b981; font-weight: 600; font-size: 15px;">${(item.price_at_purchase * item.quantity).toFixed(2)} &euro;</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    `).join('');
+
+    return `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pedido Entregado - ${data.orderRef}</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #e2e8f0; margin: 0; padding: 40px 20px; background-color: #0a0a0f;">
+<div style="max-width: 600px; margin: 0 auto; background-color: #0f0f1a; border-radius: 16px; overflow: hidden;">
+
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%); padding: 48px 32px; text-align: center;">
+        <div style="width: 80px; height: 80px; margin: 0 auto 20px; background: rgba(255,255,255,0.2); border-radius: 50%;">
+            <table width="100%" height="80"><tr><td align="center" valign="middle" style="color: white; font-size: 40px; font-weight: 300;">&#10003;</td></tr></table>
+        </div>
+        <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">Pedido Entregado</h1>
+        <p style="color: rgba(255,255,255,0.9); margin: 12px 0 0 0; font-size: 16px;">Tu pedido ha llegado a su destino</p>
+        <div style="margin-top: 24px; background: rgba(255,255,255,0.15); display: inline-block; padding: 12px 24px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2);">
+            <p style="color: rgba(255,255,255,0.8); font-size: 12px; font-weight: 500; margin: 0; text-transform: uppercase; letter-spacing: 1px;">Pedido</p>
+            <p style="color: #ffffff; font-size: 20px; font-weight: 700; margin: 4px 0 0;">#${data.orderRef}</p>
+        </div>
+    </div>
+
+    <!-- Content -->
+    <div style="padding: 40px 32px;">
+
+        <p style="font-size: 16px; margin: 0 0 24px 0; color: #e2e8f0;">
+            Hola <strong style="color: #34d399;">${data.customerName}</strong>,
+        </p>
+
+        <p style="font-size: 16px; margin: 0 0 32px 0; color: #a1a1aa;">
+            &iexcl;Tu pedido <strong style="color: #10b981;">#${data.orderRef}</strong> ha sido entregado con &eacute;xito! Esperamos que disfrutes de tus productos.
+        </p>
+
+        <!-- Delivery Confirmation Card -->
+        <div style="background: #0a0a0f; border: 1px solid #2a2a3e; border-radius: 16px; padding: 24px; margin-bottom: 24px;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                    <td width="56" valign="top">
+                        <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 12px;">
+                            <table width="48" height="48"><tr><td align="center" valign="middle" style="color: white; font-size: 22px;">&#128230;</td></tr></table>
+                        </div>
+                    </td>
+                    <td style="padding-left: 16px;" valign="middle">
+                        <div style="font-size: 12px; color: #71717a; text-transform: uppercase; letter-spacing: 1px;">Fecha de entrega</div>
+                        <div style="font-size: 16px; color: #10b981; font-weight: 700; margin-top: 4px;">${deliveredDate}</div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Products Card -->
+        <div style="background: #0a0a0f; border: 1px solid #2a2a3e; border-radius: 16px; padding: 24px; margin-bottom: 24px;">
+            <h2 style="font-size: 14px; color: #a1a1aa; margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Productos entregados</h2>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tbody>${itemsHTML}</tbody>
+            </table>
+            <table width="100%" style="margin-top: 16px; border-top: 1px solid #2a2a3e; padding-top: 16px;">
+                <tr>
+                    <td>
+                        <p style="color: #71717a; font-size: 14px; margin: 0; text-transform: uppercase;">Total del pedido</p>
+                    </td>
+                    <td style="text-align: right;">
+                        <p style="color: #f1f5f9; font-size: 22px; font-weight: 700; margin: 0;">${data.totalPrice.toFixed(2)} &euro;</p>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Order Status Progress - All Complete -->
+        <div style="background: #0a0a0f; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; margin-bottom: 24px;">
+            <h3 style="font-size: 14px; color: #a1a1aa; margin: 0 0 24px 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Estado del pedido</h3>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                    <td width="25%" align="center" style="padding-bottom: 8px;">
+                        <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #10b981, #059669); margin: 0 auto;">
+                            <table width="36" height="36"><tr><td align="center" valign="middle" style="color: white; font-size: 18px;">&#10003;</td></tr></table>
+                        </div>
+                    </td>
+                    <td width="25%" align="center" style="padding-bottom: 8px;">
+                        <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #10b981, #059669); margin: 0 auto;">
+                            <table width="36" height="36"><tr><td align="center" valign="middle" style="color: white; font-size: 18px;">&#10003;</td></tr></table>
+                        </div>
+                    </td>
+                    <td width="25%" align="center" style="padding-bottom: 8px;">
+                        <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #10b981, #059669); margin: 0 auto;">
+                            <table width="36" height="36"><tr><td align="center" valign="middle" style="color: white; font-size: 18px;">&#10003;</td></tr></table>
+                        </div>
+                    </td>
+                    <td width="25%" align="center" style="padding-bottom: 8px;">
+                        <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #10b981, #059669); margin: 0 auto;">
+                            <table width="36" height="36"><tr><td align="center" valign="middle" style="color: white; font-size: 18px;">&#10003;</td></tr></table>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td align="center" style="font-size: 11px; color: #34d399; font-weight: 500;">Confirmado</td>
+                    <td align="center" style="font-size: 11px; color: #34d399; font-weight: 500;">Preparado</td>
+                    <td align="center" style="font-size: 11px; color: #34d399; font-weight: 500;">Enviado</td>
+                    <td align="center" style="font-size: 11px; color: #34d399; font-weight: 600;">Entregado</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Satisfaction Notice -->
+        <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1)); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 16px; padding: 24px; margin-bottom: 24px; text-align: center;">
+            <p style="font-size: 18px; margin: 0 0 8px 0; color: #34d399;">&#11088;</p>
+            <p style="font-size: 15px; margin: 0 0 8px 0; color: #e2e8f0; font-weight: 600;">&iquest;C&oacute;mo fue tu experiencia?</p>
+            <p style="font-size: 13px; margin: 0; color: #a1a1aa;">
+                Tu opini&oacute;n nos ayuda a mejorar. Si tienes alg&uacute;n problema con tu pedido, no dudes en contactarnos.
+            </p>
+        </div>
+
+        <!-- Return Info -->
+        <div style="background: #0a0a0f; border: 1px solid #2a2a3e; border-radius: 16px; padding: 24px; margin-bottom: 24px;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                    <td width="56" valign="top">
+                        <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #8b5cf6, #7c3aed); border-radius: 12px;">
+                            <table width="48" height="48"><tr><td align="center" valign="middle" style="color: white; font-size: 22px;">&#128260;</td></tr></table>
+                        </div>
+                    </td>
+                    <td style="padding-left: 16px;" valign="middle">
+                        <div style="font-size: 14px; color: #e2e8f0; font-weight: 600;">Pol&iacute;tica de devoluciones</div>
+                        <div style="font-size: 13px; color: #a1a1aa; margin-top: 4px;">Tienes <strong style="color: #8b5cf6;">30 d&iacute;as</strong> desde la entrega para solicitar una devoluci&oacute;n desde tu cuenta.</div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- CTA Button -->
+        <div style="text-align: center; margin: 32px 0;">
+            <a href="${siteUrl}/cuenta/pedidos"
+               style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 12px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);">
+                Ver mis pedidos
+            </a>
+        </div>
+
+        <p style="font-size: 14px; color: #71717a; margin: 24px 0 0 0; text-align: center;">
+            &iquest;Tienes alguna pregunta? Responde a este correo y te ayudaremos.
+        </p>
+    </div>
+
+    <!-- Footer -->
+    <div style="background-color: #0a0a0f; padding: 32px; text-align: center; border-top: 1px solid #2a2a3e;">
+        <p style="color: #71717a; margin: 0; font-size: 13px;">
+            &copy; ${year} FashionMarket. Todos los derechos reservados.
+        </p>
+    </div>
+</div>
+</body>
+</html>`;
+}
+
 /**
  * Build clean, white-background invoice email HTML.
  */
@@ -456,6 +662,131 @@ export function buildShippingUpdateHTML(data: ShippingUpdateEmailData): string {
                     <td style="padding-left: 16px;" valign="middle">
                         <div style="font-size: 12px; color: #71717a; margin-bottom: 4px;">Entrega estimada</div>
                         <div style="font-size: 18px; color: #10b981; font-weight: 700;">2-5 d&iacute;as laborables</div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <p style="font-size: 14px; color: #71717a; margin: 24px 0 0 0; text-align: center;">
+            &iquest;Tienes alguna pregunta? Responde a este correo y te ayudaremos.
+        </p>
+    </div>
+
+    <!-- Footer -->
+    <div style="background-color: #0a0a0f; padding: 32px; text-align: center; border-top: 1px solid #2a2a3e;">
+        <p style="color: #71717a; margin: 0; font-size: 13px;">
+            &copy; ${year} FashionMarket. Todos los derechos reservados.
+        </p>
+    </div>
+</div>
+</body>
+</html>`;
+}
+
+// ============================================
+// Return Accepted Email Template
+// ============================================
+
+interface ReturnAcceptedEmailData {
+    customerName: string;
+    orderRef: string;
+    orderItems: Array<{
+        product_name: string;
+        size?: string | null;
+        quantity: number;
+        price: number;
+    }>;
+    totalRefund: number;
+    originalInvoiceNumber: string;
+    creditNoteNumber: string;
+}
+
+/**
+ * Return accepted email — dark premium theme matching corporate identity.
+ * Informs customer that their return has been accepted and refund is being processed.
+ */
+export function buildReturnAcceptedHTML(data: ReturnAcceptedEmailData): string {
+    const year = new Date().getFullYear();
+
+    const formatCurrency = (amount: number) =>
+        new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(Math.abs(amount));
+
+    const itemsHTML = data.orderItems.map((item) => `
+        <tr>
+            <td style="padding: 12px; border-bottom: 1px solid #2a2a3e;">
+                <p style="margin: 0; font-weight: 600; color: #f1f5f9;">${item.product_name}</p>
+                ${item.size ? `<p style="margin: 4px 0 0; font-size: 12px; color: #71717a;">Talla: ${item.size}</p>` : ''}
+            </td>
+            <td style="padding: 12px; border-bottom: 1px solid #2a2a3e; text-align: center; color: #a1a1aa; vertical-align: middle;">${Math.abs(item.quantity)}</td>
+            <td style="padding: 12px; border-bottom: 1px solid #2a2a3e; text-align: right; color: #22d3ee; font-weight: 600; vertical-align: middle;">${formatCurrency(item.price * Math.abs(item.quantity))}</td>
+        </tr>
+    `).join('');
+
+    return `<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #09090b; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+<div style="max-width: 600px; margin: 0 auto; background-color: #111113; border: 1px solid #2a2a3e;">
+
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #059669 0%, #047857 50%, #065f46 100%); padding: 40px 32px; text-align: center;">
+        <div style="width: 64px; height: 64px; margin: 0 auto 16px; background: rgba(255,255,255,0.15); border-radius: 50%;">
+            <table width="64" height="64"><tr><td align="center" valign="middle" style="color: white; font-size: 32px; font-weight: bold;">&#10003;</td></tr></table>
+        </div>
+        <h1 style="margin: 0; font-size: 26px; font-weight: 700; color: white; letter-spacing: -0.5px;">Devoluci&oacute;n Aceptada</h1>
+        <p style="margin: 10px 0 0; font-size: 15px; color: rgba(255,255,255,0.8);">Pedido ${data.orderRef}</p>
+    </div>
+
+    <!-- Content -->
+    <div style="padding: 32px;">
+        <p style="color: #e2e8f0; font-size: 16px; margin: 0 0 24px;">
+            Hola <strong>${data.customerName}</strong>,
+        </p>
+        <p style="color: #a1a1aa; font-size: 15px; margin: 0 0 32px; line-height: 1.6;">
+            Tu solicitud de devoluci&oacute;n ha sido <strong style="color: #10b981;">aceptada</strong>. 
+            Hemos procesado el reembolso que se reflejar&aacute; en tu m&eacute;todo de pago original en un plazo de <strong style="color: #e2e8f0;">5 a 10 d&iacute;as h&aacute;biles</strong>.
+        </p>
+
+        <!-- Refund Amount Card -->
+        <div style="background: linear-gradient(135deg, #064e3b, #065f46); border: 1px solid #10b981; border-radius: 16px; padding: 24px; margin-bottom: 24px; text-align: center;">
+            <p style="margin: 0 0 8px; font-size: 12px; color: #6ee7b7; text-transform: uppercase; letter-spacing: 1px;">Importe reembolsado</p>
+            <p style="margin: 0; font-size: 32px; font-weight: 700; color: #ffffff;">${formatCurrency(data.totalRefund)}</p>
+        </div>
+
+        <!-- Products Table -->
+        <div style="background: #0a0a0f; border: 1px solid #2a2a3e; border-radius: 16px; overflow: hidden; margin-bottom: 24px;">
+            <div style="padding: 16px 16px 8px; border-bottom: 1px solid #2a2a3e;">
+                <p style="margin: 0; font-size: 14px; font-weight: 600; color: #e2e8f0;">Art&iacute;culos devueltos</p>
+            </div>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <thead>
+                    <tr style="background: #0f0f14;">
+                        <th style="padding: 10px 12px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #71717a; font-weight: 600; border-bottom: 1px solid #2a2a3e;">Producto</th>
+                        <th style="padding: 10px 12px; text-align: center; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #71717a; font-weight: 600; border-bottom: 1px solid #2a2a3e;">Cant.</th>
+                        <th style="padding: 10px 12px; text-align: right; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #71717a; font-weight: 600; border-bottom: 1px solid #2a2a3e;">Importe</th>
+                    </tr>
+                </thead>
+                <tbody>${itemsHTML}</tbody>
+            </table>
+        </div>
+
+        <!-- Documents Info -->
+        <div style="background: #0a0a0f; border: 1px solid #2a2a3e; border-radius: 16px; padding: 20px; margin-bottom: 24px;">
+            <p style="margin: 0 0 12px; font-size: 14px; font-weight: 600; color: #e2e8f0;">&#128196; Documentos adjuntos</p>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                    <td style="padding: 8px 0;">
+                        <span style="color: #22d3ee; font-size: 14px;">&#9679;</span>
+                        <span style="color: #a1a1aa; font-size: 14px; margin-left: 8px;">Factura original: <strong style="color: #e2e8f0;">${data.originalInvoiceNumber}</strong></span>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0;">
+                        <span style="color: #10b981; font-size: 14px;">&#9679;</span>
+                        <span style="color: #a1a1aa; font-size: 14px; margin-left: 8px;">Factura rectificativa: <strong style="color: #e2e8f0;">${data.creditNoteNumber}</strong></span>
                     </td>
                 </tr>
             </table>

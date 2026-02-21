@@ -44,7 +44,7 @@ export const POST: APIRoute = async ({ request }) => {
 
         // Get order ID and reason from request body
         const body = await request.json();
-        const { orderId, reason } = body;
+        const { orderId, reason, resend: isResend } = body;
 
         if (!orderId) {
             return new Response(
@@ -76,8 +76,8 @@ export const POST: APIRoute = async ({ request }) => {
             );
         }
 
-        // Verify order is in 'delivered' status
-        if (order.status !== 'delivered') {
+        // Verify order is in 'delivered' or 'return_requested' status (allow resend)
+        if (order.status !== 'delivered' && order.status !== 'return_requested') {
             return new Response(
                 JSON.stringify({
                     error: 'INVALID_STATUS',
@@ -111,11 +111,8 @@ export const POST: APIRoute = async ({ request }) => {
                         <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
                             <!-- Header -->
                             <div style="background: linear-gradient(135deg, #d946ef 0%, #a21caf 100%); padding: 40px 20px; text-align: center;">
-                                <div style="width: 60px; height: 60px; background: rgba(255,255,255,0.2); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 15px;">
-                                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                                        <polyline points="9 11 12 14 22 4"></polyline>
-                                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-                                    </svg>
+                                <div style="width: 60px; height: 60px; background: rgba(255,255,255,0.2); border-radius: 50%; margin: 0 auto 15px;">
+                                    <table width="60" height="60" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" valign="middle" style="color: white; font-size: 30px; font-weight: bold; line-height: 1;">&#8617;</td></tr></table>
                                 </div>
                                 <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">Solicitud de Devolución</h1>
                                 <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">Pedido #${order.order_number || order.id}</p>
@@ -186,17 +183,29 @@ export const POST: APIRoute = async ({ request }) => {
             // Continue even if email fails - don't block the response
         }
 
-        // Notify admin about return request
-        try {
-            await sendReturnRequestNotification({
-                id: order.id,
-                order_number: order.order_number,
-                customer_name: customerName,
-                customer_email: customerEmail,
-                total_price: order.total_price
-            }, reason);
-        } catch (adminNotifyError) {
-            console.error('Error sending admin notification:', adminNotifyError);
+        // Notify admin about return request (only on first request, not resends)
+        if (!isResend) {
+            // Update order status to return_requested
+            try {
+                await supabaseAdmin
+                    .from('orders')
+                    .update({ status: 'return_requested' })
+                    .eq('id', orderId);
+            } catch (statusError) {
+                console.error('Error updating order status to return_requested:', statusError);
+            }
+
+            try {
+                await sendReturnRequestNotification({
+                    id: order.id,
+                    order_number: order.order_number,
+                    customer_name: customerName,
+                    customer_email: customerEmail,
+                    total_price: order.total_price
+                }, reason);
+            } catch (adminNotifyError) {
+                console.error('Error sending admin notification:', adminNotifyError);
+            }
         }
 
         return new Response(

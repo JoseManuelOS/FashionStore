@@ -263,6 +263,16 @@ export const prerender = false;
       color: "bg-red-500/20 text-red-400 border-red-500/30",
       step: -1,
     },
+    return_requested: {
+      label: "Devolución Solicitada",
+      color: "bg-orange-500/20 text-orange-400 border-orange-500/30",
+      step: -1,
+    },
+    returned: {
+      label: "Devuelto",
+      color: "bg-pink-500/20 text-pink-400 border-pink-500/30",
+      step: -1,
+    },
   };
 
   function formatCurrency(amount: number): string {
@@ -290,6 +300,28 @@ export const prerender = false;
       return `
         <div class="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
           <p class="text-red-400 text-sm text-center font-medium">Este pedido ha sido cancelado</p>
+        </div>
+      `;
+    }
+
+    if (status === "return_requested") {
+      return `
+        <div class="mt-4 p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl">
+          <div class="flex items-center justify-center gap-2">
+            <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
+            <p class="text-orange-400 text-sm font-medium">Devolución solicitada - En proceso de revisión</p>
+          </div>
+        </div>
+      `;
+    }
+
+    if (status === "returned") {
+      return `
+        <div class="mt-4 p-3 bg-pink-500/10 border border-pink-500/20 rounded-xl">
+          <div class="flex items-center justify-center gap-2">
+            <svg class="w-5 h-5 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            <p class="text-pink-400 text-sm font-medium">Devolución aceptada - Reembolso procesado</p>
+          </div>
         </div>
       `;
     }
@@ -532,9 +564,15 @@ export const prerender = false;
           }
           
           ${
-            order.status === "delivered"
+            order.status === "delivered" || order.status === "return_requested"
               ? `
             <div class="px-6 pb-6 pt-2 border-t border-white/10">
+              ${order.status === "return_requested" ? `
+                <div class="flex items-center gap-2 mb-3 p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl">
+                  <svg class="w-4 h-4 text-orange-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                  <p class="text-orange-400 text-sm font-medium">Tu devolución está siendo revisada</p>
+                </div>
+              ` : ''}
               <button 
                 onclick="openReturnModal('${order.id}', '${orderId}')"
                 class="flex items-center gap-2 px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/30 rounded-xl transition-all font-medium text-sm"
@@ -542,9 +580,9 @@ export const prerender = false;
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
                 </svg>
-                Solicitar Devolución
+                ${order.status === "return_requested" ? "Reenviar Solicitud de Devolución" : "Solicitar Devolución"}
               </button>
-              <p class="text-zinc-500 text-xs mt-2">Tienes 30 días desde la entrega para solicitar una devolución</p>
+              <p class="text-zinc-500 text-xs mt-2">${order.status === "return_requested" ? "Puedes reenviar el email con las instrucciones de devolución" : "Tienes 30 días desde la entrega para solicitar una devolución"}</p>
             </div>
           `
               : ""
@@ -768,6 +806,45 @@ export const prerender = false;
   // Return Modal Functions
   let currentReturnOrderId: string | null = null;
 
+  // Track orders that have had a return requested (persists in sessionStorage)
+  const returnRequestedKey = "fashionmarket_return_requested";
+  const returnRequestedOrders: Set<string> = new Set(
+    JSON.parse(sessionStorage.getItem(returnRequestedKey) || "[]")
+  );
+
+  function markReturnRequested(orderId: string) {
+    returnRequestedOrders.add(orderId);
+    sessionStorage.setItem(returnRequestedKey, JSON.stringify([...returnRequestedOrders]));
+  }
+
+  function showReturnSuccessState() {
+    const modalContent = document.getElementById("return-modal-content");
+    if (!modalContent) return;
+    modalContent.innerHTML = `
+      <div style="text-align:center; padding: 32px 0;">
+        <div style="width:64px; height:64px; margin:0 auto 16px; border-radius:50%; background:rgba(34,197,94,0.2); display:flex; align-items:center; justify-content:center;">
+          <svg style="width:32px;height:32px;color:#4ade80;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+        </div>
+        <h3 style="font-size:20px; font-weight:700; color:white; margin:0 0 8px;">¡Solicitud Enviada!</h3>
+        <p style="color:#a1a1aa; margin:0 0 24px;">Hemos enviado las instrucciones de devolución a tu email.</p>
+        <p style="color:#71717a; font-size:13px; margin:0 0 20px;">¿No recibiste el email? Puedes reenviarlo.</p>
+        <div style="display:flex; flex-direction:column; gap:12px; align-items:center;">
+          <button id="resend-return-btn" onclick="resendReturnEmail()" style="display:inline-flex; align-items:center; gap:8px; padding:10px 20px; background:#27272a; color:#d4d4d8; border-radius:12px; border:1px solid rgba(255,255,255,0.1); font-size:14px; font-weight:500; cursor:pointer;">
+            <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+            </svg>
+            Reenviar instrucciones por email
+          </button>
+          <button onclick="closeReturnModal()" style="padding:10px 24px; background:#06b6d4; color:#000; border-radius:12px; font-weight:600; font-size:15px; cursor:pointer;">
+            Cerrar
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
   (window as any).openReturnModal = function (
     orderId: string,
     displayId: string,
@@ -777,6 +854,10 @@ export const prerender = false;
     if (modal) {
       modal.classList.remove("hidden");
       document.body.style.overflow = "hidden";
+    }
+    // If already requested, show resend state directly
+    if (returnRequestedOrders.has(orderId)) {
+      showReturnSuccessState();
     }
   };
 
@@ -821,24 +902,10 @@ export const prerender = false;
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Update modal to show success
-        const modalContent = document.getElementById("return-modal-content");
-        if (modalContent) {
-          modalContent.innerHTML = `
-            <div class="text-center py-8">
-              <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-green-500/20 flex items-center justify-center">
-                <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                </svg>
-              </div>
-              <h3 class="text-xl font-bold text-white mb-2">¡Solicitud Enviada!</h3>
-              <p class="text-zinc-400 mb-6">Hemos enviado las instrucciones de devolución a tu email.</p>
-              <button onclick="closeReturnModal()" class="px-6 py-2 bg-neon-cyan text-dark-500 font-semibold rounded-xl hover:bg-neon-cyan-light transition-all">
-                Entendido
-              </button>
-            </div>
-          `;
-        }
+        // Mark this order as having a return requested (persists in sessionStorage)
+        if (currentReturnOrderId) markReturnRequested(currentReturnOrderId);
+        // Update modal to show success with resend option
+        showReturnSuccessState();
       } else {
         showToast(data.message || "Error al procesar la solicitud", "error");
         if (btn) {
@@ -852,6 +919,67 @@ export const prerender = false;
       if (btn) {
         btn.disabled = false;
         btn.innerHTML = originalText || "Confirmar Solicitud";
+      }
+    }
+  };
+
+  // Resend return email function
+  (window as any).resendReturnEmail = async function () {
+    if (!currentReturnOrderId) return;
+
+    const btn = document.getElementById("resend-return-btn") as HTMLButtonElement;
+    const originalText = btn?.innerHTML;
+
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = `
+        <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Reenviando...
+      `;
+    }
+
+    try {
+      const response = await fetch("/api/orders/request-return", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ orderId: currentReturnOrderId, resend: true }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        showToast("Instrucciones de devolución reenviadas a tu email", "success");
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `
+            <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            ¡Email reenviado!
+          `;
+          setTimeout(() => {
+            if (btn) btn.innerHTML = originalText || "Reenviar instrucciones por email";
+          }, 3000);
+        }
+      } else {
+        showToast(data.message || "Error al reenviar el email", "error");
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = originalText || "Reenviar instrucciones por email";
+        }
+      }
+    } catch (error: any) {
+      console.error("Error resending return email:", error);
+      showToast("Error de conexión. Inténtalo de nuevo.", "error");
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = originalText || "Reenviar instrucciones por email";
       }
     }
   };

@@ -198,7 +198,7 @@ export const POST: APIRoute = async ({ request }) => {
                                 </p>
                                 
                                 <div style="text-align: center; margin-top: 30px;">
-                                    <a href="${import.meta.env.PUBLIC_SITE_URL || 'https://fashionmarket.com'}/productos" 
+                                    <a href="${import.meta.env.PUBLIC_SITE_URL || 'https://j4o0084kg0ssoo0wc0ocw0g8.victoriafp.online'}/productos" 
                                        style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); color: white; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 16px;">
                                         Seguir comprando
                                     </a>

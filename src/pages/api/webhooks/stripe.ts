@@ -4,6 +4,7 @@ import { supabaseAdmin, createFacturacion, decrementStock } from '../../../lib/s
 import { Resend } from 'resend';
 import { sendNewOrderNotification, sendLowStockAlert } from '../../../lib/admin-notifications';
 import { buildOrderConfirmationHTML, buildInvoiceHTML } from '../../../lib/email-templates';
+import { generateInvoicePDFBase64 } from '../../../lib/pdf-generator';
 
 const stripe = new Stripe(import.meta.env.STRIPE_SECRET_KEY, {
     apiVersion: '2025-12-15.clover',
@@ -391,6 +392,17 @@ async function sendInvoiceEmail(orderId: string) {
 
         const invoiceDate = new Date(factura.created_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
 
+        // Get order number for the PDF
+        const { data: orderData } = await supabaseAdmin
+            .from('orders')
+            .select('order_number')
+            .eq('id', orderId)
+            .single();
+        const orderNumber = orderData?.order_number || orderId.slice(0, 8);
+
+        // Generate PDF attachment as Base64
+        const pdfBase64 = generateInvoicePDFBase64(factura, orderNumber, false);
+
         const { data: emailResult, error: emailError } = await resend.emails.send({
             from: 'FashionMarket <noreply@roomieapp.info>',
             to: [customerEmail],
@@ -404,7 +416,13 @@ async function sendInvoiceEmail(orderId: string) {
                 subtotal: factura.subtotal || 0,
                 ivaAmount: factura.iva_amount || 0,
                 total: factura.total || 0
-            })
+            }),
+            attachments: [
+                {
+                    filename: `Factura_${factura.invoice_number}.pdf`,
+                    content: Buffer.from(pdfBase64, 'base64')
+                }
+            ]
         });
 
         if (emailError) {

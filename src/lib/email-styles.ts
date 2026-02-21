@@ -171,7 +171,7 @@ export function generateEmailHTML(options: {
         content,
         showButton = false,
         buttonText = 'Ver en la tienda',
-        buttonUrl = 'https://fashionmarket.com'
+        buttonUrl = 'https://j4o0084kg0ssoo0wc0ocw0g8.victoriafp.online'
     } = options;
 
     return `

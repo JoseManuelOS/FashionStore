@@ -47,7 +47,7 @@ export const POST: APIRoute = async ({ request }) => {
 
         const successfulSends: string[] = [];
         const failedSends: string[] = [];
-        const siteUrl = import.meta.env.PUBLIC_SITE_URL || 'https://fashionmarket.com';
+        const siteUrl = import.meta.env.PUBLIC_SITE_URL || 'https://j4o0084kg0ssoo0wc0ocw0g8.victoriafp.online';
         const finalButtonUrl = buttonUrl
             ? (buttonUrl.startsWith('/') ? `${siteUrl}${buttonUrl}` : buttonUrl)
             : `${siteUrl}/productos`;
