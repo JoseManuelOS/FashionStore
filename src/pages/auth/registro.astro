@@ -387,6 +387,7 @@ export const prerender = false;
             full_name: fullName,
             newsletter: newsletter,
           },
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=login`,
         },
       });
 
@@ -417,7 +418,8 @@ export const prerender = false;
           </svg>
           <div>
             <p class="font-medium">¡Cuenta creada con éxito!</p>
-            <p class="text-green-400/80 text-sm mt-1">Te hemos enviado un email de bienvenida a <strong>${email}</strong>. Revisa tu bandeja de entrada.</p>
+            <p class="text-green-400/80 text-sm mt-1">Te hemos enviado un email de confirmación a <strong>${email}</strong>. Revisa tu bandeja de entrada y confirma tu cuenta para poder iniciar sesión.</p>
+            <p class="text-green-400/60 text-xs mt-2">Redirigiendo al inicio de sesión en <span id="countdown">5</span> segundos...</p>
           </div>
         </div>
       `;
@@ -434,6 +436,18 @@ export const prerender = false;
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
         </svg>
       `;
+
+      // Countdown and redirect to login
+      let seconds = 5;
+      const countdownEl = document.getElementById('countdown');
+      const countdownInterval = setInterval(() => {
+        seconds--;
+        if (countdownEl) countdownEl.textContent = String(seconds);
+        if (seconds <= 0) {
+          clearInterval(countdownInterval);
+          window.location.href = '/auth/login';
+        }
+      }, 1000);
     } catch (error: any) {
       let message = error.message;
       if (error.message.includes("already registered")) {

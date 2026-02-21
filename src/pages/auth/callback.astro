@@ -56,8 +56,17 @@ export const prerender = false;
           console.error('Failed to set session cookies');
         }
 
-        // Successfully authenticated
-        window.location.href = '/';
+        // Check if there's a specific redirect target
+        const urlParams = new URLSearchParams(window.location.search);
+        const next = urlParams.get('next');
+        
+        if (next === 'login') {
+          // Coming from email confirmation - redirect to login with confirmed flag
+          window.location.href = '/auth/login?confirmed=true';
+        } else {
+          // Default: redirect to homepage
+          window.location.href = '/';
+        }
       } else {
         // No session, redirect to login
         window.location.href = '/auth/login';

@@ -47,14 +47,14 @@ export const POST: APIRoute = async ({ request }) => {
         // Check if order already exists
         const { data: existingOrder } = await supabaseAdmin
             .from('orders')
-            .select('id')
+            .select('id, order_number')
             .eq('stripe_session_id', sessionId)
             .single();
 
         if (existingOrder) {
             console.log('✅ Order already exists:', existingOrder.id);
             return new Response(
-                JSON.stringify({ success: true, orderId: existingOrder.id }),
+                JSON.stringify({ success: true, orderId: existingOrder.id, orderNumber: existingOrder.order_number }),
                 { status: 200 }
             );
         }
@@ -365,7 +365,7 @@ export const POST: APIRoute = async ({ request }) => {
         }
 
         return new Response(
-            JSON.stringify({ success: true, orderId: order.id }),
+            JSON.stringify({ success: true, orderId: order.id, orderNumber: order.order_number }),
             { status: 200 }
         );
 
