@@ -19,7 +19,7 @@ let productImages: any[] = [];
 
 const { data } = await supabaseAdmin
     .from("products")
-    .select(`*, images:product_images(id, image_url, order)`)
+    .select(`*, images:product_images(id, image_url, order, color, color_hex)`)
     .eq("id", id)
     .single();
 
@@ -33,11 +33,13 @@ if (!product) {
 const variants = await getProductVariants(id!);
 const variantsMap = variants.reduce(
     (acc, v) => {
-        acc[v.size] = v;
+        const key = v.color ? `${v.size}|${v.color}` : v.size;
+        acc[key] = v;
         return acc;
     },
     {} as Record<string, ProductVariant>,
 );
+const productColors: Array<{name: string; hex: string}> = product.colors || [];
 
 productImages = (product.images || []).sort(
     (a: any, b: any) => a.order - b.order,
@@ -59,11 +61,23 @@ if (Astro.request.method === "POST") {
         const is_offer = formData.get("is_offer") === "on";
         const active = formData.get("active") === "on";
 
+        // Parse colors
+        const colorsJson = formData.get("colors_json") as string;
+        const colors: Array<{name: string; hex: string}> = colorsJson ? JSON.parse(colorsJson) : [];
+
         const variantsData: Record<string, { stock: number }> = {};
-        for (const size of sizes) {
-            const stockValue =
-                parseInt(formData.get(`stock_${size}`) as string) || 0;
-            variantsData[size] = { stock: stockValue };
+        if (colors.length > 0) {
+            for (const size of sizes) {
+                for (const color of colors) {
+                    const stockValue = parseInt(formData.get(`stock_${size}|${color.name}`) as string) || 0;
+                    variantsData[`${size}|${color.name}`] = { stock: stockValue };
+                }
+            }
+        } else {
+            for (const size of sizes) {
+                const stockValue = parseInt(formData.get(`stock_${size}`) as string) || 0;
+                variantsData[size] = { stock: stockValue };
+            }
         }
 
         const totalStock = Object.values(variantsData).reduce(
@@ -89,6 +103,7 @@ if (Astro.request.method === "POST") {
                 stock: totalStock,
                 category_id: category_id || null,
                 sizes,
+                colors,
                 is_offer,
                 active,
             })
@@ -109,10 +124,20 @@ if (Astro.request.method === "POST") {
                     .delete()
                     .eq("product_id", id);
                 if (newImageUrls.length > 0) {
+                    // Preserve existing image color assignments
+                    const existingImgColors: Record<string, {color: string|null; color_hex: string|null}> = {};
+                    productImages.forEach((img: any) => {
+                        if (img.color) existingImgColors[img.image_url] = { color: img.color, color_hex: img.color_hex };
+                    });
+                    // Check for new color assignments from form
+                    const imgColorsJson = formData.get("image_colors_json") as string;
+                    const imgColorsOverride: Record<string, {color: string; colorHex: string}> = imgColorsJson ? JSON.parse(imgColorsJson) : {};
                     const imageRecords = newImageUrls.map((url, index) => ({
                         product_id: id,
                         image_url: url,
                         order: index,
+                        color: imgColorsOverride[url]?.color || existingImgColors[url]?.color || null,
+                        color_hex: imgColorsOverride[url]?.colorHex || existingImgColors[url]?.color_hex || null,
                     }));
                     await supabaseAdmin
                         .from("product_images")
@@ -291,6 +316,73 @@ const currentImageUrls = productImages.map((img: any) => img.image_url);
         .form-hint {
             font-size: 12px;
             color: #71717a;
+        }
+
+        .color-entry {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .color-name-input {
+            flex: 1;
+            max-width: 200px;
+        }
+
+        .color-hex-input {
+            width: 44px;
+            height: 44px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            background: #18181f;
+            cursor: pointer;
+            padding: 2px;
+        }
+
+        .btn-remove-color {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 8px;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        .btn-remove-color:hover {
+            background: rgba(239, 68, 68, 0.25);
+        }
+
+        .color-stock-group {
+            background: #18181f;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .color-stock-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            font-weight: 600;
+            color: #fafafa;
+        }
+
+        .color-dot {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            display: inline-block;
+            flex-shrink: 0;
         }
 
         .stock-grid {
@@ -551,6 +643,22 @@ const currentImageUrls = productImages.map((img: any) => img.image_url);
         </div>
 
         <div class="form-section">
+            <div class="section-title">Colores</div>
+            <div id="colors-container">
+                {productColors.map((color) => (
+                    <div class="color-entry">
+                        <input type="text" class="color-name-input form-input" value={color.name} placeholder="Nombre (ej: Negro)" />
+                        <input type="color" class="color-hex-input" value={color.hex} />
+                        <button type="button" class="btn-remove-color" title="Eliminar color">&times;</button>
+                    </div>
+                ))}
+            </div>
+            <button type="button" id="add-color-btn" class="btn btn-secondary" style="margin-top:12px">+ Añadir color</button>
+            <input type="hidden" name="colors_json" id="colors-json-input" value={JSON.stringify(productColors)} />
+            <span class="form-hint">Define los colores disponibles. Si no tiene colores, déjalo vacío.</span>
+        </div>
+
+        <div class="form-section">
             <div class="section-title">Tallas y stock</div>
             <div class="form-grid">
                 <div class="form-group">
@@ -568,33 +676,41 @@ const currentImageUrls = productImages.map((img: any) => img.image_url);
                 </div>
                 <div class="form-group">
                     <label class="form-label">Stock por talla</label>
-                    <div class="variants-stack">
-                        {
-                            product.sizes?.map((size: string) => {
-                                const variant = variantsMap[size] || {};
-                                return (
-                                    <div class="variant-card">
-                                        <div class="variant-header">
-                                            <div class="variant-size">
-                                                {size}
-                                            </div>
-                                        </div>
-                                        <div class="variant-inputs">
-                                            <div class="variant-input-group">
-                                                <label>Stock</label>
-                                                <input
-                                                    type="number"
-                                                    name={`stock_${size}`}
-                                                    min="0"
-                                                    value={variant.stock ?? 0}
-                                                    class="stock-input"
-                                                />
-                                            </div>
-                                        </div>
+                    <div id="stock-container">
+                        {productColors.length > 0 ? (
+                            productColors.map((color) => (
+                                <div class="color-stock-group">
+                                    <div class="color-stock-header">
+                                        <span class="color-dot" style={`background:${color.hex}`}></span>
+                                        <span>{color.name}</span>
                                     </div>
-                                );
-                            })
-                        }
+                                    <div class="stock-grid">
+                                        {product.sizes?.map((size: string) => {
+                                            const key = `${size}|${color.name}`;
+                                            const variant = variantsMap[key] || {};
+                                            return (
+                                                <div class="stock-item">
+                                                    <div class="stock-label">{size}</div>
+                                                    <input type="number" name={`stock_${size}|${color.name}`} min="0" value={(variant as any).stock ?? 0} class="stock-input" />
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div class="stock-grid">
+                                {product.sizes?.map((size: string) => {
+                                    const variant = variantsMap[size] || {};
+                                    return (
+                                        <div class="stock-item">
+                                            <div class="stock-label">{size}</div>
+                                            <input type="number" name={`stock_${size}`} min="0" value={(variant as any).stock ?? 0} class="stock-input" />
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
                     <span class="form-hint"
                         >El stock total se calculará automáticamente</span
@@ -613,7 +729,10 @@ const currentImageUrls = productImages.map((img: any) => img.image_url);
                     client:load
                     initialImages={currentImageUrls}
                     inputName="images"
+                    availableColors={productColors}
+                    initialImageColors={productImages.reduce((acc: Record<string, string>, img: any) => { if (img.color) acc[img.image_url] = img.color; return acc; }, {})}
                 />
+                <input type="hidden" name="image_colors_json" id="image-colors-json-input" value="" />
                 <span class="form-hint"
                     >Arrastra para reordenar. Haz clic en 'Eliminar' para quitar
                     una imagen.</span
@@ -650,4 +769,124 @@ const currentImageUrls = productImages.map((img: any) => img.image_url);
             <a href="/admin/productos" class="btn btn-secondary">Cancelar</a>
         </div>
     </form>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const colorsContainer = document.getElementById('colors-container');
+            const addColorBtn = document.getElementById('add-color-btn');
+            const colorsJsonInput = document.getElementById('colors-json-input') as HTMLInputElement;
+            const stockContainer = document.getElementById('stock-container');
+            const sizesInput = document.getElementById('sizes') as HTMLInputElement;
+
+            if (!colorsContainer || !addColorBtn || !colorsJsonInput || !stockContainer || !sizesInput) return;
+
+            function getColors(): Array<{name: string; hex: string}> {
+                const entries = colorsContainer!.querySelectorAll('.color-entry');
+                const colors: Array<{name: string; hex: string}> = [];
+                entries.forEach(entry => {
+                    const name = (entry.querySelector('.color-name-input') as HTMLInputElement).value.trim();
+                    const hex = (entry.querySelector('.color-hex-input') as HTMLInputElement).value;
+                    if (name) colors.push({ name, hex });
+                });
+                return colors;
+            }
+
+            function getSizes(): string[] {
+                return sizesInput!.value.split(',').map(s => s.trim()).filter(Boolean);
+            }
+
+            function updateColorsJson() {
+                colorsJsonInput!.value = JSON.stringify(getColors());
+            }
+
+            function saveCurrentStockValues(): Record<string, string> {
+                const values: Record<string, string> = {};
+                stockContainer!.querySelectorAll('input[type="number"]').forEach((input) => {
+                    const inp = input as HTMLInputElement;
+                    values[inp.name] = inp.value;
+                });
+                return values;
+            }
+
+            function rebuildStockSection() {
+                const colors = getColors();
+                const sizes = getSizes();
+                const savedValues = saveCurrentStockValues();
+                let html = '';
+
+                if (colors.length > 0) {
+                    colors.forEach(color => {
+                        html += `<div class="color-stock-group">
+                            <div class="color-stock-header">
+                                <span class="color-dot" style="background:${color.hex}"></span>
+                                <span>${color.name}</span>
+                            </div>
+                            <div class="stock-grid">`;
+                        sizes.forEach(size => {
+                            const name = `stock_${size}|${color.name}`;
+                            const val = savedValues[name] || '0';
+                            html += `<div class="stock-item">
+                                <div class="stock-label">${size}</div>
+                                <input type="number" name="${name}" min="0" value="${val}" class="stock-input" />
+                            </div>`;
+                        });
+                        html += `</div></div>`;
+                    });
+                } else {
+                    html += `<div class="stock-grid">`;
+                    sizes.forEach(size => {
+                        const name = `stock_${size}`;
+                        const val = savedValues[name] || '0';
+                        html += `<div class="stock-item">
+                            <div class="stock-label">${size}</div>
+                            <input type="number" name="${name}" min="0" value="${val}" class="stock-input" />
+                        </div>`;
+                    });
+                    html += `</div>`;
+                }
+                stockContainer!.innerHTML = html;
+            }
+
+            function attachColorEntryListeners(entry: Element) {
+                entry.querySelector('.btn-remove-color')?.addEventListener('click', () => {
+                    entry.remove();
+                    updateColorsJson();
+                    rebuildStockSection();
+                });
+                entry.querySelector('.color-name-input')?.addEventListener('input', () => {
+                    updateColorsJson();
+                    rebuildStockSection();
+                });
+                entry.querySelector('.color-hex-input')?.addEventListener('input', () => {
+                    updateColorsJson();
+                    rebuildStockSection();
+                });
+            }
+
+            // Initialize event listeners for existing color entries
+            colorsContainer.querySelectorAll('.color-entry').forEach(attachColorEntryListeners);
+
+            addColorBtn.addEventListener('click', () => {
+                const div = document.createElement('div');
+                div.className = 'color-entry';
+                div.innerHTML = `
+                    <input type="text" class="color-name-input form-input" value="" placeholder="Nombre (ej: Negro)" />
+                    <input type="color" class="color-hex-input" value="#000000" />
+                    <button type="button" class="btn-remove-color" title="Eliminar color">&times;</button>
+                `;
+                colorsContainer!.appendChild(div);
+                attachColorEntryListeners(div);
+                updateColorsJson();
+            });
+
+            // Debounce sizes input to rebuild stock
+            let sizesTimeout: ReturnType<typeof setTimeout>;
+            sizesInput.addEventListener('input', () => {
+                clearTimeout(sizesTimeout);
+                sizesTimeout = setTimeout(() => {
+                    rebuildStockSection();
+                }, 500);
+            });
+        });
+    </script>
 </AdminLayout>

@@ -3,13 +3,28 @@ import { useStore } from '@nanostores/react';
 import { addToCart, $cart } from '../../stores/cart';
 import type { Product } from '../../lib/supabase';
 
+interface ProductColor {
+    name: string;
+    hex: string;
+}
+
 interface AddToCartButtonProps {
     product: Product;
     stockBySize?: Record<string, number>; // Stock por talla
+    onColorChange?: (color: string) => void; // Callback para cambiar galería
 }
 
-function getMainImage(product: Product): string {
+function getMainImage(product: Product, color?: string): string {
     if (product.images && product.images.length > 0) {
+        // If color specified, try to find an image with that color
+        if (color) {
+            const colorImage = product.images.find(
+                (img: any) => img.color === color
+            );
+            if (colorImage) {
+                return typeof colorImage === 'string' ? colorImage : (colorImage as any).image_url || 'https://placehold.co/400x500/0d0d14/06b6d4?text=Producto';
+            }
+        }
         const firstImage = product.images[0];
         if (typeof firstImage === 'string') {
             return firstImage;
@@ -19,53 +34,74 @@ function getMainImage(product: Product): string {
     return 'https://placehold.co/400x500/0d0d14/06b6d4?text=Producto';
 }
 
-export default function AddToCartButton({ product, stockBySize: initialStockBySize }: AddToCartButtonProps) {
+export default function AddToCartButton({ product, stockBySize: initialStockBySize, onColorChange }: AddToCartButtonProps) {
+    const colors: ProductColor[] = product.colors || [];
+    const hasColors = colors.length > 0;
+    
+    const [selectedColor, setSelectedColor] = useState(hasColors ? colors[0].name : '');
     const [selectedSize, setSelectedSize] = useState(product.sizes?.[0] || 'M');
     const [quantity, setQuantity] = useState(1);
     const [isAdding, setIsAdding] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
     const [stockBySize, setStockBySize] = useState<Record<string, number>>(initialStockBySize || {});
-    const [isLoadingStock, setIsLoadingStock] = useState(!initialStockBySize);
+    const [stockBySizeColor, setStockBySizeColor] = useState<Record<string, number>>({});
+    const [isLoadingStock, setIsLoadingStock] = useState(true);
     const cart = useStore($cart);
 
-    const image = getMainImage(product);
+    const image = getMainImage(product, selectedColor);
 
-    // Cargar stock por talla si no se pasó como prop
+    // Cargar stock (incluido por color)
     useEffect(() => {
-        if (!initialStockBySize) {
-            fetch(`/api/products/stock?productId=${product.id}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.stockBySize) {
-                        setStockBySize(data.stockBySize);
-                    }
-                })
-                .catch(console.error)
-                .finally(() => setIsLoadingStock(false));
-        }
-    }, [product.id, initialStockBySize]);
+        const colorParam = hasColors && selectedColor ? `&color=${encodeURIComponent(selectedColor)}` : '';
+        fetch(`/api/products/stock?productId=${product.id}${colorParam}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.stockBySize) {
+                    setStockBySize(data.stockBySize);
+                }
+                if (data.stockBySizeColor) {
+                    setStockBySizeColor(data.stockBySizeColor);
+                }
+            })
+            .catch(console.error)
+            .finally(() => setIsLoadingStock(false));
+    }, [product.id, selectedColor, hasColors]);
 
-    // Stock de la talla seleccionada
-    const currentSizeStock = stockBySize[selectedSize] ?? product.stock;
+    // Notificar cambio de color al padre (para cambiar galería)
+    useEffect(() => {
+        if (selectedColor !== undefined) {
+            // Dispatch custom event for Astro page script to filter thumbnails
+            document.dispatchEvent(new CustomEvent('product-color-change', {
+                detail: { color: selectedColor }
+            }));
+            if (onColorChange) {
+                onColorChange(selectedColor);
+            }
+        }
+    }, [selectedColor, onColorChange]);
+
+    // Stock para la talla y color seleccionados
+    const currentSizeStock = hasColors
+        ? (stockBySizeColor[`${selectedSize}|${selectedColor}`] ?? stockBySize[selectedSize] ?? 0)
+        : (stockBySize[selectedSize] ?? product.stock);
     const isOutOfStock = currentSizeStock <= 0;
     const totalStock = Object.values(stockBySize).reduce((sum, qty) => sum + qty, 0) || product.stock;
 
-    // Cantidad ya en el carrito para esta talla
-    const existingItem = cart.find(i => i.id === product.id && i.size === selectedSize);
+    // Cantidad ya en el carrito para esta talla+color
+    const existingItem = cart.find(i => i.id === product.id && i.size === selectedSize && i.color === selectedColor);
     const currentQty = existingItem?.quantity || 0;
-    // Máximo que se puede añadir: stock disponible menos lo que ya hay en el carrito
     const maxAddable = Math.max(0, currentSizeStock - currentQty);
 
-    // Resetear cantidad si cambia la talla
+    // Resetear cantidad si cambia la talla o color
     useEffect(() => {
         setQuantity(1);
-    }, [selectedSize]);
+    }, [selectedSize, selectedColor]);
 
     const handleAddToCart = () => {
         if (isOutOfStock || maxAddable <= 0) return;
 
         if (currentQty + quantity > currentSizeStock) {
-            alert(`Solo hay ${currentSizeStock} unidades de talla ${selectedSize} disponibles`);
+            alert(`Solo hay ${currentSizeStock} unidades de talla ${selectedSize}${selectedColor ? ` en ${selectedColor}` : ''} disponibles`);
             return;
         }
 
@@ -77,6 +113,7 @@ export default function AddToCartButton({ product, stockBySize: initialStockBySi
             slug: product.slug,
             price: product.price,
             size: selectedSize,
+            color: selectedColor,
             image: image
         }, quantity);
 
@@ -91,7 +128,9 @@ export default function AddToCartButton({ product, stockBySize: initialStockBySi
 
     // Función para determinar el estado de stock de una talla
     const getSizeStockStatus = (size: string) => {
-        const stock = stockBySize[size];
+        const stock = hasColors
+            ? (stockBySizeColor[`${size}|${selectedColor}`] ?? stockBySize[size])
+            : stockBySize[size];
         if (stock === undefined) return 'unknown';
         if (stock <= 0) return 'out';
         if (stock <= 3) return 'low';
@@ -100,6 +139,40 @@ export default function AddToCartButton({ product, stockBySize: initialStockBySi
 
     return (
         <div className="space-y-6">
+            {/* Color Selection */}
+            {hasColors && (
+                <div>
+                    <label className="block text-sm font-medium text-zinc-400 mb-3">
+                        Color: <span className="text-white">{selectedColor}</span>
+                    </label>
+                    <div className="flex gap-3 flex-wrap">
+                        {colors.map((color) => (
+                            <button
+                                key={color.name}
+                                onClick={() => setSelectedColor(color.name)}
+                                className={`
+                                    relative w-10 h-10 rounded-full transition-all duration-300
+                                    ${selectedColor === color.name
+                                        ? 'ring-2 ring-neon-cyan ring-offset-2 ring-offset-dark-600 scale-110'
+                                        : 'ring-1 ring-white/20 hover:ring-white/50'
+                                    }
+                                `}
+                                style={{ backgroundColor: color.hex }}
+                                title={color.name}
+                            >
+                                {selectedColor === color.name && (
+                                    <span className="absolute inset-0 flex items-center justify-center">
+                                        <svg className="w-5 h-5" fill="none" stroke={isLightColor(color.hex) ? '#000' : '#fff'} viewBox="0 0 24 24" strokeWidth={3}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </span>
+                                )}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Size Selection */}
             {product.sizes && product.sizes.length > 0 && (
                 <div>
@@ -109,7 +182,9 @@ export default function AddToCartButton({ product, stockBySize: initialStockBySi
                     <div className="flex gap-2 flex-wrap">
                         {product.sizes.map((size) => {
                             const stockStatus = getSizeStockStatus(size);
-                            const sizeStock = stockBySize[size] ?? 0;
+                            const sizeStock = hasColors
+                                ? (stockBySizeColor[`${size}|${selectedColor}`] ?? 0)
+                                : (stockBySize[size] ?? 0);
                             const isDisabled = stockStatus === 'out';
                             
                             return (
@@ -196,10 +271,10 @@ export default function AddToCartButton({ product, stockBySize: initialStockBySi
                         }`} />
                         <span className="text-sm text-zinc-500">
                             {isOutOfStock
-                                ? `Talla ${selectedSize} agotada`
+                                ? `Talla ${selectedSize}${selectedColor ? ` en ${selectedColor}` : ''} agotada`
                                 : currentSizeStock <= 3
-                                    ? `¡Solo quedan ${currentSizeStock} unidades en talla ${selectedSize}!`
-                                    : `${currentSizeStock} unidades en talla ${selectedSize}`
+                                    ? `¡Solo quedan ${currentSizeStock} unidades en talla ${selectedSize}${selectedColor ? ` (${selectedColor})` : ''}!`
+                                    : `${currentSizeStock} unidades en talla ${selectedSize}${selectedColor ? ` (${selectedColor})` : ''}`
                             }
                         </span>
                     </>
@@ -247,9 +322,19 @@ export default function AddToCartButton({ product, stockBySize: initialStockBySi
             {/* Already in cart notice */}
             {itemInCart && !showSuccess && (
                 <p className="text-sm text-zinc-500 text-center">
-                    Ya tienes {itemInCart.quantity} unidad(es) de talla {itemInCart.size} en el carrito
+                    Ya tienes {itemInCart.quantity} unidad(es) de talla {itemInCart.size}{itemInCart.color ? ` (${itemInCart.color})` : ''} en el carrito
                 </p>
             )}
         </div>
     );
+}
+
+/** Helper to determine if a hex color is light (for contrast) */
+function isLightColor(hex: string): boolean {
+    const c = hex.replace('#', '');
+    const r = parseInt(c.substring(0, 2), 16);
+    const g = parseInt(c.substring(2, 4), 16);
+    const b = parseInt(c.substring(4, 6), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 155;
 }

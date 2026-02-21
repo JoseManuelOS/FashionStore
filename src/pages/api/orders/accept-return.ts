@@ -121,8 +121,9 @@ export const POST: APIRoute = async ({ request }) => {
                 if (item.product_id && item.size) {
                     try {
                         const { incrementStock } = await import('../../../lib/supabase');
-                        await incrementStock(item.product_id, item.size, item.quantity);
-                        console.log(`Stock restored: ${item.product_name} (${item.size}) +${item.quantity}`);
+                        const itemColor = (item as any).color || '';
+                        await incrementStock(item.product_id, item.size, item.quantity, itemColor);
+                        console.log(`Stock restored: ${item.product_name} (${item.size}${itemColor ? '/' + itemColor : ''}) +${item.quantity}`);
                     } catch (stockError) {
                         console.error('Error restoring stock:', stockError);
                     }

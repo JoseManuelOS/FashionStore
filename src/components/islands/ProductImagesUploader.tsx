@@ -1,18 +1,60 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+
+interface ProductColor {
+    name: string;
+    hex: string;
+}
 
 interface ProductImagesUploaderProps {
     initialImages?: string[];
     inputName?: string;
+    availableColors?: ProductColor[];
+    initialImageColors?: Record<string, string>; // url -> colorName
 }
 
 export default function ProductImagesUploader({
     initialImages = [],
-    inputName = 'images'
+    inputName = 'images',
+    availableColors = [],
+    initialImageColors = {}
 }: ProductImagesUploaderProps) {
     const [images, setImages] = useState<string[]>(initialImages);
     const [uploading, setUploading] = useState(false);
     const [dragActive, setDragActive] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [imageColors, setImageColors] = useState<Record<string, string>>(initialImageColors);
+    const [colors, setColors] = useState<ProductColor[]>(availableColors);
+
+    // Listen for color changes from the page script
+    useEffect(() => {
+        const handler = () => {
+            const jsonInput = document.getElementById('colors-json-input') as HTMLInputElement;
+            if (jsonInput) {
+                try {
+                    const parsed = JSON.parse(jsonInput.value);
+                    setColors(parsed);
+                } catch { /* ignore */ }
+            }
+        };
+        // Check on an interval since direct event is tricky across frameworks
+        const interval = setInterval(handler, 2000);
+        return () => clearInterval(interval);
+    }, []);
+
+    // Sync image color assignments to a hidden input so the form can read them
+    useEffect(() => {
+        const hiddenInput = document.getElementById('image-colors-json-input') as HTMLInputElement;
+        if (hiddenInput && colors.length > 0) {
+            const mapping: Record<string, { color: string; colorHex: string }> = {};
+            for (const [url, colorName] of Object.entries(imageColors)) {
+                const c = colors.find(c => c.name === colorName);
+                if (c) {
+                    mapping[url] = { color: c.name, colorHex: c.hex };
+                }
+            }
+            hiddenInput.value = JSON.stringify(mapping);
+        }
+    }, [imageColors, colors]);
 
     const cloudinaryCloudName = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'djlc45ybk';
     const cloudinaryUploadPreset = 'fashionstore_products';
@@ -102,7 +144,15 @@ export default function ProductImagesUploader({
     };
 
     const removeImage = (indexToRemove: number) => {
+        const removedUrl = images[indexToRemove];
         setImages(prev => prev.filter((_, idx) => idx !== indexToRemove));
+        if (removedUrl) {
+            setImageColors(prev => {
+                const next = { ...prev };
+                delete next[removedUrl];
+                return next;
+            });
+        }
     };
 
     const moveImage = (fromIndex: number, toIndex: number) => {
@@ -228,6 +278,31 @@ export default function ProductImagesUploader({
                             <div className="absolute bottom-2 right-2 w-6 h-6 bg-black/70 text-white text-xs flex items-center justify-center rounded-full pointer-events-none">
                                 {idx + 1}
                             </div>
+
+                            {/* Color Tag */}
+                            {colors.length > 0 && (
+                                <div className="absolute top-2 left-2 right-2">
+                                    <select
+                                        value={imageColors[url] || ''}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setImageColors(prev => {
+                                                const next = { ...prev };
+                                                if (val) next[url] = val;
+                                                else delete next[url];
+                                                return next;
+                                            });
+                                        }}
+                                        className="w-full text-xs bg-black/70 text-white border border-white/20 rounded px-1 py-0.5 backdrop-blur-sm"
+                                        style={{ fontSize: '11px' }}
+                                    >
+                                        <option value="">Sin color</option>
+                                        {colors.map(c => (
+                                            <option key={c.name} value={c.name}>{c.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>

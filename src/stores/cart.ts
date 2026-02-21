@@ -8,6 +8,7 @@ export interface CartItem {
     price: number;       // Price in cents
     quantity: number;
     size: string;
+    color: string;       // Color name ('' for no-color products)
     image: string;
 }
 
@@ -70,12 +71,12 @@ export const $isCartEmpty = computed($cart, (items) => items.length === 0);
 
 /**
  * Add an item to the cart
- * If item with same ID + size exists, increment quantity
+ * If item with same ID + size + color exists, increment quantity
  */
 export function addToCart(item: Omit<CartItem, 'quantity'>, quantity: number = 1) {
     const currentItems = $cart.get();
     const existingIndex = currentItems.findIndex(
-        (i) => i.id === item.id && i.size === item.size
+        (i) => i.id === item.id && i.size === item.size && i.color === item.color
     );
 
     if (existingIndex >= 0) {
@@ -95,24 +96,24 @@ export function addToCart(item: Omit<CartItem, 'quantity'>, quantity: number = 1
 /**
  * Remove an item from the cart completely
  */
-export function removeFromCart(id: string, size: string) {
+export function removeFromCart(id: string, size: string, color: string = '') {
     const currentItems = $cart.get();
-    $cart.set(currentItems.filter((item) => !(item.id === id && item.size === size)));
+    $cart.set(currentItems.filter((item) => !(item.id === id && item.size === size && item.color === color)));
 }
 
 /**
  * Update quantity for a specific item
  * If quantity <= 0, remove the item
  */
-export function updateQuantity(id: string, size: string, quantity: number) {
+export function updateQuantity(id: string, size: string, quantity: number, color: string = '') {
     if (quantity <= 0) {
-        removeFromCart(id, size);
+        removeFromCart(id, size, color);
         return;
     }
 
     const currentItems = $cart.get();
     const updated = currentItems.map((item) => {
-        if (item.id === id && item.size === size) {
+        if (item.id === id && item.size === size && item.color === color) {
             return { ...item, quantity };
         }
         return item;
@@ -130,6 +131,6 @@ export function clearCart() {
 /**
  * Get a specific item from the cart
  */
-export function getCartItem(id: string, size: string): CartItem | undefined {
-    return $cart.get().find((item) => item.id === id && item.size === size);
+export function getCartItem(id: string, size: string, color: string = ''): CartItem | undefined {
+    return $cart.get().find((item) => item.id === id && item.size === size && item.color === color);
 }

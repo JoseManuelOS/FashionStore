@@ -149,7 +149,7 @@ export const POST: APIRoute = async ({ request }) => {
         // 3. Get order items to restore stock
         const { data: orderItems, error: itemsError } = await supabaseAdmin
             .from('order_items')
-            .select('product_id, product_name, size, quantity, price_at_purchase')
+            .select('product_id, product_name, size, color, quantity, price_at_purchase')
             .eq('order_id', orderId);
 
         if (itemsError) {
@@ -161,11 +161,11 @@ export const POST: APIRoute = async ({ request }) => {
         if (orderItems && orderItems.length > 0) {
             for (const item of orderItems) {
                 if (item.product_id && item.size) {
-                    const success = await incrementStock(item.product_id, item.size, item.quantity);
+                    const success = await incrementStock(item.product_id, item.size, item.quantity, item.color || '');
                     if (success) {
                         itemsRestored++;
                     } else {
-                        console.warn(`[CANCEL] Failed to restore stock for product ${item.product_id} size ${item.size}`);
+                        console.warn(`[CANCEL] Failed to restore stock for product ${item.product_id} size ${item.size} color ${item.color || 'N/A'}`);
                     }
                 }
             }

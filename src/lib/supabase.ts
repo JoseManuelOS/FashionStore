@@ -39,6 +39,11 @@ export interface ProductImage {
     created_at: string;
 }
 
+export interface ProductColor {
+    name: string;
+    hex: string;
+}
+
 export interface Product {
     id: string;
     name: string;
@@ -49,6 +54,7 @@ export interface Product {
     category_id: string | null;
     is_offer: boolean;
     sizes: string[];
+    colors: ProductColor[]; // Colores disponibles [{name, hex}]
     active: boolean;
     original_price?: number;
     discount_percent?: number;
@@ -65,6 +71,7 @@ export interface ProductVariant {
     id: string;
     product_id: string;
     size: string;
+    color: string; // '' para sin color, 'Negro' etc. para multi-color
     stock: number;
     sku?: string;
     created_at: string;
@@ -117,6 +124,7 @@ export interface OrderItem {
     product_image?: string | null;
     quantity: number;
     size: string | null;
+    color?: string | null;
     price_at_purchase: number;
     created_at: string;
 }
@@ -545,25 +553,34 @@ export async function getProductStock(productId: string): Promise<ProductVariant
 }
 
 /**
- * Obtener stock de un producto como objeto { talla: cantidad }
+ * Obtener stock de un producto como objeto { talla: cantidad } o { "talla|color": cantidad }
  */
-export async function getProductStockBySize(productId: string): Promise<Record<string, number>> {
+export async function getProductStockBySize(productId: string, color?: string): Promise<Record<string, number>> {
     const stock = await getProductVariants(productId);
+    if (color !== undefined) {
+        return stock
+            .filter(item => item.color === color)
+            .reduce((acc, item) => {
+                acc[item.size] = item.stock;
+                return acc;
+            }, {} as Record<string, number>);
+    }
     return stock.reduce((acc, item) => {
-        acc[item.size] = item.stock;
+        acc[item.size] = (acc[item.size] || 0) + item.stock;
         return acc;
     }, {} as Record<string, number>);
 }
 
 /**
- * Obtener stock de una talla específica
+ * Obtener stock de una talla específica (con color opcional)
  */
-export async function getStockForSize(productId: string, size: string): Promise<number> {
+export async function getStockForSize(productId: string, size: string, color: string = ''): Promise<number> {
     const { data, error } = await supabase
         .from('product_variants')
         .select('stock')
         .eq('product_id', productId)
         .eq('size', size)
+        .eq('color', color)
         .single();
 
     if (error) return 0;
@@ -571,15 +588,16 @@ export async function getStockForSize(productId: string, size: string): Promise<
 }
 
 /**
- * Actualizar stock de una talla específica
+ * Actualizar stock de una talla específica (con color)
  */
-export async function updateStockForSize(productId: string, size: string, quantity: number): Promise<void> {
+export async function updateStockForSize(productId: string, size: string, quantity: number, color: string = ''): Promise<void> {
     // Try to update existing variant
     const { data, error: updateError } = await supabaseAdmin
         .from('product_variants')
         .update({ stock: quantity })
         .eq('product_id', productId)
         .eq('size', size)
+        .eq('color', color)
         .select('id')
         .single();
 
@@ -591,6 +609,7 @@ export async function updateStockForSize(productId: string, size: string, quanti
                 product_id: productId,
                 size: size,
                 stock: quantity,
+                color: color,
             });
 
         if (insertError) throw insertError;
@@ -617,29 +636,36 @@ export async function getProductVariants(productId: string): Promise<ProductVari
 }
 
 /**
- * Actualizar variantes de un producto (stock por talla)
+ * Actualizar variantes de un producto (stock por talla y color)
+ * variantsData key format: "size" for no-color products, "size|color" for color products
  */
 export async function updateProductVariants(
     productId: string,
     variantsData: Record<string, { stock: number; price?: number | null; is_offer?: boolean }>
 ): Promise<void> {
-    // Delete existing variants and re-insert (product_variants has no unique constraint on product_id,size)
+    // Delete existing variants and re-insert
     await supabaseAdmin
         .from('product_variants')
         .delete()
         .eq('product_id', productId);
 
-    const insertData = Object.entries(variantsData).map(([size, data]) => ({
-        product_id: productId,
-        size,
-        stock: data.stock,
-    }));
+    const insertData = Object.entries(variantsData).map(([key, data]) => {
+        const [size, color] = key.includes('|') ? key.split('|') : [key, ''];
+        return {
+            product_id: productId,
+            size,
+            color: color || '',
+            stock: data.stock,
+        };
+    });
 
-    const { error } = await supabaseAdmin
-        .from('product_variants')
-        .insert(insertData);
+    if (insertData.length > 0) {
+        const { error } = await supabaseAdmin
+            .from('product_variants')
+            .insert(insertData);
 
-    if (error) throw error;
+        if (error) throw error;
+    }
 }
 
 /**
@@ -652,17 +678,23 @@ export async function updateProductStockBulk(productId: string, stockBySize: Rec
         .delete()
         .eq('product_id', productId);
 
-    const insertData = Object.entries(stockBySize).map(([size, quantity]) => ({
-        product_id: productId,
-        size,
-        stock: quantity,
-    }));
+    const insertData = Object.entries(stockBySize).map(([key, quantity]) => {
+        const [size, color] = key.includes('|') ? key.split('|') : [key, ''];
+        return {
+            product_id: productId,
+            size,
+            color: color || '',
+            stock: quantity,
+        };
+    });
 
-    const { error } = await supabaseAdmin
-        .from('product_variants')
-        .insert(insertData);
+    if (insertData.length > 0) {
+        const { error } = await supabaseAdmin
+            .from('product_variants')
+            .insert(insertData);
 
-    if (error) throw error;
+        if (error) throw error;
+    }
 }
 
 /**
@@ -671,12 +703,19 @@ export async function updateProductStockBulk(productId: string, stockBySize: Rec
 /**
  * Inicializar stock para un producto nuevo (todas las tallas a 0)
  */
-export async function initProductStock(productId: string, sizes: string[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL']): Promise<void> {
-    const stockEntries = sizes.map(size => ({
-        product_id: productId,
-        size,
-        stock: 0,
-    }));
+export async function initProductStock(productId: string, sizes: string[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL'], colors: string[] = []): Promise<void> {
+    const stockEntries: { product_id: string; size: string; color: string; stock: number }[] = [];
+    if (colors.length > 0) {
+        for (const color of colors) {
+            for (const size of sizes) {
+                stockEntries.push({ product_id: productId, size, color, stock: 0 });
+            }
+        }
+    } else {
+        for (const size of sizes) {
+            stockEntries.push({ product_id: productId, size, color: '', stock: 0 });
+        }
+    }
 
     const { error } = await supabaseAdmin
         .from('product_variants')
@@ -688,28 +727,32 @@ export async function initProductStock(productId: string, sizes: string[] = ['XS
 /**
  * Decrementar stock después de una compra (operación atómica)
  */
-export async function decrementStock(productId: string, size: string, quantity: number = 1): Promise<boolean> {
+export async function decrementStock(productId: string, size: string, quantity: number = 1, color: string = ''): Promise<boolean> {
     // Atomic: decrement only if enough stock, in a single query
     const { data, error } = await supabaseAdmin
         .rpc('decrement_variant_stock', {
             p_product_id: productId,
             p_size: size,
-            p_quantity: quantity
+            p_quantity: quantity,
+            p_color: color
         });
 
     // Fallback to non-RPC approach if function doesn't exist
     if (error && error.message?.includes('function') && error.message?.includes('does not exist')) {
-        const currentStock = await getStockForSize(productId, size);
+        const currentStock = await getStockForSize(productId, size, color);
         if (currentStock < quantity) return false;
 
-        const { error: updateError } = await supabaseAdmin
+        const query = supabaseAdmin
             .from('product_variants')
             .update({
                 stock: currentStock - quantity
             })
             .eq('product_id', productId)
             .eq('size', size)
+            .eq('color', color)
             .gte('stock', quantity);
+
+        const { error: updateError } = await query;
 
         if (updateError) {
             console.error('Error decrementando stock:', updateError);
@@ -734,18 +777,19 @@ export async function decrementStock(productId: string, size: string, quantity: 
 /**
  * Incrementar stock después de una devolución (operación atómica)
  */
-export async function incrementStock(productId: string, size: string, quantity: number = 1): Promise<boolean> {
+export async function incrementStock(productId: string, size: string, quantity: number = 1, color: string = ''): Promise<boolean> {
     // Atomic: increment stock in a single query
     const { data, error } = await supabaseAdmin
         .rpc('increment_variant_stock', {
             p_product_id: productId,
             p_size: size,
-            p_quantity: quantity
+            p_quantity: quantity,
+            p_color: color
         });
 
     // Fallback if RPC function doesn't exist
     if (error && error.message?.includes('function') && error.message?.includes('does not exist')) {
-        const currentStock = await getStockForSize(productId, size);
+        const currentStock = await getStockForSize(productId, size, color);
 
         const { error: updateError } = await supabaseAdmin
             .from('product_variants')
@@ -753,7 +797,8 @@ export async function incrementStock(productId: string, size: string, quantity: 
                 stock: currentStock + quantity
             })
             .eq('product_id', productId)
-            .eq('size', size);
+            .eq('size', size)
+            .eq('color', color);
 
         if (updateError) {
             console.error('Error incrementando stock:', updateError);

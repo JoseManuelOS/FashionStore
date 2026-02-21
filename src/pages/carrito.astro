@@ -210,12 +210,13 @@ export const prerender = false;
                 <a href="/productos/${item.slug}" class="font-medium text-white hover:text-neon-cyan transition-colors">
                   ${item.name}
                 </a>
-                <p class="text-sm text-zinc-400 mt-1">Talla: ${item.size}</p>
+                <p class="text-sm text-zinc-400 mt-1">Talla: ${item.size}${item.color ? ` · Color: ${item.color}` : ''}</p>
               </div>
               <button 
                 class="remove-btn p-2 text-zinc-400 hover:text-red-400 transition-colors"
                 data-id="${item.id}"
                 data-size="${item.size}"
+                data-color="${item.color || ''}"
                 aria-label="Eliminar producto"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -231,6 +232,7 @@ export const prerender = false;
                   data-action="decrease"
                   data-id="${item.id}"
                   data-size="${item.size}"
+                  data-color="${item.color || ''}"
                   ${item.quantity <= 1 ? 'disabled opacity-50' : ''}
                 >
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -243,6 +245,7 @@ export const prerender = false;
                   data-action="increase"
                   data-id="${item.id}"
                   data-size="${item.size}"
+                  data-color="${item.color || ''}"
                 >
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -266,8 +269,9 @@ export const prerender = false;
                         const target = e.currentTarget as HTMLElement;
                         const id = target.dataset.id!;
                         const size = target.dataset.size!;
+                        const color = target.dataset.color || '';
                         const cart = getCart().filter(
-                            (item) => !(item.id === id && item.size === size),
+                            (item) => !(item.id === id && item.size === size && (item.color || '') === color),
                         );
                         saveCart(cart);
                         renderCart();
@@ -280,10 +284,11 @@ export const prerender = false;
                         const action = target.dataset.action!;
                         const id = target.dataset.id!;
                         const size = target.dataset.size!;
+                        const color = target.dataset.color || '';
 
                         const cart = getCart()
                             .map((item) => {
-                                if (item.id === id && item.size === size) {
+                                if (item.id === id && item.size === size && (item.color || '') === color) {
                                     const newQty =
                                         action === "increase"
                                             ? item.quantity + 1

@@ -208,6 +208,7 @@ export const POST: APIRoute = async ({ request }) => {
                 product_image: product?.images?.[0] || null,
                 quantity: item.quantity || 1,
                 size: product?.metadata?.size || null,
+                color: product?.metadata?.color || null,
                 price_at_purchase: (item.amount_total || 0) / 100 / (item.quantity || 1)
             };
         });
@@ -226,11 +227,11 @@ export const POST: APIRoute = async ({ request }) => {
         console.log('[STOCK] Decrementing stock for order items...');
         for (const item of orderItems) {
             if (item.product_id && item.size) {
-                const success = await decrementStock(item.product_id, item.size, item.quantity);
+                const success = await decrementStock(item.product_id, item.size, item.quantity, item.color || '');
                 if (success) {
-                    console.log(`[STOCK] Decremented ${item.quantity} of ${item.product_name} (${item.size})`);
+                    console.log(`[STOCK] Decremented ${item.quantity} of ${item.product_name} (${item.size}${item.color ? `, ${item.color}` : ''})`);
                 } else {
-                    console.warn(`[STOCK] Failed to decrement stock for ${item.product_name} (${item.size})`);
+                    console.warn(`[STOCK] Failed to decrement stock for ${item.product_name} (${item.size}${item.color ? `, ${item.color}` : ''})`);
                 }
             } else {
                 console.warn(`[STOCK] Skipped stock decrement - missing product_id or size for: ${item.product_name}`);
@@ -303,16 +304,17 @@ export const POST: APIRoute = async ({ request }) => {
 
         // Check for low stock and alert admin
         try {
-            const lowStockProducts: Array<{ id: string; name: string; size?: string; currentStock: number }> = [];
+            const lowStockProducts: Array<{ id: string; name: string; size?: string; color?: string; currentStock: number }> = [];
 
             for (const item of orderItems) {
                 if (item.product_id) {
-                    // Check variant stock
+                    // Check variant stock (with color)
                     const { data: variant } = await supabaseAdmin
                         .from('product_variants')
-                        .select('stock, size')
+                        .select('stock, size, color')
                         .eq('product_id', item.product_id)
                         .eq('size', item.size || '')
+                        .eq('color', item.color || '')
                         .single();
 
                     if (variant && variant.stock < 5) {
@@ -320,6 +322,7 @@ export const POST: APIRoute = async ({ request }) => {
                             id: item.product_id,
                             name: item.product_name,
                             size: item.size || undefined,
+                            color: item.color || undefined,
                             currentStock: variant.stock
                         });
                     }

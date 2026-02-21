@@ -4,6 +4,7 @@ import { supabase } from '../../../lib/supabase';
 export const GET: APIRoute = async ({ url }) => {
     try {
         const productId = url.searchParams.get('productId');
+        const color = url.searchParams.get('color'); // Optional color filter
 
         if (!productId) {
             return new Response(
@@ -12,11 +13,18 @@ export const GET: APIRoute = async ({ url }) => {
             );
         }
 
-        // Obtener stock por talla desde product_variants (tabla autoritativa)
-        const { data: stockData, error } = await supabase
+        // Obtener stock por talla (y color) desde product_variants
+        let query = supabase
             .from('product_variants')
-            .select('size, stock')
+            .select('size, stock, color')
             .eq('product_id', productId);
+
+        // If color is specified, filter by color
+        if (color !== null && color !== undefined) {
+            query = query.eq('color', color);
+        }
+
+        const { data: stockData, error } = await query;
 
         if (error) {
             console.error('Error obteniendo stock:', error);
@@ -27,9 +35,15 @@ export const GET: APIRoute = async ({ url }) => {
         }
 
         // Convertir a objeto { talla: cantidad }
+        // If no color filter, aggregate stock across all colors for each size
         const stockBySize: Record<string, number> = {};
+        // Also build full stock map: { "size|color": stock }
+        const stockBySizeColor: Record<string, number> = {};
+
         for (const item of stockData || []) {
-            stockBySize[item.size] = item.stock;
+            stockBySize[item.size] = (stockBySize[item.size] || 0) + item.stock;
+            const key = item.color ? `${item.size}|${item.color}` : item.size;
+            stockBySizeColor[key] = item.stock;
         }
 
         // Calcular total
@@ -39,6 +53,7 @@ export const GET: APIRoute = async ({ url }) => {
             JSON.stringify({
                 productId,
                 stockBySize,
+                stockBySizeColor,
                 totalStock
             }),
             { status: 200, headers: { 'Content-Type': 'application/json' } }

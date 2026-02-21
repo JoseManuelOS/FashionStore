@@ -113,11 +113,12 @@ if (product.category) {
                     <!-- Thumbnails -->
                     {
                         images.length > 1 && (
-                            <div class="flex gap-3 overflow-x-auto pb-2">
+                            <div id="thumbnails-container" class="flex gap-3 overflow-x-auto pb-2">
                                 {images.map((img: any, idx: number) => (
                                     <button
                                         class={`cursor-pointer flex-shrink-0 w-20 h-24 rounded-lg overflow-hidden border-2 transition-all thumbnail-btn ${idx === 0 ? "border-neon-cyan shadow-glow-cyan" : "border-white/10 hover:border-white/30"}`}
                                         data-image={img.image_url}
+                                        data-color={img.color || ''}
                                     >
                                         <img
                                             src={img.image_url}
@@ -270,11 +271,11 @@ if (product.category) {
     <script>
         function initGallery() {
             const mainImage = document.getElementById("main-image") as HTMLImageElement | null;
+            const thumbnailsContainer = document.getElementById("thumbnails-container");
             const thumbnails = document.querySelectorAll<HTMLElement>(".thumbnail-btn");
             if (!mainImage || thumbnails.length === 0) return;
 
             thumbnails.forEach((btn) => {
-                // Remove previous listener by cloning (avoids duplicates on astro:page-load)
                 const fresh = btn.cloneNode(true) as HTMLElement;
                 btn.replaceWith(fresh);
             });
@@ -297,15 +298,49 @@ if (product.category) {
             });
         }
 
-        // Run immediately if DOM is ready (Astro module scripts are deferred),
-        // or wait for DOMContentLoaded as a fallback.
-        if (document.readyState === "loading") {
-            document.addEventListener("DOMContentLoaded", initGallery);
-        } else {
-            initGallery();
+        // Listen for color changes from AddToCartButton via custom event
+        function initColorFilter() {
+            document.addEventListener('product-color-change', ((e: CustomEvent) => {
+                const color = e.detail?.color || '';
+                const mainImage = document.getElementById("main-image") as HTMLImageElement | null;
+                const allThumbnails = document.querySelectorAll<HTMLElement>(".thumbnail-btn");
+                if (!mainImage || allThumbnails.length === 0) return;
+
+                let firstVisible: HTMLElement | null = null;
+                allThumbnails.forEach((btn) => {
+                    const btnColor = btn.dataset.color || '';
+                    // Show thumbnail if it matches the color or has no color assigned
+                    if (!color || !btnColor || btnColor === color) {
+                        btn.style.display = '';
+                        if (!firstVisible) firstVisible = btn;
+                    } else {
+                        btn.style.display = 'none';
+                    }
+                });
+
+                // Set main image to first visible thumbnail
+                if (firstVisible) {
+                    const newSrc = (firstVisible as HTMLElement).dataset.image;
+                    if (newSrc) {
+                        mainImage.src = newSrc;
+                        allThumbnails.forEach((t) => {
+                            t.classList.remove("border-neon-cyan", "shadow-glow-cyan");
+                            t.classList.add("border-white/10");
+                        });
+                        firstVisible.classList.remove("border-white/10");
+                        firstVisible.classList.add("border-neon-cyan", "shadow-glow-cyan");
+                    }
+                }
+            }) as EventListener);
         }
 
-        // Re-init after Astro client-side navigations (view transitions)
-        document.addEventListener("astro:page-load", initGallery);
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", () => { initGallery(); initColorFilter(); });
+        } else {
+            initGallery();
+            initColorFilter();
+        }
+
+        document.addEventListener("astro:page-load", () => { initGallery(); initColorFilter(); });
     </script>
 </PublicLayout>

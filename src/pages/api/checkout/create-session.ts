@@ -30,11 +30,11 @@ export const POST: APIRoute = async ({ request }) => {
         // Validate stock availability before creating payment session
         for (const item of items) {
             if (item.id && item.size) {
-                const available = await getStockForSize(item.id, item.size);
+                const available = await getStockForSize(item.id, item.size, item.color || '');
                 if (available < (item.quantity || 1)) {
                     return new Response(
                         JSON.stringify({
-                            error: `Stock insuficiente para ${item.name} (${item.size}). Disponible: ${available}`,
+                            error: `Stock insuficiente para ${item.name} (${item.size}${item.color ? `, ${item.color}` : ''}). Disponible: ${available}`,
                             outOfStock: true,
                             productId: item.id,
                             size: item.size
@@ -61,6 +61,7 @@ export const POST: APIRoute = async ({ request }) => {
                         metadata: {
                             product_id: item.id,
                             size: item.size || '',
+                            color: item.color || '',
                         },
                     },
                     unit_amount: unitAmount,
