@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#d946ef"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <!-- Gradient border -->
+  <rect width="512" height="512" rx="90" fill="url(#g)"/>
+  <!-- Dark inner -->
+  <rect x="4" y="4" width="504" height="504" rx="87" fill="#0d0d14"/>
+  <!-- FM text -->
+  <text x="256" y="315" font-family="Arial Black,Arial,sans-serif" font-size="230" font-weight="900" fill="url(#g)" text-anchor="middle" filter="url(#glow)">FM</text>
+</svg>

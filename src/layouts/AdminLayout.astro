@@ -95,11 +95,14 @@ const currentPath = Astro.url.pathname;
                 class="w-60 bg-dark-500 border-r border-white/5 fixed h-screen z-40 flex flex-col sidebar-glow"
             >
                 <div class="p-6 border-b border-white/5">
-                    <a
-                        href="/admin/dashboard"
-                        class="text-lg font-semibold bg-gradient-to-r from-neon-cyan to-neon-purple bg-clip-text text-transparent block font-display"
-                        >FashionMarket</a
-                    >
+                    <a href="/admin/dashboard" class="block mb-1">
+                        <img
+                            src="/logo/logo.svg?v=2"
+                            alt="FashionMarket"
+                            class="h-7 w-auto"
+                            loading="eager"
+                        />
+                    </a>
                     <span class="text-xs text-zinc-500 mt-1 block"
                         >Panel Admin</span
                     >

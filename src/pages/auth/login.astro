@@ -9,12 +9,13 @@ export const prerender = false;
     <div class="w-full max-w-md">
       <!-- Header -->
       <div class="text-center mb-8">
-        <a href="/" class="inline-flex items-center gap-3 mb-6">
-          <div
-            class="w-12 h-12 rounded-xl bg-gradient-to-br from-neon-cyan to-neon-fuchsia flex items-center justify-center"
-          >
-            <span class="text-dark-500 font-bold text-xl">FM</span>
-          </div>
+        <a href="/" class="inline-flex items-center justify-center mb-6">
+          <img
+            src="/logo/logo.svg"
+            alt="FashionMarket"
+            class="h-12 w-auto"
+            loading="eager"
+          />
         </a>
         <h1 class="text-3xl font-display font-bold text-white mb-2">
           ¡Bienvenido de nuevo!
@@ -238,8 +239,8 @@ export const prerender = false;
     "toggle-password",
   ) as HTMLButtonElement;
   const passwordInput = document.getElementById("password") as HTMLInputElement;
-  const eyeOpen = document.getElementById("eye-open") as SVGElement;
-  const eyeClosed = document.getElementById("eye-closed") as SVGElement;
+  const eyeOpen = document.getElementById("eye-open") as HTMLElement | null;
+  const eyeClosed = document.getElementById("eye-closed") as HTMLElement | null;
 
   // Show confirmed banner if redirected from email confirmation
   const urlParams = new URLSearchParams(window.location.search);

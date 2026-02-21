@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 90">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#d946ef"/>
+    </linearGradient>
+    <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#d946ef"/>
+    </linearGradient>
+    <!-- Glow filter -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- FM Icon box with gradient border -->
+  <rect x="2" y="2" width="86" height="86" rx="16" fill="url(#grad)"/>
+  <rect x="4" y="4" width="82" height="82" rx="14" fill="#0d0d14"/>
+  <!-- FM text inside box -->
+  <text x="45" y="63" font-family="Arial Black,Arial,sans-serif" font-size="38" font-weight="900" fill="url(#grad)" text-anchor="middle" filter="url(#glow)">FM</text>
+
+  <!-- Divider line -->
+  <line x1="104" y1="15" x2="104" y2="75" stroke="url(#grad)" stroke-width="1.5" opacity="0.5"/>
+
+  <!-- FASHION text -->
+  <text x="120" y="43" font-family="Arial,Helvetica,sans-serif" font-size="20" font-weight="300" fill="#ffffff" letter-spacing="7" opacity="0.95">FASHION</text>
+  <!-- MARKET text with gradient achieved via rect clip -->
+  <text x="120" y="68" font-family="Arial Black,Arial,sans-serif" font-size="20" font-weight="900" fill="url(#grad)" letter-spacing="5">MARKET</text>
+</svg>
