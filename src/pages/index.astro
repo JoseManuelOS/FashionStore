@@ -1270,6 +1270,16 @@ const heroSlides = carouselSlides.length > 0 ? carouselSlides : defaultSlides;
 					</button>
 				</form>
 				
+				<!-- Error Message (hidden by default) -->
+				<div id="footer-newsletter-error" class="hidden mt-4">
+					<div class="inline-flex items-center gap-2 px-4 py-2 bg-red-500/20 border border-red-400/30 rounded-xl">
+						<svg class="w-4 h-4 text-red-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+						</svg>
+						<p id="footer-newsletter-error-text" class="text-sm text-red-200"></p>
+					</div>
+				</div>
+
 				<!-- Success Message (hidden by default) -->
 				<div id="footer-newsletter-success" class="hidden mt-6 text-center">
 					<div class="inline-flex items-center gap-2 px-4 py-2 bg-green-500/20 border border-green-400/30 rounded-xl">
@@ -1491,26 +1501,40 @@ const heroSlides = carouselSlides.length > 0 ? carouselSlides : defaultSlides;
 				
 				const data = await response.json();
 				
+				const errorDiv = document.getElementById('footer-newsletter-error');
+				const errorText = document.getElementById('footer-newsletter-error-text');
+				const showError = (msg: string) => {
+					if (errorDiv && errorText) {
+						errorText.textContent = msg;
+						errorDiv.classList.remove('hidden');
+					}
+					submitBtn.disabled = false;
+					submitBtn.innerHTML = originalHTML;
+				};
+
 				if (data.success) {
+					// Hide any previous error
+					errorDiv?.classList.add('hidden');
 					// Update promo code
 					if (promoCodeSpan && data.promo_code) {
 						promoCodeSpan.textContent = data.promo_code;
 					}
-					
 					// Hide form, show success
 					form.classList.add("hidden");
 					successDiv?.classList.remove("hidden");
-					
 					// Mark as subscribed
 					localStorage.setItem("newsletter_subscribed", "true");
 				} else {
-					alert(data.error || "Error al suscribirse");
-					submitBtn.disabled = false;
-					submitBtn.innerHTML = originalHTML;
+					showError(data.error || 'Error al suscribirse. Inténtalo de nuevo.');
 				}
 			} catch (error) {
 				console.error("Error:", error);
-				alert("Error de conexión");
+				const errorDiv2 = document.getElementById('footer-newsletter-error');
+				const errorText2 = document.getElementById('footer-newsletter-error-text');
+				if (errorDiv2 && errorText2) {
+					errorText2.textContent = 'Error de conexión. Inténtalo de nuevo.';
+					errorDiv2.classList.remove('hidden');
+				}
 				submitBtn.disabled = false;
 				submitBtn.innerHTML = originalHTML;
 			}

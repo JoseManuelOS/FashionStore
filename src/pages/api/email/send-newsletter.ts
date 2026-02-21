@@ -52,8 +52,10 @@ export const POST: APIRoute = async ({ request }) => {
             ? (buttonUrl.startsWith('/') ? `${siteUrl}${buttonUrl}` : buttonUrl)
             : `${siteUrl}/productos`;
 
-        // Generate promo section if code exists
-        const promoSection = promoCode ? `
+        // 1.1 s between sends to stay within Resend's rate limit (1 req/s)
+        const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+        // Generate promo section if code exists        const promoSection = promoCode ? `
             <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px dashed #f59e0b; border-radius: 12px; padding: 25px; margin: 25px 0; text-align: center;">
                 <p style="margin: 0 0 10px 0; color: #92400e; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Codigo de descuento exclusivo</p>
                 <div style="font-size: 32px; font-weight: bold; color: #1f2937; font-family: monospace; letter-spacing: 3px;">${promoCode}</div>
@@ -68,8 +70,6 @@ export const POST: APIRoute = async ({ request }) => {
             </div>
         ` : '';
 
-        // Send emails in batches of 10 for better performance
-        const BATCH_SIZE = 10;
         
         async function sendToSubscriber(subscriber: { email: string; name?: string }) {
             const email = subscriber.email;
@@ -142,22 +142,18 @@ export const POST: APIRoute = async ({ request }) => {
             }
         }
 
-        // Process in batches
-        for (let i = 0; i < subscribers.length; i += BATCH_SIZE) {
-            const batch = subscribers.slice(i, i + BATCH_SIZE);
-            const results = await Promise.allSettled(
-                batch.map(sub => sendToSubscriber(sub))
-            );
+        // Send emails sequentially with a delay to respect Resend's rate limit
+        for (let i = 0; i < subscribers.length; i++) {
+            const result = await sendToSubscriber(subscribers[i]);
+            if (result.success) {
+                successfulSends.push(result.email);
+            } else {
+                failedSends.push(result.email);
+            }
 
-            for (const result of results) {
-                if (result.status === 'fulfilled' && result.value.success) {
-                    successfulSends.push(result.value.email);
-                } else if (result.status === 'fulfilled') {
-                    failedSends.push(result.value.email);
-                } else {
-                    // rejected promise
-                    failedSends.push('unknown');
-                }
+            // Wait 1.1 s between sends (skip delay after the last one)
+            if (i < subscribers.length - 1) {
+                await sleep(1100);
             }
         }
 

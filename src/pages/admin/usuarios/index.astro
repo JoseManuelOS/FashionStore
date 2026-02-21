@@ -100,16 +100,33 @@ function formatDate(dateStr: string) {
                 <table class="w-full">
                     <thead class="bg-dark-300 border-b border-white/10">
                         <tr>
-                            <th class="text-left px-6 py-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Cliente</th>
+                            <th class="px-6 py-3 text-left">
+                                <button data-sort="name" class="sort-btn inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider hover:text-neon-cyan transition-colors text-neon-cyan">
+                                    Cliente <span class="sort-icon">↑</span>
+                                </button>
+                            </th>
                             <th class="text-left px-6 py-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Teléfono</th>
-                            <th class="text-left px-6 py-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Newsletter</th>
-                            <th class="text-left px-6 py-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Registrado</th>
+                            <th class="px-6 py-3 text-left">
+                                <button data-sort="newsletter" class="sort-btn inline-flex items-center gap-1 text-xs font-semibold text-zinc-500 uppercase tracking-wider hover:text-neon-cyan transition-colors">
+                                    Newsletter <span class="sort-icon text-zinc-600">↕</span>
+                                </button>
+                            </th>
+                            <th class="px-6 py-3 text-left">
+                                <button data-sort="date" class="sort-btn inline-flex items-center gap-1 text-xs font-semibold text-zinc-500 uppercase tracking-wider hover:text-neon-cyan transition-colors">
+                                    Registrado <span class="sort-icon text-zinc-600">↕</span>
+                                </button>
+                            </th>
                             <th class="text-right px-6 py-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Acciones</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-white/5">
                         {customers.map((customer) => (
-                            <tr class="hover:bg-white/5 transition-colors">
+                            <tr
+                                class="customer-row hover:bg-white/5 transition-colors"
+                                data-name={(customer.full_name || customer.email || '').toLowerCase()}
+                                data-newsletter={customer.newsletter ? '1' : '0'}
+                                data-date={customer.created_at}
+                            >
                                 <td class="px-6 py-4">
                                     <div class="flex items-center gap-3">
                                         <div class="w-10 h-10 rounded-full bg-gradient-to-br from-neon-cyan to-neon-purple flex items-center justify-center text-white font-medium">
@@ -169,21 +186,72 @@ function formatDate(dateStr: string) {
             const searchInput = document.getElementById('user-search') as HTMLInputElement;
             const noResults = document.getElementById('no-results');
             const tableContainer = document.getElementById('users-table') as HTMLElement;
+            const tbody = tableContainer?.querySelector('tbody');
 
-            searchInput?.addEventListener('input', () => {
-                const query = searchInput.value.toLowerCase().trim();
-                const rows = tableContainer?.querySelectorAll('tbody tr');
+            // ── Search ──────────────────────────────────────────────
+            function applySearch() {
+                const query = searchInput?.value.toLowerCase().trim() ?? '';
+                const rows = tableContainer?.querySelectorAll('tbody tr.customer-row');
                 let visible = 0;
-
                 rows?.forEach(row => {
                     const text = (row as HTMLElement).innerText.toLowerCase();
                     const match = !query || text.includes(query);
                     (row as HTMLElement).style.display = match ? '' : 'none';
                     if (match) visible++;
                 });
-
                 if (noResults) noResults.classList.toggle('hidden', visible > 0 || !query);
                 if (tableContainer) tableContainer.style.display = visible === 0 && query ? 'none' : '';
+            }
+            searchInput?.addEventListener('input', applySearch);
+
+            // ── Sort ────────────────────────────────────────────────
+            let sortCol = 'name';
+            let sortDir: 'asc' | 'desc' = 'asc';
+
+            function applySort(col: string) {
+                if (sortCol === col) {
+                    sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+                } else {
+                    sortCol = col;
+                    sortDir = col === 'date' ? 'desc' : 'asc';
+                }
+
+                tableContainer?.querySelectorAll('button[data-sort]').forEach(btn => {
+                    const icon = btn.querySelector('.sort-icon') as HTMLElement;
+                    if (!icon) return;
+                    const isActive = (btn as HTMLElement).dataset.sort === col;
+                    icon.textContent = isActive ? (sortDir === 'asc' ? '↑' : '↓') : '↕';
+                    btn.classList.toggle('text-neon-cyan', isActive);
+                    btn.classList.toggle('text-zinc-500', !isActive);
+                });
+
+                if (!tbody) return;
+                const rows = Array.from(tbody.querySelectorAll('tr.customer-row'));
+                rows.sort((a, b) => {
+                    const aEl = a as HTMLElement;
+                    const bEl = b as HTMLElement;
+                    const aRaw = aEl.dataset[col] ?? '';
+                    const bRaw = bEl.dataset[col] ?? '';
+
+                    if (col === 'newsletter') {
+                        const aNum = parseInt(aRaw) || 0;
+                        const bNum = parseInt(bRaw) || 0;
+                        return sortDir === 'asc' ? aNum - bNum : bNum - aNum;
+                    }
+                    if (col === 'date') {
+                        const aTime = new Date(aRaw).getTime() || 0;
+                        const bTime = new Date(bRaw).getTime() || 0;
+                        return sortDir === 'asc' ? aTime - bTime : bTime - aTime;
+                    }
+                    return sortDir === 'asc'
+                        ? aRaw.localeCompare(bRaw, 'es')
+                        : bRaw.localeCompare(aRaw, 'es');
+                });
+                rows.forEach(row => tbody.appendChild(row));
+            }
+
+            tableContainer?.querySelectorAll('button[data-sort]').forEach(btn => {
+                btn.addEventListener('click', () => applySort((btn as HTMLElement).dataset.sort ?? ''));
             });
         });
     </script>

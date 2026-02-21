@@ -115,6 +115,14 @@
                     </button>
                 </form>
 
+                <!-- Error message -->
+                <div id="popup-error" class="hidden mt-3 flex items-center gap-2 px-4 py-3 bg-red-500/10 border border-red-500/30 rounded-xl">
+                    <svg class="w-4 h-4 text-red-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <p id="popup-error-text" class="text-sm text-red-300"></p>
+                </div>
+
                 <p class="text-zinc-500 text-xs text-center mt-4">
                     Al suscribirte, aceptas recibir emails con ofertas y novedades. Puedes cancelar en cualquier momento.
                 </p>
@@ -519,7 +527,27 @@
                 });
                 const data = await response.json();
 
+                const resetBtn = () => {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = `
+                        <span>Obtener mi descuento</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                        </svg>
+                    `;
+                };
+                const showError = (msg: string) => {
+                    const errDiv = document.getElementById('popup-error');
+                    const errText = document.getElementById('popup-error-text');
+                    if (errDiv && errText) {
+                        errText.textContent = msg;
+                        errDiv.classList.remove('hidden');
+                    }
+                };
+                const hideError = () => document.getElementById('popup-error')?.classList.add('hidden');
+
                 if (data.success) {
+                    hideError();
                     const promoEl = document.getElementById("popup-promo-code");
                     if (promoEl && data.promo_code) promoEl.textContent = data.promo_code;
 
@@ -531,18 +559,17 @@
 
                     localStorage.setItem("newsletter_subscribed", "true");
                 } else {
-                    alert(data.error || "Error al suscribirse");
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = `
-                        <span>Obtener mi descuento</span>
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
-                        </svg>
-                    `;
+                    showError(data.error || "Error al suscribirse. Inténtalo de nuevo.");
+                    resetBtn();
                 }
             } catch (error) {
                 console.error("Error:", error);
-                alert("Error de conexi\u00f3n");
+                const errDiv = document.getElementById('popup-error');
+                const errText = document.getElementById('popup-error-text');
+                if (errDiv && errText) {
+                    errText.textContent = 'Error de conexión. Inténtalo de nuevo.';
+                    errDiv.classList.remove('hidden');
+                }
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = `
                     <span>Obtener mi descuento</span>
