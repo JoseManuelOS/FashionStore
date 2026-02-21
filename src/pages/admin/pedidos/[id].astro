@@ -1017,6 +1017,35 @@ const currentStatus = statusLabels[order?.status || "pending"];
         </div>
     </div>
 
+    <!-- Confirmation Modal -->
+    <div id="confirm-modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="confirm-modal-backdrop"></div>
+        <div class="fixed inset-0 flex items-center justify-center p-4">
+            <div class="relative bg-dark-400 border border-white/10 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+                <div class="text-center mb-5">
+                    <div id="confirm-modal-icon" class="w-14 h-14 mx-auto mb-4 rounded-full flex items-center justify-center"></div>
+                    <h3 id="confirm-modal-title" class="text-lg font-bold text-white mb-2"></h3>
+                </div>
+                <div id="confirm-modal-body" class="text-sm text-zinc-400 mb-6 space-y-3"></div>
+                <div class="flex gap-3 justify-end">
+                    <button id="confirm-modal-cancel" class="px-5 py-2.5 bg-dark-300 text-zinc-300 rounded-xl hover:bg-dark-200 transition-all font-medium text-sm">
+                        Cancelar
+                    </button>
+                    <button id="confirm-modal-accept" class="px-5 py-2.5 rounded-xl font-semibold text-sm flex items-center gap-2 transition-all">
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="admin-toast" class="fixed bottom-4 right-4 z-50 hidden">
+        <div class="px-5 py-3 rounded-xl shadow-lg flex items-center gap-3 text-sm font-medium border">
+            <span id="admin-toast-icon"></span>
+            <span id="admin-toast-text"></span>
+        </div>
+    </div>
+
     <script>
         // Auto-generate tracking URL based on carrier and tracking number
         const carrierSelect = document.getElementById(
@@ -1043,6 +1072,71 @@ const currentStatus = statusLabels[order?.status || "pending"];
         carrierSelect?.addEventListener("change", updateTrackingUrl);
         trackingNumberInput?.addEventListener("input", updateTrackingUrl);
 
+        // ======= Styled Confirm Modal =======
+        const confirmModal = document.getElementById('confirm-modal')!;
+        const confirmBackdrop = document.getElementById('confirm-modal-backdrop')!;
+        const confirmIcon = document.getElementById('confirm-modal-icon')!;
+        const confirmTitle = document.getElementById('confirm-modal-title')!;
+        const confirmBody = document.getElementById('confirm-modal-body')!;
+        const confirmCancel = document.getElementById('confirm-modal-cancel')!;
+        const confirmAccept = document.getElementById('confirm-modal-accept')!;
+
+        let confirmResolver: ((value: boolean) => void) | null = null;
+
+        function showConfirmModal(options: {
+            title: string;
+            body: string;
+            acceptText: string;
+            acceptClass: string;
+            iconHtml: string;
+            iconBgClass: string;
+        }): Promise<boolean> {
+            confirmIcon.className = `w-14 h-14 mx-auto mb-4 rounded-full flex items-center justify-center ${options.iconBgClass}`;
+            confirmIcon.innerHTML = options.iconHtml;
+            confirmTitle.textContent = options.title;
+            confirmBody.innerHTML = options.body;
+            confirmAccept.className = `px-5 py-2.5 rounded-xl font-semibold text-sm flex items-center gap-2 transition-all ${options.acceptClass}`;
+            confirmAccept.innerHTML = options.acceptText;
+            confirmModal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+
+            return new Promise((resolve) => {
+                confirmResolver = resolve;
+            });
+        }
+
+        function closeConfirmModal(result: boolean) {
+            confirmModal.classList.add('hidden');
+            document.body.style.overflow = '';
+            if (confirmResolver) {
+                confirmResolver(result);
+                confirmResolver = null;
+            }
+        }
+
+        confirmCancel.addEventListener('click', () => closeConfirmModal(false));
+        confirmBackdrop.addEventListener('click', () => closeConfirmModal(false));
+        confirmAccept.addEventListener('click', () => closeConfirmModal(true));
+
+        // ======= Styled Toast =======
+        const adminToast = document.getElementById('admin-toast')!;
+        const adminToastIcon = document.getElementById('admin-toast-icon')!;
+        const adminToastText = document.getElementById('admin-toast-text')!;
+
+        function showAdminToast(message: string, type: 'success' | 'error') {
+            const wrapper = adminToast.querySelector('div')!;
+            if (type === 'success') {
+                wrapper.className = 'px-5 py-3 rounded-xl shadow-lg flex items-center gap-3 text-sm font-medium border bg-emerald-500/10 border-emerald-500/30 text-emerald-400';
+                adminToastIcon.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+            } else {
+                wrapper.className = 'px-5 py-3 rounded-xl shadow-lg flex items-center gap-3 text-sm font-medium border bg-red-500/10 border-red-500/30 text-red-400';
+                adminToastIcon.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+            }
+            adminToastText.textContent = message;
+            adminToast.classList.remove('hidden');
+            setTimeout(() => adminToast.classList.add('hidden'), 4000);
+        }
+
         // Accept Return Button
         const acceptReturnBtn = document.getElementById('accept-return-btn');
         if (acceptReturnBtn) {
@@ -1050,9 +1144,40 @@ const currentStatus = statusLabels[order?.status || "pending"];
                 const orderId = acceptReturnBtn.dataset.orderId;
                 if (!orderId) return;
 
-                if (!confirm('¿Estás seguro de aceptar esta devolución?\n\nSe procesará el reembolso por Stripe, se generará la factura rectificativa y se enviará el email al cliente con ambas facturas en PDF.\n\nEsta acción no se puede deshacer.')) {
-                    return;
-                }
+                const confirmed = await showConfirmModal({
+                    title: '¿Aceptar esta devolución?',
+                    body: `
+                        <div class="space-y-3">
+                            <p>Se realizarán las siguientes acciones:</p>
+                            <ul class="space-y-2 ml-1">
+                                <li class="flex items-start gap-2">
+                                    <svg class="w-4 h-4 mt-0.5 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                    <span>Reembolso procesado por Stripe</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <svg class="w-4 h-4 mt-0.5 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                    <span>Factura rectificativa generada</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <svg class="w-4 h-4 mt-0.5 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                    <span>Email enviado al cliente con ambas facturas en PDF</span>
+                                </li>
+                            </ul>
+                            <div class="mt-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                                <p class="text-amber-400 text-xs font-medium flex items-center gap-1.5">
+                                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"></path></svg>
+                                    Esta acción no se puede deshacer
+                                </p>
+                            </div>
+                        </div>
+                    `,
+                    acceptText: `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Aceptar Devolución`,
+                    acceptClass: 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-700 hover:to-emerald-600 shadow-lg shadow-emerald-500/20',
+                    iconHtml: '<svg class="w-7 h-7 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>',
+                    iconBgClass: 'bg-orange-500/20',
+                });
+
+                if (!confirmed) return;
 
                 acceptReturnBtn.classList.add('opacity-50', 'pointer-events-none');
                 acceptReturnBtn.innerHTML = `
@@ -1094,7 +1219,7 @@ const currentStatus = statusLabels[order?.status || "pending"];
                         </svg>
                         Aceptar Devolución y Reembolsar
                     `;
-                    alert('Error al procesar la devolución: ' + (error.message || 'Error desconocido'));
+                    showAdminToast('Error al procesar la devolución: ' + (error.message || 'Error desconocido'), 'error');
                 }
             });
         }
@@ -1106,9 +1231,40 @@ const currentStatus = statusLabels[order?.status || "pending"];
                 const orderId = adminCancelBtn.dataset.orderId;
                 if (!orderId) return;
 
-                if (!confirm('¿Estás seguro de cancelar este pedido?\n\nSe procesará el reembolso por Stripe, se generará la factura rectificativa y se enviará el email al cliente con ambas facturas en PDF.\n\nEsta acción no se puede deshacer.')) {
-                    return;
-                }
+                const confirmed = await showConfirmModal({
+                    title: '¿Cancelar este pedido?',
+                    body: `
+                        <div class="space-y-3">
+                            <p>Se realizarán las siguientes acciones:</p>
+                            <ul class="space-y-2 ml-1">
+                                <li class="flex items-start gap-2">
+                                    <svg class="w-4 h-4 mt-0.5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                    <span>Reembolso procesado por Stripe</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <svg class="w-4 h-4 mt-0.5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                    <span>Factura rectificativa generada</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <svg class="w-4 h-4 mt-0.5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                    <span>Email enviado al cliente con ambas facturas en PDF</span>
+                                </li>
+                            </ul>
+                            <div class="mt-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                                <p class="text-amber-400 text-xs font-medium flex items-center gap-1.5">
+                                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"></path></svg>
+                                    Esta acción no se puede deshacer
+                                </p>
+                            </div>
+                        </div>
+                    `,
+                    acceptText: `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg> Cancelar Pedido`,
+                    acceptClass: 'bg-gradient-to-r from-red-600 to-red-500 text-white hover:from-red-700 hover:to-red-600 shadow-lg shadow-red-500/20',
+                    iconHtml: '<svg class="w-7 h-7 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"></path></svg>',
+                    iconBgClass: 'bg-red-500/20',
+                });
+
+                if (!confirmed) return;
 
                 adminCancelBtn.classList.add('opacity-50', 'pointer-events-none');
                 adminCancelBtn.innerHTML = `
@@ -1150,7 +1306,7 @@ const currentStatus = statusLabels[order?.status || "pending"];
                         </svg>
                         Cancelar Pedido y Reembolsar
                     `;
-                    alert('Error al cancelar el pedido: ' + (error.message || 'Error desconocido'));
+                    showAdminToast('Error al cancelar el pedido: ' + (error.message || 'Error desconocido'), 'error');
                 }
             });
         }
