@@ -278,7 +278,7 @@ if (Astro.request.method === "POST") {
                     <div
                         id="preview-container"
                         class="relative w-full select-none"
-                        style="height: 70vh; max-height: 700px; min-height: 400px;"
+                        style="aspect-ratio: 21/9;"
                     >
                         <img
                             id="preview-image"
@@ -1219,18 +1219,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (previewWrapper && container) {
             if (view === "desktop") {
                 previewWrapper.style.maxWidth = "95vw";
-                container.style.aspectRatio = "";
-                container.style.height = "70vh";
-                container.style.maxHeight = "700px";
-                container.style.minHeight = "400px";
+                container.style.aspectRatio = "21/9";
                 previewWrapper.classList.remove("mobile-view");
                 if (simulatedHeader) simulatedHeader.style.display = "flex";
             } else {
                 previewWrapper.style.maxWidth = "375px";
-                container.style.height = "";
-                container.style.maxHeight = "";
-                container.style.minHeight = "";
-                container.style.aspectRatio = "9/16";
+                container.style.aspectRatio = "3/4";
                 previewWrapper.classList.add("mobile-view");
                 if (simulatedHeader) simulatedHeader.style.display = "none";
             }

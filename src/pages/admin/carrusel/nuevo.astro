@@ -725,7 +725,7 @@ if (Astro.request.method === "POST") {
         if (viewDesktop && viewMobile && previewWrapper) {
             viewDesktop.addEventListener("click", () => {
                 previewWrapper.style.maxWidth = "100%";
-                previewWrapper.style.aspectRatio = "16/9";
+                previewWrapper.style.aspectRatio = "21/9";
                 viewDesktop.classList.add(
                     "bg-white",
                     "shadow-sm",
@@ -742,7 +742,7 @@ if (Astro.request.method === "POST") {
 
             viewMobile.addEventListener("click", () => {
                 previewWrapper.style.maxWidth = "375px";
-                previewWrapper.style.aspectRatio = "9/16";
+                previewWrapper.style.aspectRatio = "3/4";
                 viewMobile.classList.add(
                     "bg-white",
                     "shadow-sm",
@@ -774,7 +774,7 @@ if (Astro.request.method === "POST") {
                 previewWrapper.style.maxWidth = "90vw";
                 previewWrapper.style.maxHeight = "90vh";
                 previewWrapper.style.height = "auto";
-                previewWrapper.style.aspectRatio = "16/9";
+                previewWrapper.style.aspectRatio = "21/9";
             });
 
             closeFullscreen.addEventListener("click", () => {
@@ -785,10 +785,10 @@ if (Astro.request.method === "POST") {
                 // Check which mode was active
                 if (viewMobile?.classList.contains("text-zinc-900")) {
                     previewWrapper.style.maxWidth = "375px";
-                    previewWrapper.style.aspectRatio = "9/16";
+                    previewWrapper.style.aspectRatio = "3/4";
                 } else {
                     previewWrapper.style.maxWidth = "100%";
-                    previewWrapper.style.aspectRatio = "16/9";
+                    previewWrapper.style.aspectRatio = "21/9";
                 }
                 previewWrapper.style.maxHeight = "";
                 previewWrapper.style.height = "";
