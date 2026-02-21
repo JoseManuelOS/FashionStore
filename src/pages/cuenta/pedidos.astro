@@ -587,6 +587,27 @@ export const prerender = false;
           `
               : ""
           }
+
+          <!-- Invoice Request Button (for all non-pending, non-cancelled orders) -->
+          ${
+            order.status !== "pending" && order.status !== "cancelled"
+              ? `
+            <div class="px-6 pb-6 pt-2 ${order.status === "paid" || order.status === "delivered" || order.status === "return_requested" ? "" : "border-t border-white/10"}">
+              <button 
+                id="invoice-btn-${order.id}"
+                onclick="requestInvoice('${order.id}', '${orderId}')"
+                class="flex items-center gap-2 px-4 py-2 bg-neon-cyan/10 hover:bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/30 rounded-xl transition-all font-medium text-sm"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                Solicitar Factura por Email
+              </button>
+              <p class="text-zinc-500 text-xs mt-2">Recibirás la factura en PDF en tu correo electrónico</p>
+            </div>
+          `
+              : ""
+          }
         </div>
       </div>
     `;
@@ -1024,6 +1045,59 @@ export const prerender = false;
         btn.disabled = false;
         btn.innerHTML = originalText || "Reenviar instrucciones por email";
       }
+    }
+  };
+
+  // Request Invoice Function
+  (window as any).requestInvoice = async function (orderId: string, displayId: string) {
+    const btn = document.getElementById(`invoice-btn-${orderId}`) as HTMLButtonElement;
+    if (!btn) return;
+
+    const originalText = btn.innerHTML;
+
+    btn.disabled = true;
+    btn.innerHTML = `
+      <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      Enviando factura...
+    `;
+
+    try {
+      const response = await fetch("/api/orders/request-invoice", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ orderId }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        showToast(`Factura enviada a ${data.email}`, "success");
+        btn.disabled = false;
+        btn.innerHTML = `
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+          ¡Factura enviada!
+        `;
+        setTimeout(() => {
+          btn.innerHTML = originalText;
+        }, 4000);
+      } else {
+        showToast(data.error || "Error al solicitar la factura", "error");
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
+    } catch (error: any) {
+      console.error("Error requesting invoice:", error);
+      showToast("Error de conexión. Inténtalo de nuevo.", "error");
+      btn.disabled = false;
+      btn.innerHTML = originalText;
     }
   };
 

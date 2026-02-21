@@ -320,15 +320,16 @@ if (product.category) {
 
                 // Set main image to first visible thumbnail
                 if (firstVisible) {
-                    const newSrc = (firstVisible as HTMLElement).dataset.image;
+                    const visibleBtn = firstVisible as HTMLElement;
+                    const newSrc = visibleBtn.dataset.image;
                     if (newSrc) {
                         mainImage.src = newSrc;
                         allThumbnails.forEach((t) => {
                             t.classList.remove("border-neon-cyan", "shadow-glow-cyan");
                             t.classList.add("border-white/10");
                         });
-                        firstVisible.classList.remove("border-white/10");
-                        firstVisible.classList.add("border-neon-cyan", "shadow-glow-cyan");
+                        visibleBtn.classList.remove("border-white/10");
+                        visibleBtn.classList.add("border-neon-cyan", "shadow-glow-cyan");
                     }
                 }
             }) as EventListener);
