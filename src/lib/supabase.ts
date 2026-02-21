@@ -1208,14 +1208,36 @@ export async function createFacturacion(orderId: string): Promise<Facturacion> {
 }
 
 /**
- * Get facturacion by Order ID
+ * Get original facturacion (invoice) by Order ID.
+ * Returns the original invoice (positive total), not the credit note.
  */
 export async function getFacturacionByOrderId(orderId: string): Promise<Facturacion | null> {
     const { data, error } = await supabaseAdmin
         .from('facturacion')
         .select('*, orders(order_number, customer_email, customer_name, total_price)')
         .eq('order_id', orderId)
-        .single();
+        .not('invoice_number', 'like', 'FR-%')
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+}
+
+/**
+ * Get existing credit note (factura rectificativa) by Order ID.
+ * Credit notes have invoice_number starting with 'FR-'.
+ */
+export async function getCreditNoteByOrderId(orderId: string): Promise<Facturacion | null> {
+    const { data, error } = await supabaseAdmin
+        .from('facturacion')
+        .select('*, orders(order_number, customer_email, customer_name, total_price)')
+        .eq('order_id', orderId)
+        .like('invoice_number', 'FR-%')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
     if (error && error.code !== 'PGRST116') throw error;
     return data;
@@ -1250,6 +1272,13 @@ async function generateCreditNoteNumber(): Promise<string> {
  * Amounts are negative to indicate a refund.
  */
 export async function createCreditNote(orderId: string): Promise<Facturacion> {
+    // Check if a credit note already exists for this order (from a previous attempt)
+    const existingCreditNote = await getCreditNoteByOrderId(orderId);
+    if (existingCreditNote) {
+        console.log('Credit note already exists for order, reusing:', existingCreditNote.invoice_number);
+        return existingCreditNote;
+    }
+
     // Get the original invoice
     const originalInvoice = await getFacturacionByOrderId(orderId);
     if (!originalInvoice) {

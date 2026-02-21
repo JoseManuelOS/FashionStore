@@ -466,8 +466,7 @@ DROP TABLE IF EXISTS facturacion;
 CREATE TABLE facturacion (
   id SERIAL PRIMARY KEY,
   order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  CONSTRAINT unique_order_facturacion UNIQUE (order_id)
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Indices
