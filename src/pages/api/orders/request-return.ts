@@ -88,6 +88,26 @@ export const POST: APIRoute = async ({ request }) => {
             );
         }
 
+        // Update order status to return_requested (only on first request, not resends)
+        if (!isResend && order.status === 'delivered') {
+            const { error: statusError } = await supabaseAdmin
+                .from('orders')
+                .update({ 
+                    status: 'return_requested',
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', orderId);
+
+            if (statusError) {
+                console.error('Error updating order status to return_requested:', statusError);
+                return new Response(
+                    JSON.stringify({ error: 'Error al actualizar el estado del pedido', details: statusError.message }),
+                    { status: 500, headers: { 'Content-Type': 'application/json' } }
+                );
+            }
+            console.log('Order status updated to return_requested:', orderId);
+        }
+
         // Send return instructions email
         const customerEmail = order.customer_email || user.email;
         const customerName = order.customer_name || user.user_metadata?.full_name || 'Cliente';
@@ -185,16 +205,6 @@ export const POST: APIRoute = async ({ request }) => {
 
         // Notify admin about return request (only on first request, not resends)
         if (!isResend) {
-            // Update order status to return_requested
-            try {
-                await supabaseAdmin
-                    .from('orders')
-                    .update({ status: 'return_requested' })
-                    .eq('id', orderId);
-            } catch (statusError) {
-                console.error('Error updating order status to return_requested:', statusError);
-            }
-
             try {
                 await sendReturnRequestNotification({
                     id: order.id,

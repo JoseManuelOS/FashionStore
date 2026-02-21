@@ -1,0 +1,137 @@
+---
+import PublicLayout from "../layouts/PublicLayout.astro";
+---
+
+<PublicLayout title="Política de Privacidad - FashionMarket" description="Política de privacidad de FashionMarket. Cómo tratamos tus datos personales.">
+    <div class="min-h-screen bg-dark-500 py-16 px-4">
+        <div class="max-w-3xl mx-auto">
+            <!-- Header -->
+            <div class="mb-10">
+                <h1 class="text-3xl md:text-4xl font-bold text-zinc-100 mb-3">Política de Privacidad</h1>
+                <p class="text-zinc-500 text-sm">Última actualización: 21 de febrero de 2026</p>
+            </div>
+
+            <div class="space-y-8 text-zinc-300 leading-relaxed">
+
+                <section>
+                    <h2 class="text-xl font-semibold text-zinc-100 mb-3">1. Responsable del tratamiento</h2>
+                    <p>
+                        En cumplimiento del Reglamento General de Protección de Datos (RGPD) y la Ley Orgánica 3/2018 de Protección de Datos Personales y garantía de los derechos digitales (LOPDGDD), te informamos que el responsable del tratamiento de tus datos personales es <strong class="text-zinc-100">FashionMarket</strong>, con domicilio en España.
+                    </p>
+                    <p class="mt-2">Para cualquier consulta sobre privacidad puedes contactarnos en: <a href="mailto:privacidad@fashionmarket.es" class="text-cyan-400 hover:text-cyan-300 transition-colors">privacidad@fashionmarket.es</a></p>
+                </section>
+
+                <section>
+                    <h2 class="text-xl font-semibold text-zinc-100 mb-3">2. Datos que recopilamos</h2>
+                    <p class="mb-3">Recopilamos los siguientes datos personales según la finalidad:</p>
+                    <ul class="space-y-2 list-disc list-inside text-zinc-400">
+                        <li><strong class="text-zinc-200">Registro de cuenta:</strong> nombre, dirección de email y contraseña (cifrada).</li>
+                        <li><strong class="text-zinc-200">Procesamiento de pedidos:</strong> nombre y apellidos, dirección de envío, teléfono de contacto y dirección de email.</li>
+                        <li><strong class="text-zinc-200">Pago:</strong> Los datos de tarjeta son gestionados directamente por <strong class="text-zinc-200">Stripe</strong>. FashionMarket no almacena datos de pago.</li>
+                        <li><strong class="text-zinc-200">Newsletter:</strong> dirección de email (solo si te suscribes voluntariamente).</li>
+                        <li><strong class="text-zinc-200">Navegación:</strong> datos de uso anónimos o pseudonimizados para mejorar el servicio.</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h2 class="text-xl font-semibold text-zinc-100 mb-3">3. Finalidad y base legal del tratamiento</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm border border-white/10 rounded-xl overflow-hidden">
+                            <thead class="bg-white/5">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-zinc-200 font-semibold">Finalidad</th>
+                                    <th class="px-4 py-3 text-left text-zinc-200 font-semibold">Base legal</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-white/5">
+                                <tr>
+                                    <td class="px-4 py-3 text-zinc-400">Gestión de pedidos y envíos</td>
+                                    <td class="px-4 py-3 text-zinc-400">Ejecución del contrato</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-3 text-zinc-400">Gestión de devoluciones y reembolsos</td>
+                                    <td class="px-4 py-3 text-zinc-400">Ejecución del contrato / Obligación legal</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-3 text-zinc-400">Emisión de facturas</td>
+                                    <td class="px-4 py-3 text-zinc-400">Obligación legal (normativa tributaria)</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-3 text-zinc-400">Envío de newsletter</td>
+                                    <td class="px-4 py-3 text-zinc-400">Consentimiento del interesado</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-3 text-zinc-400">Atención al cliente</td>
+                                    <td class="px-4 py-3 text-zinc-400">Interés legítimo / Ejecución del contrato</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section>
+                    <h2 class="text-xl font-semibold text-zinc-100 mb-3">4. Conservación de datos</h2>
+                    <p>Conservamos tus datos durante el tiempo necesario para cumplir con la finalidad para la que fueron recogidos:</p>
+                    <ul class="mt-2 space-y-2 list-disc list-inside text-zinc-400">
+                        <li>Datos de pedidos y facturación: <strong class="text-zinc-200">5 años</strong> (obligación fiscal).</li>
+                        <li>Datos de cuenta: hasta que solicites la eliminación.</li>
+                        <li>Newsletter: hasta que te des de baja.</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h2 class="text-xl font-semibold text-zinc-100 mb-3">5. Cesión de datos a terceros</h2>
+                    <p class="mb-3">Tus datos pueden ser compartidos con los siguientes proveedores de servicios, exclusivamente para la prestación del servicio:</p>
+                    <ul class="space-y-2 list-disc list-inside text-zinc-400">
+                        <li><strong class="text-zinc-200">Stripe Inc.</strong> — procesamiento de pagos.</li>
+                        <li><strong class="text-zinc-200">Supabase Inc.</strong> — almacenamiento de datos en base de datos segura.</li>
+                        <li><strong class="text-zinc-200">Resend</strong> — envío de emails transaccionales.</li>
+                        <li><strong class="text-zinc-200">Cloudinary</strong> — almacenamiento de imágenes.</li>
+                        <li><strong class="text-zinc-200">Empresas de mensajería</strong> — entrega de pedidos.</li>
+                    </ul>
+                    <p class="mt-3">No cedemos tus datos a terceros con fines comerciales.</p>
+                </section>
+
+                <section>
+                    <h2 class="text-xl font-semibold text-zinc-100 mb-3">6. Tus derechos</h2>
+                    <p class="mb-3">Tienes derecho a:</p>
+                    <ul class="space-y-1 list-disc list-inside text-zinc-400">
+                        <li><strong class="text-zinc-200">Acceso</strong> — saber qué datos tenemos sobre ti.</li>
+                        <li><strong class="text-zinc-200">Rectificación</strong> — corregir datos inexactos.</li>
+                        <li><strong class="text-zinc-200">Supresión</strong> — solicitar la eliminación de tus datos.</li>
+                        <li><strong class="text-zinc-200">Portabilidad</strong> — recibir tus datos en formato estructurado.</li>
+                        <li><strong class="text-zinc-200">Limitación</strong> — restringir el tratamiento en ciertas circunstancias.</li>
+                        <li><strong class="text-zinc-200">Oposición</strong> — oponerte al tratamiento basado en interés legítimo.</li>
+                    </ul>
+                    <p class="mt-3">Para ejercer cualquiera de estos derechos, escríbenos a <a href="mailto:privacidad@fashionmarket.es" class="text-cyan-400 hover:text-cyan-300 transition-colors">privacidad@fashionmarket.es</a>. También puedes presentar una reclamación ante la <strong class="text-zinc-200">Agencia Española de Protección de Datos</strong> (aepd.es).</p>
+                </section>
+
+                <section>
+                    <h2 class="text-xl font-semibold text-zinc-100 mb-3">7. Seguridad</h2>
+                    <p>Aplicamos medidas técnicas y organizativas adecuadas para proteger tus datos frente a accesos no autorizados, pérdida o alteración. Las comunicaciones entre tu navegador y nuestros servidores están cifradas mediante TLS/HTTPS.</p>
+                </section>
+
+                <section>
+                    <h2 class="text-xl font-semibold text-zinc-100 mb-3">8. Cookies</h2>
+                    <p>Utilizamos cookies técnicas imprescindibles para el funcionamiento del sitio (sesión, carrito). No utilizamos cookies de seguimiento publicitario de terceros.</p>
+                </section>
+
+                <section>
+                    <h2 class="text-xl font-semibold text-zinc-100 mb-3">9. Cambios en esta política</h2>
+                    <p>Podemos actualizar esta política ocasionalmente. Te notificaremos los cambios relevantes por email o mediante un aviso en nuestra web.</p>
+                </section>
+
+            </div>
+
+            <!-- Back link -->
+            <div class="mt-12 pt-8 border-t border-white/5">
+                <a href="/" class="inline-flex items-center gap-2 text-zinc-500 hover:text-cyan-400 transition-colors text-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Volver al inicio
+                </a>
+            </div>
+        </div>
+    </div>
+</PublicLayout>
