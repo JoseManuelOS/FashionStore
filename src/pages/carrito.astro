@@ -279,28 +279,64 @@ export const prerender = false;
                 });
 
                 document.querySelectorAll(".qty-btn").forEach((btn) => {
-                    btn.addEventListener("click", (e) => {
+                    btn.addEventListener("click", async (e) => {
                         const target = e.currentTarget as HTMLElement;
                         const action = target.dataset.action!;
                         const id = target.dataset.id!;
                         const size = target.dataset.size!;
                         const color = target.dataset.color || '';
 
-                        const cart = getCart()
-                            .map((item) => {
-                                if (item.id === id && item.size === size && (item.color || '') === color) {
+                        const cart = getCart();
+                        const item = cart.find(
+                            (i) => i.id === id && i.size === size && (i.color || '') === color
+                        );
+
+                        if (action === "increase" && item) {
+                            // Verificar stock disponible antes de incrementar
+                            try {
+                                const colorParam = color ? `&color=${encodeURIComponent(color)}` : '';
+                                const res = await fetch(`/api/products/stock?productId=${id}${colorParam}`);
+                                if (res.ok) {
+                                    const data = await res.json();
+                                    let available = 0;
+                                    if (color && data.stockBySizeColor) {
+                                        available = data.stockBySizeColor[`${size}|${color}`] ?? data.stockBySize?.[size] ?? 0;
+                                    } else if (data.stockBySize) {
+                                        available = data.stockBySize[size] ?? 0;
+                                    }
+                                    if (item.quantity >= available) {
+                                        // Mostrar aviso inline
+                                        const parent = target.closest('[data-index]');
+                                        if (parent && !parent.querySelector('.stock-warning')) {
+                                            const warning = document.createElement('p');
+                                            warning.className = 'stock-warning text-xs text-amber-400 mt-2';
+                                            warning.textContent = `Solo quedan ${available} unidades disponibles`;
+                                            parent.querySelector('.flex-1')?.appendChild(warning);
+                                            setTimeout(() => warning.remove(), 3000);
+                                        }
+                                        return;
+                                    }
+                                }
+                            } catch {
+                                // Si falla la verificación, dejamos pasar
+                            }
+                        }
+
+                        const updatedCart = cart
+                            .map((ci) => {
+                                if (ci.id === id && ci.size === size && (ci.color || '') === color) {
                                     const newQty =
                                         action === "increase"
-                                            ? item.quantity + 1
-                                            : item.quantity - 1;
+                                            ? ci.quantity + 1
+                                            : ci.quantity - 1;
                                     if (newQty <= 0) return null;
-                                    return { ...item, quantity: newQty };
+                                    return { ...ci, quantity: newQty };
                                 }
-                                return item;
+                                return ci;
                             })
                             .filter(Boolean);
 
-                        saveCart(cart);
+                        saveCart(updatedCart);
                         renderCart();
                     });
                 });
