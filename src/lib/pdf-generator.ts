@@ -114,7 +114,7 @@ export function generateInvoicePDF(factura: any, orderNumber: number | string, i
         `${item.product_name}${item.size ? ` (Talla: ${item.size})` : ''}`,
         Math.abs(item.quantity),
         formatCurrency(Math.abs(item.price)),
-        formatCurrency(Math.abs(item.total || item.price * Math.abs(item.quantity)))
+        (isCreditNote ? '-' : '') + formatCurrency(Math.abs(item.total || item.price * Math.abs(item.quantity)))
     ]);
 
     const tableStartY = isCreditNote ? infoY + 48 : infoY + 38;
@@ -157,7 +157,7 @@ export function generateInvoicePDF(factura: any, orderNumber: number | string, i
     doc.text('Base imponible', totalsX, finalY);
     doc.setTextColor(55, 65, 81);
     doc.setFont('helvetica', 'bold');
-    doc.text(formatCurrency(Math.abs(factura.subtotal || 0)), totalsValueX, finalY, { align: 'right' });
+    doc.text((isCreditNote ? '-' : '') + formatCurrency(Math.abs(factura.subtotal || 0)), totalsValueX, finalY, { align: 'right' });
 
     // IVA
     doc.setTextColor(107, 114, 128);
@@ -165,7 +165,7 @@ export function generateInvoicePDF(factura: any, orderNumber: number | string, i
     doc.text('IVA (21%)', totalsX, finalY + 8);
     doc.setTextColor(55, 65, 81);
     doc.setFont('helvetica', 'bold');
-    doc.text(formatCurrency(Math.abs(factura.iva_amount || 0)), totalsValueX, finalY + 8, { align: 'right' });
+    doc.text((isCreditNote ? '-' : '') + formatCurrency(Math.abs(factura.iva_amount || 0)), totalsValueX, finalY + 8, { align: 'right' });
 
     // Line
     doc.setDrawColor(229, 231, 235);

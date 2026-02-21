@@ -4,6 +4,7 @@ import { supabaseAdmin, createFacturacion, decrementStock } from '../../../lib/s
 import { Resend } from 'resend';
 import { sendNewOrderNotification, sendLowStockAlert } from '../../../lib/admin-notifications';
 import { buildOrderConfirmationHTML, buildInvoiceHTML } from '../../../lib/email-templates';
+import { generateInvoicePDFBase64 } from '../../../lib/pdf-generator';
 
 const stripe = new Stripe(import.meta.env.STRIPE_SECRET_KEY, {
     apiVersion: '2025-12-15.clover',
@@ -260,6 +261,10 @@ export const POST: APIRoute = async ({ request }) => {
                         day: '2-digit', month: 'long', year: 'numeric'
                     });
 
+                    // Generate PDF attachment
+                    const invoicePDFBase64 = generateInvoicePDFBase64(invoiceData, order.order_number, false);
+                    const invoicePDFBuffer = Buffer.from(invoicePDFBase64, 'base64');
+
                     const { data: invoiceEmailResult, error: invoiceEmailErr } = await resend.emails.send({
                         from: 'FashionMarket <noreply@roomieapp.info>',
                         to: customerEmail,
@@ -273,7 +278,13 @@ export const POST: APIRoute = async ({ request }) => {
                             subtotal: invoiceData.subtotal || 0,
                             ivaAmount: invoiceData.iva_amount || 0,
                             total: invoiceData.total || 0
-                        })
+                        }),
+                        attachments: [
+                            {
+                                filename: `Factura_${invoiceData.invoice_number}.pdf`,
+                                content: invoicePDFBuffer,
+                            },
+                        ],
                     });
 
                     if (invoiceEmailErr) {
