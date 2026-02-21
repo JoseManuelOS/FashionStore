@@ -48,15 +48,8 @@ export const GET: APIRoute = async ({ request }) => {
             .eq('email', userEmail)
             .single();
 
-        if (!customer) {
-            return new Response(
-                JSON.stringify({ orders: [] }),
-                { status: 200, headers: { 'Content-Type': 'application/json' } }
-            );
-        }
-
-        // Get orders by customer_id
-        const { data: orders, error: ordersError } = await supabaseAdmin
+        // Query orders by customer_id OR by customer_email (for guest orders placed before registration)
+        let query = supabaseAdmin
             .from('orders')
             .select(`
                 *,
@@ -69,9 +62,32 @@ export const GET: APIRoute = async ({ request }) => {
                     size,
                     price_at_purchase
                 )
-            `)
-            .eq('customer_id', customer.id)
+            `);
+
+        if (customer) {
+            // Match by customer_id OR email (covers both linked and unlinked orders)
+            query = query.or(`customer_id.eq.${customer.id},customer_email.eq.${userEmail}`);
+        } else {
+            // No customer record yet — match solely by email
+            query = query.eq('customer_email', userEmail);
+        }
+
+        const { data: orders, error: ordersError } = await query
             .order('created_at', { ascending: false });
+
+        // Backfill: link any orphan orders (customer_email matches but customer_id is null)
+        if (customer && orders && orders.length > 0) {
+            const orphanIds = orders
+                .filter((o: any) => !o.customer_id && o.customer_email === userEmail)
+                .map((o: any) => o.id);
+
+            if (orphanIds.length > 0) {
+                await supabaseAdmin
+                    .from('orders')
+                    .update({ customer_id: customer.id })
+                    .in('id', orphanIds);
+            }
+        }
 
         if (ordersError) {
             console.error('Error fetching orders:', ordersError);
