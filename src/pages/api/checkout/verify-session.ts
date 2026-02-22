@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import { supabaseAdmin, createFacturacion, decrementStock } from '../../../lib/supabase';
 import { Resend } from 'resend';
 import { sendNewOrderNotification, sendLowStockAlert } from '../../../lib/admin-notifications';
-import { buildOrderConfirmationHTML, buildInvoiceHTML } from '../../../lib/email-templates';
+import { buildOrderConfirmationHTML } from '../../../lib/email-templates';
 import { generateInvoicePDFBase64 } from '../../../lib/pdf-generator';
 
 const stripe = new Stripe(import.meta.env.STRIPE_SECRET_KEY, {
@@ -240,62 +240,13 @@ export const POST: APIRoute = async ({ request }) => {
         }
 
         // Create invoice automatically
-        let invoiceCreated = false;
+        let invoiceData: any = null;
         try {
-            const invoice = await createFacturacion(order.id);
-            console.log('🧾 Invoice created:', invoice.invoice_number);
-            invoiceCreated = true;
+            invoiceData = await createFacturacion(order.id);
+            console.log('🧾 Invoice created:', invoiceData.invoice_number);
         } catch (invoiceError) {
             // Don't fail the request - payment already processed
             console.error('⚠️ Error creating invoice (non-fatal):', invoiceError);
-        }
-
-        // Send invoice email to customer automatically
-        if (invoiceCreated && customerEmail) {
-            try {
-                const { getFacturacionByOrderId } = await import('../../../lib/supabase');
-                const invoiceData = await getFacturacionByOrderId(order.id);
-
-                if (invoiceData) {
-                    const invoiceDate = new Date().toLocaleDateString('es-ES', {
-                        day: '2-digit', month: 'long', year: 'numeric'
-                    });
-
-                    // Generate PDF attachment
-                    const invoicePDFBase64 = generateInvoicePDFBase64(invoiceData, order.order_number, false);
-                    const invoicePDFBuffer = Buffer.from(invoicePDFBase64, 'base64');
-
-                    const { data: invoiceEmailResult, error: invoiceEmailErr } = await resend.emails.send({
-                        from: 'FashionMarket <noreply@roomieapp.info>',
-                        to: customerEmail,
-                        subject: `Factura ${invoiceData.invoice_number} - Pedido #${order.order_number}`,
-                        html: buildInvoiceHTML({
-                            customerName: customerName || 'Cliente',
-                            customerEmail: customerEmail,
-                            invoiceNumber: invoiceData.invoice_number,
-                            invoiceDate,
-                            items: invoiceData.items || [],
-                            subtotal: invoiceData.subtotal || 0,
-                            ivaAmount: invoiceData.iva_amount || 0,
-                            total: invoiceData.total || 0
-                        }),
-                        attachments: [
-                            {
-                                filename: `Factura_${invoiceData.invoice_number}.pdf`,
-                                content: invoicePDFBuffer,
-                            },
-                        ],
-                    });
-
-                    if (invoiceEmailErr) {
-                        console.error('[EMAIL] Error sending invoice:', invoiceEmailErr);
-                    } else {
-                        console.log('[EMAIL] Invoice sent to:', customerEmail, 'ID:', invoiceEmailResult?.id);
-                    }
-                }
-            } catch (invoiceEmailError) {
-                console.error('⚠️ Error sending invoice email (non-fatal):', invoiceEmailError);
-            }
         }
 
         // Send admin notification for new order
@@ -348,12 +299,26 @@ export const POST: APIRoute = async ({ request }) => {
             console.error('⚠️ Error checking stock (non-fatal):', stockError);
         }
 
-        // Send confirmation email with product details
+        // Send confirmation email with invoice PDF attached
         // Wait 1s to respect Resend's 2 req/s rate limit
         if (customerEmail && import.meta.env.RESEND_API_KEY) {
             await new Promise(resolve => setTimeout(resolve, 1000));
             try {
                 const orderRef = order.order_number ? `#${order.order_number}` : `#${order.id.slice(0, 8).toUpperCase()}`;
+
+                // Generate PDF attachment if invoice data is available
+                const attachments: Array<{ filename: string; content: Buffer }> = [];
+                if (invoiceData) {
+                    try {
+                        const pdfBase64 = generateInvoicePDFBase64(invoiceData, order.order_number, false);
+                        attachments.push({
+                            filename: `Factura_${invoiceData.invoice_number}.pdf`,
+                            content: Buffer.from(pdfBase64, 'base64')
+                        });
+                    } catch (pdfError) {
+                        console.error('[PDF] Error generating invoice PDF:', pdfError);
+                    }
+                }
 
                 const { data: emailResult, error: emailError } = await resend.emails.send({
                     from: 'FashionMarket <noreply@roomieapp.info>',
@@ -365,14 +330,14 @@ export const POST: APIRoute = async ({ request }) => {
                         orderItems,
                         totalPrice,
                         shippingAddress
-                    })
+                    }),
+                    ...(attachments.length > 0 ? { attachments } : {})
                 });
 
                 if (emailError) {
                     console.error('[EMAIL] Error sending order confirmation:', emailError);
                 } else {
-                    console.log('[EMAIL] Order confirmation sent to:', customerEmail, 'ID:', emailResult?.id);
-                }
+                    console.log('[EMAIL] Order confirmation sent to:', customerEmail, 'ID:', emailResult?.id, attachments.length > 0 ? '(with invoice PDF)' : '(no PDF)');
             } catch (emailError) {
                 console.error('[EMAIL] Exception sending confirmation email:', emailError);
             }

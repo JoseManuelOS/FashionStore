@@ -645,11 +645,6 @@ const currentStatus = statusLabels[order?.status || "pending"];
                                 >Entregado</option
                             >
                             <option
-                                value="cancelled"
-                                selected={order?.status === "cancelled"}
-                                >Cancelado</option
-                            >
-                            <option
                                 value="return_requested"
                                 selected={order?.status === "return_requested"}
                                 >Devolución Solicitada</option
@@ -704,36 +699,6 @@ const currentStatus = statusLabels[order?.status || "pending"];
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                                 </svg>
                                 Aceptar Devolución y Reembolsar
-                            </button>
-                            <p class="text-xs text-zinc-500 mt-2 text-center">
-                                Esta acción no se puede deshacer
-                            </p>
-                        </div>
-                    )
-                }
-
-                {/* Cancel Order Button - shown when order is in paid status */}
-                {
-                    order?.status === "paid" && (
-                        <div class="bg-dark-400 rounded-2xl border border-red-500/30 p-5">
-                            <h2 class="font-semibold text-red-400 mb-3 flex items-center gap-2">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                                Cancelar Pedido
-                            </h2>
-                            <p class="text-zinc-400 text-sm mb-4">
-                                Al cancelar se procesará el reembolso por Stripe, se generará la factura rectificativa y se enviará todo por email al cliente.
-                            </p>
-                            <button
-                                id="admin-cancel-btn"
-                                data-order-id={order.id}
-                                class="w-full px-4 py-3 bg-gradient-to-r from-red-600 to-red-500 text-white font-semibold rounded-xl hover:from-red-700 hover:to-red-600 transition-all shadow-lg shadow-red-500/20 flex items-center justify-center gap-2"
-                            >
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                                Cancelar Pedido y Reembolsar
                             </button>
                             <p class="text-xs text-zinc-500 mt-2 text-center">
                                 Esta acción no se puede deshacer
@@ -1231,91 +1196,5 @@ const currentStatus = statusLabels[order?.status || "pending"];
             });
         }
 
-        // Admin Cancel Order Button
-        const adminCancelBtn = document.getElementById('admin-cancel-btn');
-        if (adminCancelBtn) {
-            adminCancelBtn.addEventListener('click', async () => {
-                const orderId = adminCancelBtn.dataset.orderId;
-                if (!orderId) return;
-
-                const confirmed = await showConfirmModal({
-                    title: '¿Cancelar este pedido?',
-                    body: `
-                        <div class="space-y-3">
-                            <p>Se realizarán las siguientes acciones:</p>
-                            <ul class="space-y-2 ml-1">
-                                <li class="flex items-start gap-2">
-                                    <svg class="w-4 h-4 mt-0.5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                    <span>Reembolso procesado por Stripe</span>
-                                </li>
-                                <li class="flex items-start gap-2">
-                                    <svg class="w-4 h-4 mt-0.5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                    <span>Factura rectificativa generada</span>
-                                </li>
-                                <li class="flex items-start gap-2">
-                                    <svg class="w-4 h-4 mt-0.5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                    <span>Email enviado al cliente con ambas facturas en PDF</span>
-                                </li>
-                            </ul>
-                            <div class="mt-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                                <p class="text-amber-400 text-xs font-medium flex items-center gap-1.5">
-                                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"></path></svg>
-                                    Esta acción no se puede deshacer
-                                </p>
-                            </div>
-                        </div>
-                    `,
-                    acceptText: `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg> Cancelar Pedido`,
-                    acceptClass: 'bg-gradient-to-r from-red-600 to-red-500 text-white hover:from-red-700 hover:to-red-600 shadow-lg shadow-red-500/20',
-                    iconHtml: '<svg class="w-7 h-7 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"></path></svg>',
-                    iconBgClass: 'bg-red-500/20',
-                });
-
-                if (!confirmed) return;
-
-                adminCancelBtn.classList.add('opacity-50', 'pointer-events-none');
-                adminCancelBtn.innerHTML = `
-                    <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                    </svg>
-                    Procesando cancelación...
-                `;
-
-                try {
-                    const response = await fetch('/api/orders/admin-cancel', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ orderId })
-                    });
-
-                    const result = await response.json();
-
-                    if (result.success) {
-                        adminCancelBtn.innerHTML = `
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                            </svg>
-                            Pedido cancelado correctamente
-                        `;
-                        adminCancelBtn.className = 'w-full px-4 py-3 bg-red-800 text-white font-semibold rounded-xl flex items-center justify-center gap-2 pointer-events-none';
-                        
-                        // Reload page after a short delay
-                        setTimeout(() => window.location.reload(), 1500);
-                    } else {
-                        throw new Error(result.error || 'Error desconocido');
-                    }
-                } catch (error: any) {
-                    adminCancelBtn.classList.remove('opacity-50', 'pointer-events-none');
-                    adminCancelBtn.innerHTML = `
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                        Cancelar Pedido y Reembolsar
-                    `;
-                    showAdminToast('Error al cancelar el pedido: ' + (error.message || 'Error desconocido'), 'error');
-                }
-            });
-        }
     </script>
 </AdminLayout>

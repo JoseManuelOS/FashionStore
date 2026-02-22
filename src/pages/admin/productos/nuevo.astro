@@ -83,7 +83,7 @@ if (Astro.request.method === "POST") {
 ---
 
 <AdminLayout title="Nuevo Producto">
-    <style>
+    <style is:global>
         .back-link {
             display: inline-flex;
             align-items: center;
@@ -259,14 +259,8 @@ if (Astro.request.method === "POST") {
 
         .stock-grid {
             display: grid;
-            grid-template-columns: repeat(6, 1fr);
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
             gap: 12px;
-        }
-        
-        @media (max-width: 600px) {
-            .stock-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
         }
         
         .stock-item {

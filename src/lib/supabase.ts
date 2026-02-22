@@ -1221,15 +1221,17 @@ export async function createFacturacion(orderId: string): Promise<Facturacion> {
         product_name: item.product_name,
         quantity: item.quantity,
         size: item.size,
+        color: item.color || '',
         price: item.price_at_purchase,
         total: item.price_at_purchase * item.quantity
     }));
 
-    const subtotal = items.reduce((sum: number, item: any) => sum + item.total, 0);
+    const itemsTotal = items.reduce((sum: number, item: any) => sum + item.total, 0);
     const total = order.total_price;
-    // IVA is already included in prices, calculate base amount
-    const baseImponible = subtotal / 1.21;
-    const ivaAmount = subtotal - baseImponible;
+    // IVA is already included in prices, calculate base amount from the actual total
+    // (total comes from Stripe and already includes any discounts)
+    const baseImponible = Math.round((total / 1.21) * 100) / 100;
+    const ivaAmount = Math.round((total - baseImponible) * 100) / 100;
 
     const { data, error } = await supabaseAdmin
         .from('facturacion')
@@ -1240,9 +1242,9 @@ export async function createFacturacion(orderId: string): Promise<Facturacion> {
             customer_email: order.customer_email,
             shipping_address: order.shipping_address,
             items: items,
-            subtotal: subtotal,
+            subtotal: baseImponible,
             iva_amount: ivaAmount,
-            shipping_cost: 0, // Free shipping
+            shipping_cost: 0,
             total: total
         })
         .select()

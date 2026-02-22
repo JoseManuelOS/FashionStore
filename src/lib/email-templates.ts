@@ -413,7 +413,8 @@ export function buildOrderDeliveredHTML(data: OrderDeliveredEmailData): string {
  */
 export function buildInvoiceHTML(data: InvoiceEmailData): string {
     const year = new Date().getFullYear();
-    const baseImponible = data.subtotal / 1.21;
+    // subtotal is now stored as base imponible (without IVA)
+    const baseImponible = data.subtotal;
 
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(amount);

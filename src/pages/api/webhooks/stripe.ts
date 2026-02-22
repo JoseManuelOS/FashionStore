@@ -249,16 +249,17 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
         // ==========================================
         // 🧾 Generar Factura Automática (Simplificada)
         // ==========================================
+        let invoiceData: any = null;
         try {
             console.log('Generating facturacion for order:', order.id);
-            await createFacturacion(order.id);
+            invoiceData = await createFacturacion(order.id);
             console.log('Facturacion generated successfully for order:', order.id);
         } catch (invoiceError) {
             console.error('Error generating facturacion:', invoiceError);
             // No fallamos el webhook, la factura se puede regenerar luego
         }
 
-        // Enviar email de confirmación
+        // Enviar email de confirmación con factura PDF adjunta
         if (customerEmail) {
             try {
                 await sendOrderConfirmationEmail({
@@ -268,19 +269,11 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
                     orderNumber: order.order_number,
                     orderItems: orderItems,
                     total: totalPrice,
-                    shippingAddress: shippingAddress
+                    shippingAddress: shippingAddress,
+                    invoiceData: invoiceData
                 });
             } catch (confirmError) {
                 console.error('Error sending confirmation email (non-fatal):', confirmError);
-            }
-
-            // Enviar factura por email
-            try {
-                await sendInvoiceEmail(order.id);
-                console.log('Invoice email sent for order:', order.id);
-            } catch (invoiceEmailError) {
-                console.error('Error sending invoice email:', invoiceEmailError);
-                // No fallamos el webhook, la factura se puede reenviar después
             }
         }
 
@@ -344,9 +337,24 @@ async function sendOrderConfirmationEmail(data: {
     orderItems: any[];
     total: number;
     shippingAddress: string;
+    invoiceData?: any;
 }) {
     try {
         const orderRef = data.orderNumber ? `#${data.orderNumber}` : `#${data.orderId.slice(0, 8).toUpperCase()}`;
+
+        // Generate PDF attachment if invoice data is available
+        const attachments: Array<{ filename: string; content: Buffer }> = [];
+        if (data.invoiceData) {
+            try {
+                const pdfBase64 = generateInvoicePDFBase64(data.invoiceData, data.orderNumber || data.orderId.slice(0, 8), false);
+                attachments.push({
+                    filename: `Factura_${data.invoiceData.invoice_number}.pdf`,
+                    content: Buffer.from(pdfBase64, 'base64')
+                });
+            } catch (pdfError) {
+                console.error('[PDF] Error generating invoice PDF for confirmation email:', pdfError);
+            }
+        }
 
         const { data: emailResult, error: emailError } = await resend.emails.send({
             from: 'FashionMarket <noreply@roomieapp.info>',
@@ -358,13 +366,14 @@ async function sendOrderConfirmationEmail(data: {
                 orderItems: data.orderItems,
                 totalPrice: data.total,
                 shippingAddress: data.shippingAddress
-            })
+            }),
+            ...(attachments.length > 0 ? { attachments } : {})
         });
 
         if (emailError) {
             console.error('[EMAIL] Error sending order confirmation:', emailError);
         } else {
-            console.log('[EMAIL] Order confirmation sent to:', data.to, 'ID:', emailResult?.id);
+            console.log('[EMAIL] Order confirmation sent to:', data.to, 'ID:', emailResult?.id, attachments.length > 0 ? '(with invoice PDF)' : '(no PDF)');
         }
     } catch (error) {
         console.error('[EMAIL] Exception sending order confirmation:', error);
