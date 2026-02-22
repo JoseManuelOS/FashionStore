@@ -3,6 +3,7 @@ import BaseLayout from "./BaseLayout.astro";
 import CartIcon from "../components/islands/CartIcon";
 import CartSlideOver from "../components/islands/CartSlideOver";
 import UserMenu from "../components/islands/UserMenu";
+import LiveSearch from "../components/islands/LiveSearch";
 import NewsletterPopup from "../components/NewsletterPopup.astro";
 import PageAnimations from "../components/islands/PageAnimations";
 import { getCategories } from "../lib/supabase";
@@ -73,7 +74,10 @@ try {
                 </nav>
 
                 <!-- Actions -->
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <!-- Live Search -->
+                    <LiveSearch client:load />
+
                     <!-- User Menu -->
                     <UserMenu client:load />
 
