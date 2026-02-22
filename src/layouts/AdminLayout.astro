@@ -88,11 +88,39 @@ const currentPath = Astro.url.pathname;
                 background: var(--admin-hover-bg);
                 border-color: rgba(6, 182, 212, 0.2);
             }
+            /* Mobile sidebar */
+            .admin-sidebar {
+                transition: transform 0.3s ease;
+            }
+            .admin-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.6);
+                z-index: 35;
+                backdrop-filter: blur(4px);
+                transition: opacity 0.3s ease;
+            }
+            .admin-overlay.active {
+                display: block;
+            }
+            @media (max-width: 1023px) {
+                .admin-sidebar {
+                    transform: translateX(-100%);
+                }
+                .admin-sidebar.open {
+                    transform: translateX(0);
+                }
+            }
         </style>
         <div class="flex min-h-screen">
+            <!-- Mobile Overlay -->
+            <div id="admin-overlay" class="admin-overlay"></div>
+
             <!-- Sidebar -->
             <aside
-                class="w-60 bg-dark-500 border-r border-white/5 fixed h-screen z-40 flex flex-col sidebar-glow"
+                id="admin-sidebar"
+                class="admin-sidebar w-60 bg-dark-500 border-r border-white/5 fixed h-screen z-40 flex flex-col sidebar-glow"
             >
                 <div class="p-6 border-b border-white/5">
                     <a href="/admin/dashboard" class="block mb-1">
@@ -437,14 +465,25 @@ const currentPath = Astro.url.pathname;
             </aside>
 
             <!-- Main -->
-            <div class="flex-1 ml-60 flex flex-col min-h-screen">
+            <div class="flex-1 lg:ml-60 flex flex-col min-h-screen">
                 <header
-                    class="h-16 bg-dark-400/80 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-8 sticky top-0 z-30"
+                    class="h-16 bg-dark-400/80 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-30"
                 >
-                    <h1 class="text-lg font-semibold text-zinc-100">{title}</h1>
+                    <div class="flex items-center gap-3">
+                        <button
+                            id="hamburger-btn"
+                            class="lg:hidden flex items-center justify-center w-10 h-10 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-white/5 transition-colors"
+                            aria-label="Abrir menú"
+                        >
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        </button>
+                        <h1 class="text-lg font-semibold text-zinc-100">{title}</h1>
+                    </div>
                 </header>
 
-                <main class="flex-1 p-8 bg-dark-500">
+                <main class="flex-1 p-4 lg:p-8 bg-dark-500">
                     <slot />
                 </main>
                 <AdminAnimations client:load />
@@ -459,6 +498,32 @@ const currentPath = Astro.url.pathname;
                         "admin-session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;";
                     window.location.href = "/admin/login";
                 });
+
+            // Mobile sidebar toggle
+            const sidebar = document.getElementById("admin-sidebar");
+            const overlay = document.getElementById("admin-overlay");
+            const hamburger = document.getElementById("hamburger-btn");
+
+            function openSidebar() {
+                sidebar?.classList.add("open");
+                overlay?.classList.add("active");
+                document.body.style.overflow = "hidden";
+            }
+            function closeSidebar() {
+                sidebar?.classList.remove("open");
+                overlay?.classList.remove("active");
+                document.body.style.overflow = "";
+            }
+
+            hamburger?.addEventListener("click", openSidebar);
+            overlay?.addEventListener("click", closeSidebar);
+
+            // Close sidebar when clicking a nav link (mobile)
+            sidebar?.querySelectorAll("a").forEach((link) => {
+                link.addEventListener("click", () => {
+                    if (window.innerWidth < 1024) closeSidebar();
+                });
+            });
         </script>
     </body>
 </html>

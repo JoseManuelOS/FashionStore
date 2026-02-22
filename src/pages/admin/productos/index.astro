@@ -71,24 +71,76 @@ function getStockStatus(stock: number): string {
     return "green";
 }
 
+// Color name to hex mapping for visual swatches
+function getColorHex(colorName: string): string {
+    const colors: Record<string, string> = {
+        'rojo': '#ef4444', 'red': '#ef4444',
+        'azul': '#3b82f6', 'blue': '#3b82f6',
+        'verde': '#22c55e', 'green': '#22c55e',
+        'amarillo': '#eab308', 'yellow': '#eab308',
+        'negro': '#1f2937', 'black': '#1f2937',
+        'blanco': '#e5e7eb', 'white': '#e5e7eb',
+        'rosa': '#ec4899', 'pink': '#ec4899',
+        'morado': '#a855f7', 'purple': '#a855f7',
+        'naranja': '#f97316', 'orange': '#f97316',
+        'gris': '#6b7280', 'gray': '#6b7280', 'grey': '#6b7280',
+        'marrón': '#92400e', 'brown': '#92400e',
+        'beige': '#d4a574', 'crema': '#f5e6d3',
+        'celeste': '#67e8f9', 'turquesa': '#2dd4bf',
+        'dorado': '#d4a017', 'gold': '#d4a017',
+        'plateado': '#94a3b8', 'silver': '#94a3b8',
+        'burdeos': '#881337', 'borgoña': '#881337',
+        'coral': '#fb7185', 'lavanda': '#c4b5fd',
+        'oliva': '#84cc16', 'marino': '#1e3a5f',
+        'caqui': '#a3946a', 'lila': '#c084fc',
+    };
+    return colors[colorName.toLowerCase().trim()] || '#06b6d4';
+}
+
+// Standard size order
+const sizeOrder = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '2XL', '3XL'];
+function sortSizes(a: string, b: string): number {
+    const iA = sizeOrder.indexOf(a);
+    const iB = sizeOrder.indexOf(b);
+    if (iA !== -1 && iB !== -1) return iA - iB;
+    if (iA !== -1) return -1;
+    if (iB !== -1) return 1;
+    return a.localeCompare(b);
+}
+
+function stockCls(qty: number): string {
+    if (qty === 0) return 'out-of-stock';
+    if (qty <= 3) return 'low-stock';
+    return '';
+}
+
 // Preparar productos con datos pre-calculados
 const productsWithData =
     products?.map((product) => {
         // Agrupar stock por tallas (sumando todos los colores)
         const stockBySize: Record<string, number> = {};
-        // Detalle por color: { size: { color: stock } }
-        const stockByColor: Record<string, Record<string, number>> = {};
+        // Detalle agrupado por color: { color: { sizes: { size: stock }, total: N } }
+        const colorGroups: Record<string, { sizes: Record<string, number>, total: number }> = {};
         let totalFromVariants = 0;
         let hasColors = false;
+        const uniqueColors = new Set<string>();
+        const uniqueSizes = new Set<string>();
+
         if (product.variants && product.variants.length > 0) {
             product.variants.forEach((v: any) => {
                 const color = v.color || '';
-                if (color) hasColors = true;
+                if (color) {
+                    hasColors = true;
+                    uniqueColors.add(color);
+                }
+                uniqueSizes.add(v.size);
                 // Sumar stock total por talla
                 stockBySize[v.size] = (stockBySize[v.size] || 0) + v.stock;
-                // Detalle por color
-                if (!stockByColor[v.size]) stockByColor[v.size] = {};
-                stockByColor[v.size][color || 'Sin color'] = v.stock;
+                // Agrupar por color
+                const colorKey = color || 'Sin color';
+                if (!colorGroups[colorKey]) colorGroups[colorKey] = { sizes: {}, total: 0 };
+                colorGroups[colorKey].sizes[v.size] = v.stock;
+                colorGroups[colorKey].total += v.stock;
                 totalFromVariants += v.stock;
             });
         }
@@ -102,9 +154,12 @@ const productsWithData =
             )[0]?.image_url,
             stockStatus: getStockStatus(effectiveStock),
             stockBySize,
-            stockByColor,
+            colorGroups,
             hasColors,
             totalStock: effectiveStock,
+            colorCount: uniqueColors.size,
+            sizeCount: uniqueSizes.size,
+            sortedSizes: [...uniqueSizes].sort(sortSizes),
         };
     }) || [];
 ---
@@ -166,11 +221,13 @@ const productsWithData =
             background: #12121a;
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 16px;
-            overflow: hidden;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .data-table {
             width: 100%;
+            min-width: 700px;
             border-collapse: collapse;
         }
 
@@ -247,14 +304,14 @@ const productsWithData =
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            font-size: 12px;
-            color: #71717a;
-            margin-top: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #e4e4e7;
         }
 
         .stock-dot {
-            width: 6px;
-            height: 6px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
         }
 
@@ -271,128 +328,207 @@ const productsWithData =
             box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
         }
 
-        .stock-sizes {
+        /* --- Stock cell redesign --- */
+        .stock-cell {
+            min-width: 180px;
+        }
+
+        .stock-summary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            cursor: pointer;
+            padding: 6px 10px;
+            border-radius: 10px;
+            transition: background 0.2s;
+            user-select: none;
+        }
+
+        .stock-summary:hover {
+            background: rgba(6, 182, 212, 0.06);
+        }
+
+        .stock-summary-left {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .stock-meta {
+            font-size: 11px;
+            color: #71717a;
+        }
+
+        .stock-toggle {
+            width: 20px;
+            height: 20px;
+            color: #52525b;
+            transition: transform 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .stock-toggle.open {
+            transform: rotate(180deg);
+        }
+
+        .stock-detail {
+            display: none;
+            margin-top: 6px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+        }
+
+        .stock-detail.open {
+            display: block;
+        }
+
+        .color-group {
+            padding: 8px 0;
+        }
+
+        .color-group + .color-group {
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .color-group-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .color-swatch {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            flex-shrink: 0;
+        }
+
+        .color-group-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #e4e4e7;
+            text-transform: capitalize;
+        }
+
+        .color-group-total {
+            font-size: 11px;
+            color: #71717a;
+            margin-left: auto;
+        }
+
+        .stock-sizes-grid {
             display: flex;
             flex-wrap: wrap;
             gap: 4px;
         }
 
-        .size-badge {
+        .size-pill {
             display: inline-flex;
             align-items: center;
-            gap: 4px;
-            padding: 3px 8px;
-            border-radius: 6px;
-            font-size: 11px;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 12px;
             font-weight: 500;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             color: #a1a1aa;
-            transition: all 0.2s;
+            transition: all 0.15s;
         }
 
-        .size-badge:hover {
-            background: rgba(6, 182, 212, 0.1);
-            border-color: rgba(6, 182, 212, 0.3);
+        .size-pill:hover {
+            background: rgba(6, 182, 212, 0.08);
+            border-color: rgba(6, 182, 212, 0.2);
         }
 
-        .size-badge .size-name {
-            color: #71717a;
-            text-transform: uppercase;
-            font-weight: 600;
-        }
-
-        .size-badge .size-stock {
-            color: #06b6d4;
+        .size-pill .sz {
             font-weight: 700;
+            color: #a1a1aa;
+            font-size: 11px;
+            text-transform: uppercase;
         }
 
-        .size-badge.out-of-stock {
-            opacity: 0.4;
-            border-color: rgba(239, 68, 68, 0.3);
+        .size-pill .sq {
+            font-weight: 700;
+            font-size: 13px;
+            color: #06b6d4;
         }
 
-        .size-badge.out-of-stock .size-stock {
+        .size-pill.out-of-stock {
+            opacity: 0.35;
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+
+        .size-pill.out-of-stock .sq {
             color: #ef4444;
         }
 
-        .size-badge.low-stock {
-            border-color: rgba(245, 158, 11, 0.3);
+        .size-pill.low-stock {
+            border-color: rgba(245, 158, 11, 0.25);
         }
 
-        .size-badge.low-stock .size-stock {
+        .size-pill.low-stock .sq {
             color: #f59e0b;
         }
 
-        /* Color stock breakdown */
-        .color-stock-list {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            max-width: 280px;
-        }
-
-        .size-color-row {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .size-color-row .size-label {
-            font-size: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
-            color: #71717a;
-            min-width: 26px;
-            text-align: right;
-        }
-
-        .color-badges {
+        /* Non-color products: bigger inline badges */
+        .stock-sizes-inline {
             display: flex;
             flex-wrap: wrap;
-            gap: 3px;
+            gap: 6px;
+            margin-bottom: 6px;
         }
 
-        .color-badge {
+        .size-chip {
             display: inline-flex;
             align-items: center;
-            gap: 3px;
-            padding: 2px 6px;
-            border-radius: 5px;
-            font-size: 10px;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 10px;
+            font-size: 13px;
             font-weight: 500;
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #a1a1aa;
+            transition: all 0.15s;
         }
 
-        .color-badge .color-name {
-            color: #a1a1aa;
-            max-width: 60px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+        .size-chip:hover {
+            background: rgba(6, 182, 212, 0.08);
+            border-color: rgba(6, 182, 212, 0.25);
         }
 
-        .color-badge .color-stock {
-            color: #06b6d4;
+        .size-chip .sc-label {
             font-weight: 700;
+            color: #a1a1aa;
+            font-size: 12px;
+            text-transform: uppercase;
         }
 
-        .color-badge.out-of-stock {
+        .size-chip .sc-qty {
+            font-size: 14px;
+            font-weight: 800;
+            color: #06b6d4;
+        }
+
+        .size-chip.out-of-stock {
             opacity: 0.4;
-            border-color: rgba(239, 68, 68, 0.3);
+            border-color: rgba(239, 68, 68, 0.25);
         }
 
-        .color-badge.out-of-stock .color-stock {
+        .size-chip.out-of-stock .sc-qty {
             color: #ef4444;
         }
 
-        .color-badge.low-stock {
+        .size-chip.low-stock {
             border-color: rgba(245, 158, 11, 0.3);
         }
 
-        .color-badge.low-stock .color-stock {
+        .size-chip.low-stock .sc-qty {
             color: #f59e0b;
         }
 
@@ -709,55 +845,72 @@ const productsWithData =
                                     </span>
                                 </td>
                                 <td>
-                                    <div>
+                                    <div class="stock-cell">
                                         {Object.keys(product.stockBySize).length > 0 ? (
                                             <>
                                                 {product.hasColors ? (
-                                                    <div class="color-stock-list">
-                                                        {Object.entries(product.stockByColor)
-                                                            .sort((a: [string, unknown], b: [string, unknown]) => {
-                                                                const order = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
-                                                                const iA = order.indexOf(a[0]);
-                                                                const iB = order.indexOf(b[0]);
-                                                                if (iA !== -1 && iB !== -1) return iA - iB;
-                                                                return a[0].localeCompare(b[0]);
-                                                            })
-                                                            .map(([size, colors]: [string, any]) => (
-                                                                <div class="size-color-row">
-                                                                    <span class="size-label">{size}</span>
-                                                                    <div class="color-badges">
-                                                                        {Object.entries(colors).map(([color, stock]: [string, any]) => (
-                                                                            <span class={`color-badge ${stock === 0 ? 'out-of-stock' : stock <= 3 ? 'low-stock' : ''}`}>
-                                                                                <span class="color-name">{color}</span>
-                                                                                <span class="color-stock">{stock}</span>
-                                                                            </span>
-                                                                        ))}
-                                                                    </div>
+                                                    <>
+                                                        {/* Clickable summary for color products */}
+                                                        <div class="stock-summary" data-stock-toggle={product.id}>
+                                                            <div class="stock-summary-left">
+                                                                <div class="stock-badge">
+                                                                    <span class={`stock-dot ${product.stockStatus}`} />
+                                                                    {product.totalStock} uds
                                                                 </div>
-                                                            ))}
-                                                    </div>
+                                                                <div class="stock-meta">
+                                                                    {product.colorCount} {product.colorCount === 1 ? 'color' : 'colores'} · {product.sizeCount} {product.sizeCount === 1 ? 'talla' : 'tallas'}
+                                                                </div>
+                                                            </div>
+                                                            <svg class="stock-toggle" data-toggle-icon={product.id} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                                            </svg>
+                                                        </div>
+
+                                                        {/* Expandable color detail */}
+                                                        <div class="stock-detail" data-stock-detail={product.id}>
+                                                            {Object.entries(product.colorGroups)
+                                                                .sort((a: [string, any], b: [string, any]) => b[1].total - a[1].total)
+                                                                .map(([color, data]: [string, any]) => (
+                                                                    <div class="color-group">
+                                                                        <div class="color-group-header">
+                                                                            <span class="color-swatch" style={`background: ${getColorHex(color)}`} />
+                                                                            <span class="color-group-name">{color}</span>
+                                                                            <span class="color-group-total">{data.total} uds</span>
+                                                                        </div>
+                                                                        <div class="stock-sizes-grid">
+                                                                            {product.sortedSizes.map((size: string) => {
+                                                                                const qty = data.sizes[size] ?? 0;
+                                                                                return (
+                                                                                    <span class={`size-pill ${stockCls(qty)}`}>
+                                                                                        <span class="sz">{size}</span>
+                                                                                        <span class="sq">{qty}</span>
+                                                                                    </span>
+                                                                                );
+                                                                            })}
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                        </div>
+                                                    </>
                                                 ) : (
-                                                    <div class="stock-sizes">
-                                                        {Object.entries(product.stockBySize)
-                                                            .sort((a: [string, unknown], b: [string, unknown]) => {
-                                                                const order = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
-                                                                const indexA = order.indexOf(a[0]);
-                                                                const indexB = order.indexOf(b[0]);
-                                                                if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-                                                                return a[0].localeCompare(b[0]);
-                                                            })
-                                                            .map(([size, stock]: [string, any]) => (
-                                                                <span class={`size-badge ${stock === 0 ? 'out-of-stock' : stock <= 3 ? 'low-stock' : ''}`}>
-                                                                    <span class="size-name">{size}</span>
-                                                                    <span class="size-stock">{stock}</span>
-                                                                </span>
-                                                            ))}
-                                                    </div>
+                                                    <>
+                                                        {/* Non-color: bigger inline chips */}
+                                                        <div class="stock-sizes-inline">
+                                                            {Object.entries(product.stockBySize)
+                                                                .sort((a: [string, unknown], b: [string, unknown]) => sortSizes(a[0], b[0]))
+                                                                .map(([size, stock]: [string, any]) => (
+                                                                    <span class={`size-chip ${stockCls(stock)}`}>
+                                                                        <span class="sc-label">{size}</span>
+                                                                        <span class="sc-qty">{stock}</span>
+                                                                    </span>
+                                                                ))}
+                                                        </div>
+                                                        <div class="stock-badge">
+                                                            <span class={`stock-dot ${product.stockStatus}`} />
+                                                            {product.totalStock} total
+                                                        </div>
+                                                    </>
                                                 )}
-                                                <div class="stock-badge">
-                                                    <span class={`stock-dot ${product.stockStatus}`} />
-                                                    {product.totalStock} total
-                                                </div>
                                             </>
                                         ) : (
                                             <div class="stock-badge">
@@ -989,6 +1142,17 @@ const productsWithData =
 
                 if (noResults) noResults.style.display = visible === 0 && query ? 'block' : 'none';
                 if (tableContainer) tableContainer.style.display = visible === 0 && query ? 'none' : '';
+            });
+
+            // Stock detail toggle for color products
+            document.querySelectorAll('[data-stock-toggle]').forEach(summary => {
+                summary.addEventListener('click', () => {
+                    const id = (summary as HTMLElement).dataset.stockToggle;
+                    const detail = document.querySelector(`[data-stock-detail="${id}"]`);
+                    const icon = document.querySelector(`[data-toggle-icon="${id}"]`);
+                    detail?.classList.toggle('open');
+                    icon?.classList.toggle('open');
+                });
             });
         });
     </script>

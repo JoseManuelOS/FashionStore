@@ -487,6 +487,13 @@ const heroSlides = carouselSlides.length > 0 ? carouselSlides : defaultSlides;
 		@media (max-width: 768px) {
 			.features-grid {
 				grid-template-columns: repeat(2, 1fr);
+				gap: 24px;
+			}
+		}
+
+		@media (max-width: 480px) {
+			.features-grid {
+				grid-template-columns: 1fr;
 			}
 		}
 

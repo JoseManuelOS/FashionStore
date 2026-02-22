@@ -329,7 +329,8 @@ export const prerender = false;
     return `
       <div class="mt-6">
         <h4 class="text-white font-medium text-sm mb-4">Estado del pedido</h4>
-        <div class="flex items-center justify-between relative">
+        <div class="overflow-x-auto -mx-2 px-2 pb-2">
+        <div class="flex items-center justify-between relative min-w-[400px]">
           <!-- Progress line background -->
           <div class="absolute top-5 left-6 right-6 h-0.5 bg-dark-300 rounded-full"></div>
           <!-- Progress line filled -->
@@ -341,14 +342,15 @@ export const prerender = false;
               const isCurrent = index === currentStep;
               return `
               <div class="flex flex-col items-center z-10 flex-1">
-                <div class="${isCompleted ? "bg-neon-cyan text-dark-500" : "bg-dark-300 text-zinc-500"} ${isCurrent ? "ring-2 ring-neon-cyan/40" : ""} w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300">
-                  ${isCompleted ? `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>` : index + 1}
+                <div class="${isCompleted ? "bg-neon-cyan text-dark-500" : "bg-dark-300 text-zinc-500"} ${isCurrent ? "ring-2 ring-neon-cyan/40" : ""} w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-semibold transition-all duration-300">
+                  ${isCompleted ? `<svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>` : index + 1}
                 </div>
-                <span class="text-xs mt-2 ${isCompleted ? "text-neon-cyan font-medium" : "text-zinc-500"} text-center">${step.label}</span>
+                <span class="text-[10px] sm:text-xs mt-2 ${isCompleted ? "text-neon-cyan font-medium" : "text-zinc-500"} text-center whitespace-nowrap">${step.label}</span>
               </div>
             `;
             })
             .join("")}
+        </div>
         </div>
       </div>
     `;
