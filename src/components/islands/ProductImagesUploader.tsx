@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 
 interface ProductColor {
     name: string;
@@ -24,6 +24,7 @@ export default function ProductImagesUploader({
     const [error, setError] = useState<string | null>(null);
     const [imageColors, setImageColors] = useState<Record<string, string>>(initialImageColors);
     const [colors, setColors] = useState<ProductColor[]>(availableColors);
+    const prevColorsLengthRef = useRef(availableColors.length);
 
     // Listen for color changes from the page script
     useEffect(() => {
@@ -41,6 +42,24 @@ export default function ProductImagesUploader({
         return () => clearInterval(interval);
     }, []);
 
+    // Auto-assign colors to unassigned images when colors change
+    useEffect(() => {
+        if (colors.length > 0 && images.length > 0) {
+            const hasAnyAssignment = images.some(url => imageColors[url]);
+            if (!hasAnyAssignment && colors.length > prevColorsLengthRef.current) {
+                // Auto-assign: distribute images among colors in round-robin
+                const newAssignments: Record<string, string> = { ...imageColors };
+                images.forEach((url, idx) => {
+                    if (!newAssignments[url]) {
+                        newAssignments[url] = colors[idx % colors.length].name;
+                    }
+                });
+                setImageColors(newAssignments);
+            }
+        }
+        prevColorsLengthRef.current = colors.length;
+    }, [colors, images]);
+
     // Sync image color assignments to a hidden input so the form can read them
     useEffect(() => {
         const hiddenInput = document.getElementById('image-colors-json-input') as HTMLInputElement;
@@ -55,6 +74,21 @@ export default function ProductImagesUploader({
             hiddenInput.value = JSON.stringify(mapping);
         }
     }, [imageColors, colors]);
+
+    // Helper: get hex for a color name
+    const getColorHex = (colorName: string): string | null => {
+        const c = colors.find(c => c.name === colorName);
+        return c ? c.hex : null;
+    };
+
+    // Helper: is a color light enough to need dark text?
+    const isLightColor = (hex: string): boolean => {
+        const h = hex.replace('#', '');
+        const r = parseInt(h.substring(0, 2), 16);
+        const g = parseInt(h.substring(2, 4), 16);
+        const b = parseInt(h.substring(4, 6), 16);
+        return (r * 299 + g * 587 + b * 114) / 1000 > 160;
+    };
 
     const cloudinaryCloudName = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'djlc45ybk';
     const cloudinaryUploadPreset = 'fashionstore_products';
@@ -113,7 +147,21 @@ export default function ProductImagesUploader({
         }
 
         if (newImages.length > 0) {
-            setImages(prev => [...prev, ...newImages]);
+            setImages(prev => {
+                const updated = [...prev, ...newImages];
+                // Auto-assign colors to new images if colors are available
+                if (colors.length > 0) {
+                    setImageColors(prevColors => {
+                        const next = { ...prevColors };
+                        newImages.forEach((url, i) => {
+                            const idx = prev.length + i;
+                            next[url] = colors[idx % colors.length].name;
+                        });
+                        return next;
+                    });
+                }
+                return updated;
+            });
         }
         setUploading(false);
     }, []);
@@ -230,9 +278,84 @@ export default function ProductImagesUploader({
 
             {/* Image Grid */}
             {images.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                    {images.map((url, idx) => (
-                        <div key={`${url}-${idx}`} className="group relative aspect-[3/4] bg-zinc-100 rounded-lg overflow-hidden border border-zinc-200 shadow-sm">
+                <div>
+                    {/* Color legend when colors are available */}
+                    {colors.length > 0 && (
+                        <div style={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: '8px',
+                            marginBottom: '12px',
+                            padding: '10px 14px',
+                            background: '#18181b',
+                            borderRadius: '10px',
+                            border: '1px solid #27272a',
+                            alignItems: 'center'
+                        }}>
+                            <span style={{ fontSize: '12px', color: '#a1a1aa', marginRight: '4px' }}>Colores:</span>
+                            {colors.map(c => (
+                                <span key={c.name} style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '5px',
+                                    fontSize: '12px',
+                                    color: '#e4e4e7',
+                                    padding: '2px 8px',
+                                    background: '#27272a',
+                                    borderRadius: '6px',
+                                    border: `2px solid ${c.hex}`,
+                                }}>
+                                    <span style={{
+                                        width: '10px',
+                                        height: '10px',
+                                        borderRadius: '50%',
+                                        backgroundColor: c.hex,
+                                        border: '1px solid rgba(255,255,255,0.3)',
+                                        flexShrink: 0
+                                    }} />
+                                    {c.name}
+                                    <span style={{ color: '#71717a', fontSize: '11px' }}>
+                                        ({images.filter(url => imageColors[url] === c.name).length} img)
+                                    </span>
+                                </span>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Unassigned warning */}
+                    {colors.length > 0 && images.some(url => !imageColors[url]) && (
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '8px 12px',
+                            marginBottom: '12px',
+                            background: '#451a03',
+                            border: '1px solid #92400e',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            color: '#fbbf24'
+                        }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                            </svg>
+                            Hay imágenes sin color asignado. Selecciona un color en el desplegable de cada imagen.
+                        </div>
+                    )}
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    {images.map((url, idx) => {
+                        const assignedColor = imageColors[url];
+                        const colorHex = assignedColor ? getColorHex(assignedColor) : null;
+                        const borderColor = colorHex || (colors.length > 0 ? '#ef4444' : '#27272a');
+                        const showWarning = colors.length > 0 && !assignedColor;
+
+                        return (
+                        <div key={`${url}-${idx}`} className="group relative aspect-[3/4] bg-zinc-100 rounded-lg overflow-hidden shadow-sm"
+                            style={{
+                                border: `3px solid ${borderColor}`,
+                                boxShadow: colorHex ? `0 0 12px ${colorHex}44` : undefined,
+                            }}>
                             <img
                                 src={url}
                                 alt={`Product ${idx + 1}`}
@@ -274,12 +397,66 @@ export default function ProductImagesUploader({
                                 </button>
                             </div>
 
-                            {/* Order Badge */}
+                            {/* Order Badge (bottom-right) */}
                             <div className="absolute bottom-2 right-2 w-6 h-6 bg-black/70 text-white text-xs flex items-center justify-center rounded-full pointer-events-none">
                                 {idx + 1}
                             </div>
 
-                            {/* Color Tag */}
+                            {/* Color Badge (bottom-left) - always visible */}
+                            {assignedColor && colorHex && (
+                                <div style={{
+                                    position: 'absolute',
+                                    bottom: '8px',
+                                    left: '8px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    padding: '2px 8px 2px 4px',
+                                    background: colorHex,
+                                    color: isLightColor(colorHex) ? '#18181b' : '#fff',
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    borderRadius: '12px',
+                                    border: '1px solid rgba(255,255,255,0.4)',
+                                    pointerEvents: 'none',
+                                    maxWidth: 'calc(100% - 44px)',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                }}>
+                                    <span style={{
+                                        width: '8px',
+                                        height: '8px',
+                                        borderRadius: '50%',
+                                        backgroundColor: isLightColor(colorHex) ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.5)',
+                                        flexShrink: 0
+                                    }} />
+                                    {assignedColor}
+                                </div>
+                            )}
+
+                            {/* Warning badge if no color assigned and colors exist */}
+                            {showWarning && (
+                                <div style={{
+                                    position: 'absolute',
+                                    bottom: '8px',
+                                    left: '8px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '3px',
+                                    padding: '2px 7px',
+                                    background: '#dc2626',
+                                    color: '#fff',
+                                    fontSize: '10px',
+                                    fontWeight: 600,
+                                    borderRadius: '12px',
+                                    pointerEvents: 'none',
+                                }}>
+                                    ⚠ Sin color
+                                </div>
+                            )}
+
+                            {/* Color Selector (top) */}
                             {colors.length > 0 && (
                                 <div className="absolute top-2 left-2 right-2">
                                     <select
@@ -293,18 +470,29 @@ export default function ProductImagesUploader({
                                                 return next;
                                             });
                                         }}
-                                        className="w-full text-xs bg-black/70 text-white border border-white/20 rounded px-1 py-0.5 backdrop-blur-sm"
-                                        style={{ fontSize: '11px' }}
+                                        style={{
+                                            width: '100%',
+                                            fontSize: '12px',
+                                            padding: '4px 6px',
+                                            borderRadius: '6px',
+                                            border: assignedColor ? `2px solid ${colorHex}` : '2px solid #ef4444',
+                                            background: 'rgba(0,0,0,0.75)',
+                                            color: '#fff',
+                                            backdropFilter: 'blur(4px)',
+                                            cursor: 'pointer',
+                                        }}
                                     >
-                                        <option value="">Sin color</option>
+                                        <option value="">⚠ Sin color</option>
                                         {colors.map(c => (
-                                            <option key={c.name} value={c.name}>{c.name}</option>
+                                            <option key={c.name} value={c.name}>● {c.name}</option>
                                         ))}
                                     </select>
                                 </div>
                             )}
                         </div>
-                    ))}
+                        );
+                    })}
+                    </div>
                 </div>
             )}
         </div>

@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
-import { getFacturacionByOrderId, getOrderById } from '../../../lib/supabase';
+import { getFacturacionByOrderId, getFacturacionById, getOrderById } from '../../../lib/supabase';
 
-export const GET: APIRoute = async ({ params }) => {
+export const GET: APIRoute = async ({ params, url }) => {
     const orderId = params.orderId;
 
     if (!orderId) {
@@ -9,8 +9,18 @@ export const GET: APIRoute = async ({ params }) => {
     }
 
     try {
-        // Get invoice data
-        const invoice = await getFacturacionByOrderId(orderId);
+        // Support fetching specific invoice by ID (for admin preview of credit notes)
+        const invoiceIdParam = url.searchParams.get('invoiceId');
+        let invoice;
+
+        if (invoiceIdParam) {
+            invoice = await getFacturacionById(Number(invoiceIdParam));
+        }
+
+        // Fallback to order-based lookup (original invoice)
+        if (!invoice) {
+            invoice = await getFacturacionByOrderId(orderId);
+        }
 
         if (!invoice) {
             return new Response('Invoice not found', { status: 404 });
@@ -19,10 +29,13 @@ export const GET: APIRoute = async ({ params }) => {
         // Get order for additional details
         const order = await getOrderById(orderId);
 
+        // Detect credit note
+        const isCreditNote = invoice.invoice_number?.startsWith('FR-');
+
         // Parse items from JSON
         const items = invoice.items || [];
 
-        // Format currency
+        // Format currency — uses Intl so negative values get proper formatting
         const formatCurrency = (amount: number) =>
             new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(amount);
 
@@ -33,10 +46,11 @@ export const GET: APIRoute = async ({ params }) => {
                 <td style="padding: 16px 20px; border-bottom: 1px solid #e5e7eb;">
                     <div style="font-weight: 600; color: #111827;">${item.product_name}</div>
                     ${item.size ? `<div style="font-size: 13px; color: #6b7280; margin-top: 2px;">Talla: ${item.size}</div>` : ''}
+                    ${item.color ? `<div style="font-size: 13px; color: #6b7280; margin-top: 2px;">Color: ${item.color}</div>` : ''}
                 </td>
                 <td style="padding: 16px 20px; border-bottom: 1px solid #e5e7eb; text-align: center; color: #374151;">${item.quantity}</td>
                 <td style="padding: 16px 20px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #374151;">${formatCurrency(item.price)}</td>
-                <td style="padding: 16px 20px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600; color: #111827;">${formatCurrency(item.total || item.price * item.quantity)}</td>
+                <td style="padding: 16px 20px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600; color: ${isCreditNote ? '#dc2626' : '#111827'};">${formatCurrency(item.total || item.price * item.quantity)}</td>
             </tr>
         `).join('');
 
@@ -47,6 +61,23 @@ export const GET: APIRoute = async ({ params }) => {
             year: 'numeric'
         });
 
+        // Header colors based on type
+        const headerBg = isCreditNote
+            ? 'linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%)'
+            : 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)';
+        const accentColor = isCreditNote ? '#f87171' : '#06b6d4';
+        const accentBg = isCreditNote
+            ? 'rgba(248, 113, 113, 0.1)'
+            : 'rgba(6, 182, 212, 0.1)';
+        const accentBorder = isCreditNote
+            ? 'rgba(248, 113, 113, 0.3)'
+            : 'rgba(6, 182, 212, 0.3)';
+        const typeLabel = isCreditNote ? 'Factura Rectificativa' : 'Factura';
+        const totalBg = isCreditNote
+            ? 'linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%)'
+            : 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)';
+        const totalColor = isCreditNote ? '#f87171' : '#06b6d4';
+
         // Generate premium HTML invoice
         const html = `
 <!DOCTYPE html>
@@ -54,7 +85,7 @@ export const GET: APIRoute = async ({ params }) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Factura ${invoice.invoice_number} - FashionMarket</title>
+    <title>${typeLabel} ${invoice.invoice_number} - FashionMarket</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * {
@@ -90,25 +121,33 @@ export const GET: APIRoute = async ({ params }) => {
 <body>
     <!-- Print Button -->
     <div class="no-print" style="text-align: center; padding: 20px;">
-        <button onclick="window.print()" style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); color: white; border: none; padding: 12px 32px; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; font-family: inherit;">
-            🖨️ Imprimir Factura
+        <button onclick="window.print()" style="background: ${headerBg}; color: white; border: none; padding: 12px 32px; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; font-family: inherit;">
+            🖨️ Imprimir ${typeLabel}
         </button>
     </div>
 
     <div class="invoice-container">
         <!-- Header -->
-        <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 40px; display: flex; justify-content: space-between; align-items: flex-start;">
+        <div style="background: ${headerBg}; padding: 40px; display: flex; justify-content: space-between; align-items: flex-start;">
             <div>
-                <h1 style="font-size: 28px; font-weight: 700; color: #06b6d4; letter-spacing: -0.5px; margin-bottom: 8px;">FASHIONMARKET</h1>
+                <h1 style="font-size: 28px; font-weight: 700; color: ${accentColor}; letter-spacing: -0.5px; margin-bottom: 8px;">FASHIONMARKET</h1>
                 <p style="color: #94a3b8; font-size: 14px;">Moda Premium • Estilo Único</p>
             </div>
             <div style="text-align: right;">
-                <div style="background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.3); padding: 16px 24px; border-radius: 8px;">
-                    <p style="color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Factura</p>
-                    <p style="color: #06b6d4; font-size: 20px; font-weight: 700;">${invoice.invoice_number}</p>
+                <div style="background: ${accentBg}; border: 1px solid ${accentBorder}; padding: 16px 24px; border-radius: 8px;">
+                    <p style="color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">${typeLabel}</p>
+                    <p style="color: ${accentColor}; font-size: 20px; font-weight: 700;">${invoice.invoice_number}</p>
                 </div>
             </div>
         </div>
+
+        ${isCreditNote ? `
+        <!-- Credit Note Banner -->
+        <div style="background: #fef2f2; border-bottom: 2px solid #fecaca; padding: 12px 40px; display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 18px;">⚠️</span>
+            <span style="color: #991b1b; font-weight: 600; font-size: 14px;">FACTURA RECTIFICATIVA — Los importes se muestran en negativo (abono/devolución)</span>
+        </div>
+        ` : ''}
 
         <!-- Info Section -->
         <div style="padding: 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; background: #fafafa; border-bottom: 1px solid #e5e7eb;">
@@ -159,21 +198,21 @@ export const GET: APIRoute = async ({ params }) => {
                 <div style="width: 300px;">
                     <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
                         <span style="color: #6b7280;">Base imponible</span>
-                        <span style="font-weight: 500; color: #374151;">${formatCurrency(invoice.subtotal || 0)}</span>
+                        <span style="font-weight: 500; color: ${isCreditNote ? '#dc2626' : '#374151'};">${formatCurrency(invoice.subtotal || 0)}</span>
                     </div>
                     <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
                         <span style="color: #6b7280;">IVA (21%)</span>
-                        <span style="font-weight: 500; color: #374151;">${formatCurrency(invoice.iva_amount || 0)}</span>
+                        <span style="font-weight: 500; color: ${isCreditNote ? '#dc2626' : '#374151'};">${formatCurrency(invoice.iva_amount || 0)}</span>
                     </div>
-                    ${invoice.shipping_cost > 0 ? `
+                    ${invoice.shipping_cost && invoice.shipping_cost !== 0 ? `
                     <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
                         <span style="color: #6b7280;">Gastos de envío</span>
-                        <span style="font-weight: 500; color: #374151;">${formatCurrency(invoice.shipping_cost)}</span>
+                        <span style="font-weight: 500; color: ${isCreditNote ? '#dc2626' : '#374151'};">${formatCurrency(invoice.shipping_cost)}</span>
                     </div>
                     ` : ''}
-                    <div style="display: flex; justify-content: space-between; padding: 16px 0; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); margin: 16px -20px -20px; padding: 20px; border-radius: 0 0 8px 8px;">
+                    <div style="display: flex; justify-content: space-between; padding: 16px 0; background: ${totalBg}; margin: 16px -20px -20px; padding: 20px; border-radius: 0 0 8px 8px;">
                         <span style="color: white; font-weight: 600; font-size: 16px;">TOTAL</span>
-                        <span style="color: #06b6d4; font-weight: 700; font-size: 20px;">${formatCurrency(invoice.total || 0)}</span>
+                        <span style="color: ${totalColor}; font-weight: 700; font-size: 20px;">${formatCurrency(invoice.total || 0)}</span>
                     </div>
                 </div>
             </div>
@@ -182,7 +221,7 @@ export const GET: APIRoute = async ({ params }) => {
         <!-- Footer -->
         <div style="background: #fafafa; padding: 24px 40px; border-top: 1px solid #e5e7eb; text-align: center;">
             <p style="color: #6b7280; font-size: 13px;">
-                Gracias por tu compra en FashionMarket
+                ${isCreditNote ? 'Esta factura rectificativa anula la factura original.' : 'Gracias por tu compra en FashionMarket'}
             </p>
             <p style="color: #9ca3af; font-size: 12px; margin-top: 8px;">
                 Esta factura ha sido generada automáticamente y es válida sin firma.

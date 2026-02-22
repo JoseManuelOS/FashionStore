@@ -174,7 +174,7 @@ function formatDate(dateStr: string) {
                                             <div class="flex items-center justify-end gap-2">
                                                 <!-- Ver Factura -->
                                                 <a
-                                                    href={`/api/invoice/${invoice.order_id}`}
+                                                    href={`/api/invoice/${invoice.order_id}?invoiceId=${invoice.id}`}
                                                     target="_blank"
                                                     class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-neon-cyan bg-neon-cyan/10 rounded-lg hover:bg-neon-cyan/20 border border-neon-cyan/30 transition-colors"
                                                     title="Ver Factura"
