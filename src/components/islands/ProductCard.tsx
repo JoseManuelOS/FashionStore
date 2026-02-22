@@ -18,18 +18,10 @@ interface ProductCardProps {
         stock: number;
         is_offer: boolean;
         category?: { name: string; slug: string };
-        images?: Array<{ image_url: string; color?: string; color_name?: string }>;
+        colors?: Array<{ name: string; hex: string }>;
+        images?: Array<{ image_url: string; color?: string; color_hex?: string; color_name?: string }>;
     };
 }
-
-// Predefined colors for demo (map image index to color)
-const defaultColors = [
-    { color: '#1a1a1a', colorName: 'Negro' },
-    { color: '#1e3a5f', colorName: 'Azul Marino' },
-    { color: '#6b7280', colorName: 'Gris' },
-    { color: '#fef3c7', colorName: 'Beige' },
-    { color: '#ffffff', colorName: 'Blanco' },
-];
 
 const supabase = createClient(
     import.meta.env.PUBLIC_SUPABASE_URL || '',
@@ -38,14 +30,26 @@ const supabase = createClient(
 
 export default function ProductCard({ product }: ProductCardProps) {
     const images = product.images || [];
+    const productColors = product.colors || [];
     const mainImage = images[0]?.image_url || 'https://placehold.co/400x500/0d0d14/06b6d4?text=Producto';
 
-    // Create color variants from images
-    const colorVariants: ColorVariant[] = images.slice(0, 5).map((img, idx) => ({
-        color: img.color || defaultColors[idx % defaultColors.length].color,
-        colorName: img.color_name || defaultColors[idx % defaultColors.length].colorName,
-        image: img.image_url
-    }));
+    // Build a hex lookup from product.colors [{name, hex}]
+    const colorHexMap: Record<string, string> = {};
+    productColors.forEach(c => { colorHexMap[c.name.toLowerCase()] = c.hex; });
+
+    // Deduplicate images by color — one dot per unique color (first image wins)
+    const seenColors = new Set<string>();
+    const colorVariants: ColorVariant[] = [];
+    for (const img of images) {
+        const colorKey = (img.color || '').toLowerCase();
+        if (!colorKey || seenColors.has(colorKey)) continue;
+        seenColors.add(colorKey);
+        colorVariants.push({
+            color: img.color_hex || colorHexMap[colorKey] || img.color || '#71717a',
+            colorName: img.color || 'Sin color',
+            image: img.image_url,
+        });
+    }
 
     const [currentImage, setCurrentImage] = useState(mainImage);
     const [activeColor, setActiveColor] = useState(0);
