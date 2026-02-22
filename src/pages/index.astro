@@ -155,14 +155,30 @@ const heroSlides = carouselSlides.length > 0 ? carouselSlides : defaultSlides;
 
 		.carousel-element .hero-title {
 			font-size: var(--desktop-font-size, 3.5rem);
+			color: var(--desktop-color, #ffffff);
+			font-weight: var(--desktop-font-weight, 700);
 		}
 
 		.carousel-element .hero-subtitle {
 			font-size: var(--desktop-font-size, 1rem);
+			color: var(--desktop-color, #d4af37);
+			text-transform: var(--desktop-text-transform, uppercase);
 		}
 
 		.carousel-element .hero-description {
 			font-size: var(--desktop-font-size, 1.125rem);
+			color: var(--desktop-color, #e4e4e7);
+		}
+
+		.carousel-element .discount-code {
+			font-size: var(--desktop-font-size, 1.125rem);
+			color: var(--desktop-color, #d4af37);
+		}
+
+		.carousel-element .hero-btn {
+			background-color: var(--desktop-btn-bg, #ffffff);
+			color: var(--desktop-btn-text, #000000);
+			border-radius: var(--desktop-btn-radius, 9999px);
 		}
 
 		/* Mobile responsive overrides */
@@ -176,14 +192,30 @@ const heroSlides = carouselSlides.length > 0 ? carouselSlides : defaultSlides;
 
 			.carousel-element .hero-title {
 				font-size: var(--mobile-font-size, 2rem);
+				color: var(--mobile-color, var(--desktop-color, #ffffff));
+				font-weight: var(--mobile-font-weight, var(--desktop-font-weight, 700));
 			}
 
 			.carousel-element .hero-subtitle {
 				font-size: var(--mobile-font-size, 0.875rem);
+				color: var(--mobile-color, var(--desktop-color, #d4af37));
+				text-transform: var(--mobile-text-transform, var(--desktop-text-transform, uppercase));
 			}
 
 			.carousel-element .hero-description {
 				font-size: var(--mobile-font-size, 0.875rem);
+				color: var(--mobile-color, var(--desktop-color, #e4e4e7));
+			}
+
+			.carousel-element .discount-code {
+				font-size: var(--mobile-font-size, 0.875rem);
+				color: var(--mobile-color, var(--desktop-color, #d4af37));
+			}
+
+			.carousel-element .hero-btn {
+				background-color: var(--mobile-btn-bg, var(--desktop-btn-bg, #ffffff));
+				color: var(--mobile-btn-text, var(--desktop-btn-text, #000000));
+				border-radius: var(--mobile-btn-radius, var(--desktop-btn-radius, 9999px));
 			}
 		}
 
@@ -745,15 +777,11 @@ const heroSlides = carouselSlides.length > 0 ? carouselSlides : defaultSlides;
 									const mobile = slide.style_config?.mobile?.subtitle || desktop;
 									const d = desktop || { top: '15%', left: '10%' };
 									const m = mobile || { top: '20%', left: '5%' };
-									return `--desktop-top: ${d.top}; --desktop-left: ${d.left}; --mobile-top: ${m.top}; --mobile-left: ${m.left}; --desktop-font-size: ${d.fontSize || '1rem'}; --mobile-font-size: ${m.fontSize || '0.875rem'}; --desktop-max-width: ${d.maxWidth || 'auto'}; --mobile-max-width: ${m.maxWidth || '90%'};`;
+									return `--desktop-top: ${d.top}; --desktop-left: ${d.left}; --mobile-top: ${m.top}; --mobile-left: ${m.left}; --desktop-font-size: ${d.fontSize || '1rem'}; --mobile-font-size: ${m.fontSize || '0.875rem'}; --desktop-max-width: ${d.maxWidth || 'auto'}; --mobile-max-width: ${m.maxWidth || '90%'}; --desktop-color: ${d.color || '#d4af37'}; --mobile-color: ${m.color || d.color || '#d4af37'}; --desktop-text-transform: ${d.textTransform || 'uppercase'}; --mobile-text-transform: ${m.textTransform || d.textTransform || 'uppercase'};`;
 								})()}
 							>
 								<p 
-									class="hero-subtitle uppercase tracking-[0.2em] font-medium"
-									style={(() => {
-										const cfg = slide.style_config?.desktop?.subtitle || slide.style_config?.subtitle;
-										return `color: ${cfg?.color || '#d4af37'}; text-transform: ${cfg?.textTransform || 'uppercase'};`;
-									})()}
+									class="hero-subtitle tracking-[0.2em] font-medium"
 								>
 									{slide.subtitle}
 								</p>
@@ -768,15 +796,11 @@ const heroSlides = carouselSlides.length > 0 ? carouselSlides : defaultSlides;
 									const mobile = slide.style_config?.mobile?.title || desktop;
 									const d = desktop || { top: '25%', left: '10%' };
 									const m = mobile || { top: '28%', left: '5%' };
-									return `--desktop-top: ${d.top}; --desktop-left: ${d.left}; --mobile-top: ${m.top}; --mobile-left: ${m.left}; --desktop-font-size: ${d.fontSize || '3.5rem'}; --mobile-font-size: ${m.fontSize || '2rem'}; --desktop-max-width: ${d.maxWidth || '60%'}; --mobile-max-width: ${m.maxWidth || '90%'};`;
+									return `--desktop-top: ${d.top}; --desktop-left: ${d.left}; --mobile-top: ${m.top}; --mobile-left: ${m.left}; --desktop-font-size: ${d.fontSize || '3.5rem'}; --mobile-font-size: ${m.fontSize || '2rem'}; --desktop-max-width: ${d.maxWidth || '60%'}; --mobile-max-width: ${m.maxWidth || '90%'}; --desktop-color: ${d.color || '#ffffff'}; --mobile-color: ${m.color || d.color || '#ffffff'}; --desktop-font-weight: ${d.fontWeight || '700'}; --mobile-font-weight: ${m.fontWeight || d.fontWeight || '700'};`;
 								})()}
 							>
 								<h1 
-									class="hero-title font-bold leading-tight"
-									style={(() => {
-										const cfg = slide.style_config?.desktop?.title || slide.style_config?.title;
-										return `color: ${cfg?.color || '#ffffff'}; font-weight: ${cfg?.fontWeight || '700'};`;
-									})()}
+									class="hero-title leading-tight"
 								>
 									{slide.title}
 								</h1>
@@ -791,15 +815,11 @@ const heroSlides = carouselSlides.length > 0 ? carouselSlides : defaultSlides;
 									const mobile = slide.style_config?.mobile?.description || desktop;
 									const d = desktop || { top: '45%', left: '10%' };
 									const m = mobile || { top: '48%', left: '5%' };
-									return `--desktop-top: ${d.top}; --desktop-left: ${d.left}; --mobile-top: ${m.top}; --mobile-left: ${m.left}; --desktop-font-size: ${d.fontSize || '1.125rem'}; --mobile-font-size: ${m.fontSize || '0.875rem'}; --desktop-max-width: ${d.maxWidth || '40%'}; --mobile-max-width: ${m.maxWidth || '90%'};`;
+									return `--desktop-top: ${d.top}; --desktop-left: ${d.left}; --mobile-top: ${m.top}; --mobile-left: ${m.left}; --desktop-font-size: ${d.fontSize || '1.125rem'}; --mobile-font-size: ${m.fontSize || '0.875rem'}; --desktop-max-width: ${d.maxWidth || '40%'}; --mobile-max-width: ${m.maxWidth || '90%'}; --desktop-color: ${d.color || '#e4e4e7'}; --mobile-color: ${m.color || d.color || '#e4e4e7'};`;
 								})()}
 							>
 								<p 
 									class="hero-description"
-									style={(() => {
-										const cfg = slide.style_config?.desktop?.description || slide.style_config?.description;
-										return `color: ${cfg?.color || '#e4e4e7'};`;
-									})()}
 								>
 									{slide.description}
 								</p>
@@ -815,7 +835,7 @@ const heroSlides = carouselSlides.length > 0 ? carouselSlides : defaultSlides;
 										const mobile = slide.style_config?.mobile?.discount || desktop;
 										const d = desktop || { top: '60%', left: '10%' };
 										const m = mobile || { top: '62%', left: '5%' };
-										return `--desktop-top: ${d.top}; --desktop-left: ${d.left}; --mobile-top: ${m.top}; --mobile-left: ${m.left};`;
+										return `--desktop-top: ${d.top}; --desktop-left: ${d.left}; --mobile-top: ${m.top}; --mobile-left: ${m.left}; --desktop-font-size: ${d.fontSize || '1.125rem'}; --mobile-font-size: ${m.fontSize || '0.875rem'}; --desktop-color: ${d.color || '#d4af37'}; --mobile-color: ${m.color || d.color || '#d4af37'};`;
 									})()}
 								>
 									<button
@@ -826,13 +846,7 @@ const heroSlides = carouselSlides.length > 0 ? carouselSlides : defaultSlides;
 										<span class="text-white/80 text-sm font-medium discount-label">
 											CÓDIGO:
 										</span>
-										<span 
-									class="font-mono font-bold tracking-wider discount-code"
-									style={(() => {
-										const cfg = slide.style_config?.desktop?.discount || slide.style_config?.discount;
-										return `color: ${cfg?.color || '#d4af37'}; font-size: ${cfg?.fontSize || '1.125rem'};`;
-									})()}
-								>
+										<span class="font-mono font-bold tracking-wider discount-code">
 											{slide.discount_code}
 										</span>
 									</button>
@@ -848,16 +862,12 @@ const heroSlides = carouselSlides.length > 0 ? carouselSlides : defaultSlides;
 									const mobile = slide.style_config?.mobile?.cta || desktop;
 									const d = desktop || { top: '75%', left: '10%' };
 									const m = mobile || { top: '78%', left: '5%' };
-									return `--desktop-top: ${d.top}; --desktop-left: ${d.left}; --mobile-top: ${m.top}; --mobile-left: ${m.left};`;
+									return `--desktop-top: ${d.top}; --desktop-left: ${d.left}; --mobile-top: ${m.top}; --mobile-left: ${m.left}; --desktop-btn-bg: ${d.bgColor || '#ffffff'}; --mobile-btn-bg: ${m.bgColor || d.bgColor || '#ffffff'}; --desktop-btn-text: ${d.textColor || '#000000'}; --mobile-btn-text: ${m.textColor || d.textColor || '#000000'}; --desktop-btn-radius: ${d.borderRadius || '9999px'}; --mobile-btn-radius: ${m.borderRadius || d.borderRadius || '9999px'};`;
 								})()}
 							>
 								<a
 									href={slide.cta_link}
 									class="hero-btn inline-flex items-center gap-2 px-8 py-4 font-semibold hover:opacity-90 transition-all text-sm md:text-base tracking-wide uppercase"
-									style={(() => {
-										const cfg = slide.style_config?.desktop?.cta || slide.style_config?.cta;
-										return `background-color: ${cfg?.bgColor || '#ffffff'}; color: ${cfg?.textColor || '#000000'}; border-radius: ${cfg?.borderRadius || '9999px'};`;
-									})()}
 								>
 									{slide.cta_text}
 									<svg

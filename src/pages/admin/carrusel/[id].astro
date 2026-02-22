@@ -1263,6 +1263,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (cfg.maxWidth) el.style.maxWidth = cfg.maxWidth;
             }
         });
+        // Sync style controls (font size, colors, etc.) with the current view config
+        loadStyleControls();
     }
 
     if (container) {
