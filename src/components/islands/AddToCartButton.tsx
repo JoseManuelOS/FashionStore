@@ -38,8 +38,21 @@ export default function AddToCartButton({ product, stockBySize: initialStockBySi
     const colors: ProductColor[] = product.colors || [];
     const hasColors = colors.length > 0;
     const hasSingleSize = (product.sizes?.length || 0) === 1;
+
+    // Read ?color= from URL to preselect color (from color-expanded product cards)
+    const getInitialColor = () => {
+        if (!hasColors) return '';
+        if (typeof window !== 'undefined') {
+            const urlColor = new URLSearchParams(window.location.search).get('color');
+            if (urlColor) {
+                const match = colors.find(c => c.name.toLowerCase() === urlColor.toLowerCase());
+                if (match) return match.name;
+            }
+        }
+        return colors[0].name;
+    };
     
-    const [selectedColor, setSelectedColor] = useState(hasColors ? colors[0].name : '');
+    const [selectedColor, setSelectedColor] = useState(getInitialColor);
     const [selectedSize, setSelectedSize] = useState(product.sizes?.[0] || 'M');
     const [quantity, setQuantity] = useState(1);
     const [isAdding, setIsAdding] = useState(false);

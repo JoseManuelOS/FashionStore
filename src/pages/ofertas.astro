@@ -6,6 +6,7 @@ import {
     getSetting,
     getProductMainImage,
 } from "../lib/supabase";
+import { expandProductsByColor } from "../lib/utils";
 
 export const prerender = true;
 
@@ -13,7 +14,7 @@ let products: any[] = [];
 let offersEnabled = false;
 
 try {
-    products = await getProducts({ isOffer: true });
+    products = expandProductsByColor(await getProducts({ isOffer: true }));
     const offersSetting = await getSetting("offers_enabled");
     offersEnabled = offersSetting === true || offersSetting === "true";
 } catch (e) {
@@ -103,12 +104,14 @@ try {
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         {products.map((product) => (
                             <a
-                                href={`/productos/${product.slug}`}
+                                href={product._colorSlug
+                                    ? `/productos/${product.slug}?color=${encodeURIComponent(product._colorSlug)}`
+                                    : `/productos/${product.slug}`}
                                 class="product-card group"
                             >
                                 <div class="relative aspect-[4/5] bg-dark-400 overflow-hidden">
                                     <img
-                                        src={getProductMainImage(product)}
+                                        src={product._displayImage || getProductMainImage(product)}
                                         alt={product.name}
                                         class="product-image w-full h-full object-cover"
                                         loading="lazy"
@@ -129,6 +132,12 @@ try {
                                     <div class="absolute inset-0 bg-gradient-to-t from-dark-600 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                                 </div>
                                 <div class="p-5">
+                                    {product._displayColor && product._displayColorHex && (
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <span class="w-3.5 h-3.5 rounded-full border-2 border-fuchsia-400" style={`background:${product._displayColorHex}`}></span>
+                                            <span class="text-xs text-zinc-400 capitalize">{product._displayColor}</span>
+                                        </div>
+                                    )}
                                     {product.category && (
                                         <span class="text-xs text-zinc-500 uppercase tracking-wider">
                                             {product.category.name}

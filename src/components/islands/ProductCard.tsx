@@ -20,6 +20,10 @@ interface ProductCardProps {
         category?: { name: string; slug: string };
         colors?: Array<{ name: string; hex: string }>;
         images?: Array<{ image_url: string; color?: string; color_hex?: string; color_name?: string }>;
+        _displayImage?: string | null;
+        _displayColor?: string | null;
+        _displayColorHex?: string | null;
+        _colorSlug?: string | null;
     };
 }
 
@@ -31,7 +35,12 @@ const supabase = createClient(
 export default function ProductCard({ product }: ProductCardProps) {
     const images = product.images || [];
     const productColors = product.colors || [];
-    const mainImage = images[0]?.image_url || 'https://placehold.co/400x500/0d0d14/06b6d4?text=Producto';
+    const mainImage = product._displayImage || images[0]?.image_url || 'https://placehold.co/400x500/0d0d14/06b6d4?text=Producto';
+
+    // Link includes ?color= when this card represents a specific color variant
+    const productUrl = product._colorSlug
+        ? `/productos/${product.slug}?color=${encodeURIComponent(product._colorSlug)}`
+        : `/productos/${product.slug}`;
 
     // Build a hex lookup from product.colors [{name, hex}]
     const colorHexMap: Record<string, string> = {};
@@ -125,7 +134,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
     return (
         <div className="product-card group">
-            <a href={`/productos/${product.slug}`} className="block">
+            <a href={productUrl} className="block">
                 <div className="relative aspect-4/5 bg-dark-400 overflow-hidden">
                     <img
                         src={currentImage}
@@ -192,34 +201,19 @@ export default function ProductCard({ product }: ProductCardProps) {
                 </div>
             </a>
 
-            {/* Color Variants */}
-            {colorVariants.length > 1 && (
-                <div className="flex items-center gap-1.5 px-5 pt-4">
-                    {colorVariants.map((variant, index) => (
-                        <button
-                            key={index}
-                            className={`
-                w-5 h-5 rounded-full border-2 transition-all duration-200
-                ${activeColor === index
-                                    ? 'border-neon-cyan scale-110 shadow-glow-cyan'
-                                    : 'border-white/20 hover:border-white/50'
-                                }
-              `}
-                            style={{ backgroundColor: variant.color }}
-                            onMouseEnter={() => handleColorHover(variant, index)}
-                            onMouseLeave={handleMouseLeave}
-                            title={variant.colorName}
-                            aria-label={`Ver en color ${variant.colorName}`}
-                        />
-                    ))}
-                    {images.length > 5 && (
-                        <span className="text-xs text-zinc-500 ml-1">+{images.length - 5}</span>
-                    )}
+            {/* Color indicator for expanded color variant */}
+            {product._displayColor && product._displayColorHex && (
+                <div className="flex items-center gap-2 px-5 pt-4">
+                    <span
+                        className="w-4 h-4 rounded-full border-2 border-neon-cyan shadow-glow-cyan"
+                        style={{ backgroundColor: product._displayColorHex }}
+                    />
+                    <span className="text-xs text-zinc-400 capitalize">{product._displayColor}</span>
                 </div>
             )}
 
             {/* Product Info */}
-            <a href={`/productos/${product.slug}`} className="block p-5 pt-3">
+            <a href={productUrl} className="block p-5 pt-3">
                 {product.category && (
                     <span className="text-xs text-zinc-500 uppercase tracking-wider">
                         {product.category.name}

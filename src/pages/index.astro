@@ -9,6 +9,7 @@ import {
 	getCarouselSlides,
 	type CarouselSlide,
 } from "../lib/supabase";
+import { expandProductsByColor } from "../lib/utils";
 
 export const prerender = true;
 
@@ -21,8 +22,8 @@ let offersEnabled = false;
 let carouselSlides: CarouselSlide[] = [];
 
 try {
-	products = await getProducts({ limit: 8 });
-	offerProducts = await getProducts({ isOffer: true, limit: 4 });
+	products = expandProductsByColor(await getProducts({ limit: 8 }));
+	offerProducts = expandProductsByColor(await getProducts({ isOffer: true, limit: 4 }));
 	categories = await getCategories();
 	const offersSetting = await getSetting("offers_enabled");
 	offersEnabled = offersSetting === true || offersSetting === "true";
@@ -1108,18 +1109,26 @@ const heroSlides = carouselSlides.length > 0 ? carouselSlides : defaultSlides;
 							<div class="offer-card">
 								<div class="offer-image">
 									<img
-										src={getProductMainImage(product)}
+										src={product._displayImage || getProductMainImage(product)}
 										alt={product.name}
 									/>
 								</div>
 								<div class="offer-content">
 									<span class="offer-badge">Oferta</span>
+									{product._displayColor && product._displayColorHex && (
+										<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+											<span style={`width:14px;height:14px;border-radius:50%;border:2px solid #d946ef;background:${product._displayColorHex}`}></span>
+											<span style="font-size:12px;color:#a1a1aa;text-transform:capitalize">{product._displayColor}</span>
+										</div>
+									)}
 									<h3 class="offer-name">{product.name}</h3>
 									<p class="offer-price">
 										{formatPrice(product.price)}
 									</p>
 									<a
-										href={`/productos/${product.slug}`}
+										href={product._colorSlug
+											? `/productos/${product.slug}?color=${encodeURIComponent(product._colorSlug)}`
+											: `/productos/${product.slug}`}
 										class="offer-link"
 									>
 										Comprar ahora
@@ -1163,10 +1172,12 @@ const heroSlides = carouselSlides.length > 0 ? carouselSlides : defaultSlides;
 					<div class="products-grid">
 						{products.map((product, index) => (
 							<div class="product-card-new">
-								<a href={`/productos/${product.slug}`}>
+								<a href={product._colorSlug
+									? `/productos/${product.slug}?color=${encodeURIComponent(product._colorSlug)}`
+									: `/productos/${product.slug}`}>
 									<div class="product-image-container">
 										<img
-											src={getProductMainImage(product)}
+											src={product._displayImage || getProductMainImage(product)}
 											alt={product.name}
 											loading="lazy"
 										/>
@@ -1187,6 +1198,12 @@ const heroSlides = carouselSlides.length > 0 ? carouselSlides : defaultSlides;
 										</div>
 									</div>
 									<div class="product-info">
+										{product._displayColor && product._displayColorHex && (
+											<div style="display:flex;align-items:center;gap:5px;margin-bottom:4px">
+												<span style={`width:12px;height:12px;border-radius:50%;border:2px solid #06b6d4;background:${product._displayColorHex}`}></span>
+												<span style="font-size:11px;color:#a1a1aa;text-transform:capitalize">{product._displayColor}</span>
+											</div>
+										)}
 										{product.category && (
 											<p class="product-category">
 												{product.category.name}

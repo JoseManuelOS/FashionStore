@@ -6,6 +6,7 @@ import {
     formatPrice,
     getProductMainImage,
 } from "../../lib/supabase";
+import { expandProductsByColor } from "../../lib/utils";
 
 export const prerender = true;
 
@@ -25,7 +26,7 @@ let products: any[] = [];
 let categories: any[] = [];
 
 try {
-    products = await getProducts({ categorySlug: category.slug });
+    products = expandProductsByColor(await getProducts({ categorySlug: category.slug }));
     categories = await getCategories();
 } catch (e) {
     console.error("Error fetching products:", e);
@@ -119,14 +120,14 @@ try {
                             <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                                 {products.map((product) => (
                                     <a
-                                        href={`/productos/${product.slug}`}
+                                        href={product._colorSlug
+                                            ? `/productos/${product.slug}?color=${encodeURIComponent(product._colorSlug)}`
+                                            : `/productos/${product.slug}`}
                                         class="product-card group"
                                     >
                                         <div class="relative aspect-[4/5] bg-dark-400 overflow-hidden">
                                             <img
-                                                src={getProductMainImage(
-                                                    product,
-                                                )}
+                                                src={product._displayImage || getProductMainImage(product)}
                                                 alt={product.name}
                                                 class="product-image w-full h-full object-cover"
                                                 loading="lazy"
@@ -152,6 +153,12 @@ try {
                                             </div>
                                         </div>
                                         <div class="p-5">
+                                            {product._displayColor && product._displayColorHex && (
+                                                <div class="flex items-center gap-2 mb-2">
+                                                    <span class="w-3.5 h-3.5 rounded-full border-2 border-cyan-400" style={`background:${product._displayColorHex}`}></span>
+                                                    <span class="text-xs text-zinc-400 capitalize">{product._displayColor}</span>
+                                                </div>
+                                            )}
                                             <h3 class="font-medium text-white group-hover:text-neon-cyan transition-colors">
                                                 {product.name}
                                             </h3>

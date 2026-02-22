@@ -3,6 +3,7 @@ import PublicLayout from "../../layouts/PublicLayout.astro";
 import ProductCard from "../../components/islands/ProductCard";
 import FilterSidebar from "../../components/islands/FilterSidebar";
 import { getProducts, getCategories } from "../../lib/supabase";
+import { expandProductsByColor } from "../../lib/utils";
 
 // SSR for dynamic filtering
 export const prerender = false;
@@ -74,6 +75,9 @@ if (sortBy === "price-low") {
 } else if (sortBy === "name") {
   products.sort((a, b) => a.name.localeCompare(b.name));
 }
+
+// Expand multi-color products into one card per color
+products = expandProductsByColor(products);
 
 // Pagination
 const totalProducts = products.length;
