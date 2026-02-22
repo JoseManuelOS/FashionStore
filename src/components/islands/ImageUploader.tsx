@@ -131,8 +131,8 @@ export default function ImageUploader({
           border-2 border-dashed rounded-lg p-8 text-center
           transition-colors cursor-pointer
           ${dragActive
-                        ? 'border-brand-navy-500 bg-brand-navy-50'
-                        : 'border-brand-charcoal-200 hover:border-brand-charcoal-300'
+                        ? 'border-cyan-500 bg-cyan-900/30'
+                        : 'border-zinc-600 hover:border-cyan-400 bg-zinc-800/50'
                     }
           ${uploading ? 'opacity-50 pointer-events-none' : ''}
         `}
@@ -149,24 +149,24 @@ export default function ImageUploader({
                 <label htmlFor="image-upload" className="cursor-pointer">
                     {uploading ? (
                         <div className="flex flex-col items-center">
-                            <svg className="animate-spin h-8 w-8 text-brand-navy-500 mb-2" fill="none" viewBox="0 0 24 24">
+                            <svg className="animate-spin h-8 w-8 text-cyan-400 mb-2" fill="none" viewBox="0 0 24 24">
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                             </svg>
-                            <span className="text-brand-charcoal-500">Subiendo imágenes...</span>
+                            <span className="text-zinc-400">Subiendo imágenes...</span>
                         </div>
                     ) : (
                         <div className="flex flex-col items-center">
-                            <svg className="w-10 h-10 text-brand-charcoal-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-10 h-10 text-zinc-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            <span className="text-brand-charcoal-600 font-medium">
+                            <span className="text-zinc-300 font-medium">
                                 Arrastra imágenes aquí
                             </span>
-                            <span className="text-sm text-brand-charcoal-400 mt-1">
+                            <span className="text-sm text-zinc-500 mt-1">
                                 o haz clic para seleccionar
                             </span>
-                            <span className="text-xs text-brand-charcoal-400 mt-2">
+                            <span className="text-xs text-zinc-500 mt-2">
                                 JPG, PNG o WebP • Máx. 10MB por imagen
                             </span>
                         </div>
@@ -176,7 +176,7 @@ export default function ImageUploader({
 
             {/* Error Message */}
             {error && (
-                <p className="text-sm text-red-600">{error}</p>
+                <p className="text-sm text-red-400">{error}</p>
             )}
 
             {/* Image Grid */}

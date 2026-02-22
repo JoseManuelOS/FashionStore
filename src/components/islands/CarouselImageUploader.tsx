@@ -149,8 +149,8 @@ export default function CarouselImageUploader({
                     className={`
                         border-2 border-dashed rounded-xl p-12 text-center transition-all cursor-pointer
                         ${dragActive
-                            ? 'border-cyan-500 bg-cyan-50 scale-[1.02]'
-                            : 'border-zinc-300 hover:border-cyan-400 bg-zinc-50'
+                            ? 'border-cyan-500 bg-cyan-900/30 scale-[1.02]'
+                            : 'border-zinc-600 hover:border-cyan-400 bg-zinc-800/50'
                         }
                         ${uploading ? 'opacity-50 pointer-events-none' : ''}
                     `}
@@ -172,25 +172,25 @@ export default function CarouselImageUploader({
                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                                     </svg>
                                 </div>
-                                <span className="text-zinc-700 font-medium">Subiendo a Cloudinary...</span>
+                                <span className="text-zinc-300 font-medium">Subiendo a Cloudinary...</span>
                                 <span className="text-sm text-zinc-500 mt-1">Por favor espera</span>
                             </div>
                         ) : (
                             <div className="flex flex-col items-center">
-                                <div className="p-4 bg-gradient-to-br from-cyan-50 to-blue-50 rounded-2xl mb-4 shadow-sm">
-                                    <svg className="w-12 h-12 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div className="p-4 bg-gradient-to-br from-cyan-900/30 to-blue-900/30 rounded-2xl mb-4 shadow-sm">
+                                    <svg className="w-12 h-12 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                     </svg>
                                 </div>
-                                <span className="text-zinc-900 font-semibold text-lg">
+                                <span className="text-zinc-200 font-semibold text-lg">
                                     Arrastra una imagen aquí
                                 </span>
-                                <span className="text-sm text-zinc-600 mt-2">
+                                <span className="text-sm text-zinc-400 mt-2">
                                     o haz clic para seleccionar desde tu computadora
                                 </span>
                                 <div className="mt-4 flex items-center gap-4 text-xs text-zinc-500">
                                     <div className="flex items-center gap-1">
-                                        <svg className="w-4 h-4 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                         </svg>
                                         <span>1920x900 px recomendado</span>
@@ -208,7 +208,7 @@ export default function CarouselImageUploader({
 
             {/* Error Message */}
             {error && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm flex items-start gap-3">
+                <div className="p-4 bg-red-900/20 border border-red-800 rounded-xl text-red-400 text-sm flex items-start gap-3">
                     <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>

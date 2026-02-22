@@ -224,8 +224,8 @@ export default function ProductImagesUploader({
                 className={`
                     border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer
                     ${dragActive
-                        ? 'border-cyan-500 bg-cyan-50 scale-[1.01]'
-                        : 'border-zinc-300 hover:border-cyan-400 bg-zinc-50'
+                        ? 'border-cyan-500 bg-cyan-900/30 scale-[1.01]'
+                        : 'border-zinc-600 hover:border-cyan-400 bg-zinc-800/50'
                     }
                     ${uploading ? 'opacity-50 pointer-events-none' : ''}
                 `}
@@ -248,15 +248,15 @@ export default function ProductImagesUploader({
                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                                 </svg>
                             </div>
-                            <span className="text-zinc-700 font-medium">Subiendo imágenes...</span>
+                            <span className="text-zinc-300 font-medium">Subiendo imágenes...</span>
                         </div>
                     ) : (
                         <div className="flex flex-col items-center">
                             <svg className="w-10 h-10 text-zinc-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            <span className="text-zinc-700 font-medium">
-                                Arrastra imágenes o <span className="text-cyan-600">examina</span>
+                            <span className="text-zinc-300 font-medium">
+                                Arrastra imágenes o <span className="text-cyan-400">examina</span>
                             </span>
                             <span className="text-xs text-zinc-500 mt-1">
                                 JPG, PNG, WebP (Máx 10MB)
@@ -268,7 +268,7 @@ export default function ProductImagesUploader({
 
             {/* Error Message */}
             {error && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-start gap-2">
+                <div className="p-3 bg-red-900/20 border border-red-800 rounded-lg text-red-400 text-sm flex items-start gap-2">
                     <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
