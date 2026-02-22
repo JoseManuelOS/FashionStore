@@ -831,6 +831,9 @@ tbody tr {
 
 .live-search-wrapper {
   position: relative;
+}
+
+.live-search-wrapper.is-open {
   z-index: 50;
 }
 

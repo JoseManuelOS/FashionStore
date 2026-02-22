@@ -146,7 +146,7 @@ export default function LiveSearch() {
     const showDropdown = isOpen && (query.length >= 2 || isLoading);
 
     return (
-        <div ref={containerRef} className="live-search-wrapper">
+        <div ref={containerRef} className={`live-search-wrapper${isOpen ? ' is-open' : ''}`}>
             {/* Search trigger button */}
             {!isOpen && (
                 <button
