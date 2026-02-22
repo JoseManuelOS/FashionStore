@@ -9,7 +9,7 @@ export const prerender = false;
 import type { APIRoute } from 'astro';
 import { Resend } from 'resend';
 import { createClient } from '@supabase/supabase-js';
-import { supabaseAdmin, getFacturacionByOrderId, getOrderById } from '../../../lib/supabase';
+import { supabaseAdmin, getFacturacionByOrderId, getCreditNoteByOrderId, getOrderById } from '../../../lib/supabase';
 import { generateInvoicePDFBase64 } from '../../../lib/pdf-generator';
 
 const resend = new Resend(import.meta.env.RESEND_API_KEY);
@@ -40,8 +40,11 @@ export const POST: APIRoute = async ({ request }) => {
             );
         }
 
-        // 2. Get orderId from body
-        const { orderId } = await request.json();
+        // 2. Get orderId and optional type from body
+        // type: 'original' → always fetch normal invoice
+        //       'credit_note' → always fetch factura rectificativa
+        //       undefined → auto-detect based on order status
+        const { orderId, type } = await request.json();
         if (!orderId) {
             return new Response(
                 JSON.stringify({ error: 'ID de pedido requerido' }),
@@ -77,7 +80,36 @@ export const POST: APIRoute = async ({ request }) => {
         }
 
         // 4. Get invoice data
-        const invoice = await getFacturacionByOrderId(orderId);
+        // If explicit type is requested, use that; otherwise auto-detect for returned/cancelled.
+        let invoice: any = null;
+        let isCreditNote = false;
+
+        if (type === 'credit_note') {
+            invoice = await getCreditNoteByOrderId(orderId);
+            if (!invoice) {
+                return new Response(
+                    JSON.stringify({ error: 'Factura rectificativa no disponible para este pedido' }),
+                    { status: 404, headers: { 'Content-Type': 'application/json' } }
+                );
+            }
+            isCreditNote = true;
+        } else if (type === 'original') {
+            invoice = await getFacturacionByOrderId(orderId);
+        } else {
+            // Auto-detect: for returned/cancelled orders prefer credit note
+            const isReturnedOrCancelled = order.status === 'returned' || order.status === 'cancelled';
+            if (isReturnedOrCancelled) {
+                invoice = await getCreditNoteByOrderId(orderId);
+                if (invoice) {
+                    isCreditNote = true;
+                } else {
+                    invoice = await getFacturacionByOrderId(orderId);
+                }
+            } else {
+                invoice = await getFacturacionByOrderId(orderId);
+            }
+        }
+
         if (!invoice) {
             return new Response(
                 JSON.stringify({ error: 'Factura no disponible para este pedido' }),
@@ -87,7 +119,7 @@ export const POST: APIRoute = async ({ request }) => {
 
         // 5. Generate PDF
         const orderNumber = order.order_number || orderId.slice(0, 8);
-        const pdfBase64 = generateInvoicePDFBase64(invoice, orderNumber, false);
+        const pdfBase64 = generateInvoicePDFBase64(invoice, orderNumber, isCreditNote);
 
         // 6. Format helpers
         const formatCurrency = (amount: number) =>
@@ -113,10 +145,11 @@ export const POST: APIRoute = async ({ request }) => {
         });
 
         // 7. Send email with PDF attachment
+        const invoiceLabel = isCreditNote ? 'Factura Rectificativa' : 'Factura';
         const { data: emailData, error: emailError } = await resend.emails.send({
             from: 'FashionMarket <noreply@roomieapp.info>',
             to: [user.email],
-            subject: `Tu Factura ${invoice.invoice_number || '#' + invoice.id} - Pedido #${orderNumber}`,
+            subject: `Tu ${invoiceLabel} ${invoice.invoice_number || '#' + invoice.id} - Pedido #${orderNumber}`,
             html: `
                 <!DOCTYPE html>
                 <html>
@@ -129,13 +162,13 @@ export const POST: APIRoute = async ({ request }) => {
                         <!-- Header -->
                         <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 40px; text-align: center;">
                             <h1 style="font-size: 24px; font-weight: 700; color: #06b6d4; margin: 0 0 8px 0;">FASHIONMARKET</h1>
-                            <p style="color: #94a3b8; font-size: 14px; margin: 0;">Factura ${invoice.invoice_number || '#' + invoice.id}</p>
+                            <p style="color: #94a3b8; font-size: 14px; margin: 0;">${invoiceLabel} ${invoice.invoice_number || '#' + invoice.id}</p>
                         </div>
 
                         <!-- Message -->
                         <div style="padding: 32px; border-bottom: 1px solid #e5e7eb;">
                             <p style="color: #374151; font-size: 16px; margin: 0 0 8px 0;">Hola <strong>${invoice.customer_name || order.customer_name || 'Cliente'}</strong>,</p>
-                            <p style="color: #6b7280; font-size: 14px; margin: 0;">Aquí tienes la factura de tu pedido <strong>#${orderNumber}</strong>. También la encontrarás adjunta en formato PDF.</p>
+                            <p style="color: #6b7280; font-size: 14px; margin: 0;">Aquí tienes la ${invoiceLabel.toLowerCase()} de tu pedido <strong>#${orderNumber}</strong>. También la encontrarás adjunta en formato PDF.</p>
                         </div>
 
                         <!-- Invoice Info -->
@@ -208,7 +241,7 @@ export const POST: APIRoute = async ({ request }) => {
             `,
             attachments: [
                 {
-                    filename: `Factura_${invoice.invoice_number || invoice.id}.pdf`,
+                    filename: `${isCreditNote ? 'Factura_Rectificativa' : 'Factura'}_${invoice.invoice_number || invoice.id}.pdf`,
                     content: Buffer.from(pdfBase64, 'base64')
                 }
             ]
@@ -229,7 +262,8 @@ export const POST: APIRoute = async ({ request }) => {
                 success: true,
                 message: 'Factura enviada correctamente',
                 email: user.email,
-                invoice_number: invoice.invoice_number
+                invoice_number: invoice.invoice_number,
+                is_credit_note: isCreditNote
             }),
             { status: 200, headers: { 'Content-Type': 'application/json' } }
         );

@@ -360,7 +360,6 @@ export function buildOrderDeliveredHTML(data: OrderDeliveredEmailData): string {
 
         <!-- Satisfaction Notice -->
         <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1)); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 16px; padding: 24px; margin-bottom: 24px; text-align: center;">
-            <p style="font-size: 18px; margin: 0 0 8px 0; color: #34d399;">&#11088;</p>
             <p style="font-size: 15px; margin: 0 0 8px 0; color: #e2e8f0; font-weight: 600;">&iquest;C&oacute;mo fue tu experiencia?</p>
             <p style="font-size: 13px; margin: 0; color: #a1a1aa;">
                 Tu opini&oacute;n nos ayuda a mejorar. Si tienes alg&uacute;n problema con tu pedido, no dudes en contactarnos.

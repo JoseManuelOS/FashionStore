@@ -590,24 +590,53 @@ export const prerender = false;
               : ""
           }
 
-          <!-- Invoice Request Button (for all non-pending, non-cancelled orders) -->
+          <!-- Invoice Request Button(s) -->
           ${
-            order.status !== "pending" && order.status !== "cancelled"
-              ? `
-            <div class="px-6 pb-6 pt-2 ${order.status === "paid" || order.status === "delivered" || order.status === "return_requested" ? "" : "border-t border-white/10"}">
+            order.status !== "pending"
+              ? (() => {
+                  const borderClass = order.status === "paid" || order.status === "delivered" || order.status === "return_requested" || order.status === "cancelled" || order.status === "returned" ? "" : "border-t border-white/10";
+                  const docIcon = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>`;
+                  const refundIcon = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>`;
+                  if (order.status === "returned" || order.status === "cancelled") {
+                    return `
+            <div class="px-6 pb-6 pt-2 ${borderClass}">
+              <p class="text-zinc-400 text-xs font-semibold uppercase tracking-wider mb-3">Documentos del pedido</p>
+              <div class="flex flex-wrap gap-3">
+                <button
+                  id="invoice-btn-${order.id}-original"
+                  onclick="requestInvoice('${order.id}', '${orderId}', 'original')"
+                  class="flex items-center gap-2 px-4 py-2 bg-neon-cyan/10 hover:bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/30 rounded-xl transition-all font-medium text-sm"
+                >
+                  ${docIcon}
+                  Factura original
+                </button>
+                <button
+                  id="invoice-btn-${order.id}-credit"
+                  onclick="requestInvoice('${order.id}', '${orderId}', 'credit_note')"
+                  class="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl transition-all font-medium text-sm"
+                >
+                  ${refundIcon}
+                  Factura rectificativa
+                </button>
+              </div>
+              <p class="text-zinc-500 text-xs mt-2">Recibirás cada factura en PDF en tu correo electrónico</p>
+            </div>
+          `;
+                  }
+                  return `
+            <div class="px-6 pb-6 pt-2 ${borderClass}">
               <button 
                 id="invoice-btn-${order.id}"
                 onclick="requestInvoice('${order.id}', '${orderId}')"
                 class="flex items-center gap-2 px-4 py-2 bg-neon-cyan/10 hover:bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/30 rounded-xl transition-all font-medium text-sm"
               >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
+                ${docIcon}
                 Solicitar Factura por Email
               </button>
               <p class="text-zinc-500 text-xs mt-2">Recibirás la factura en PDF en tu correo electrónico</p>
             </div>
-          `
+          `;
+                })()
               : ""
           }
         </div>
@@ -1051,8 +1080,12 @@ export const prerender = false;
   };
 
   // Request Invoice Function
-  (window as any).requestInvoice = async function (orderId: string, displayId: string) {
-    const btn = document.getElementById(`invoice-btn-${orderId}`) as HTMLButtonElement;
+  (window as any).requestInvoice = async function (orderId: string, displayId: string, type?: string) {
+    // Determine button id based on type
+    const btnId = type === 'original' ? `invoice-btn-${orderId}-original`
+                : type === 'credit_note' ? `invoice-btn-${orderId}-credit`
+                : `invoice-btn-${orderId}`;
+    const btn = document.getElementById(btnId) as HTMLButtonElement;
     if (!btn) return;
 
     const originalText = btn.innerHTML;
@@ -1073,7 +1106,7 @@ export const prerender = false;
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ orderId }),
+        body: JSON.stringify({ orderId, ...(type ? { type } : {}) }),
       });
 
       const data = await response.json();

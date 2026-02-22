@@ -417,7 +417,7 @@ export async function sendReturnRequestNotification(order: {
     customer_name?: string;
     customer_email?: string;
     total_price: number;
-}, reason: string) {
+}, _reason?: string) {
     try {
         const orderRef = `#${order.order_number || order.id.slice(0, 8)}`;
 
@@ -426,10 +426,32 @@ export async function sendReturnRequestNotification(order: {
                 <table width="100%" cellpadding="0" cellspacing="0" border="0">
                     <tr>
                         <td valign="top" width="50%">
-                            ${infoCard('Pedido', orderRef, '#22d3ee')}
+                            <table cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <td width="40" valign="top">
+                                        <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #0891b2, #06b6d4); border-radius: 8px;">
+                                            <table width="36" height="36"><tr><td align="center" valign="middle">${SVG_ICONS.package(16)}</td></tr></table>
+                                        </div>
+                                    </td>
+                                    <td style="padding-left: 10px;" valign="middle">
+                                        ${infoCard('Pedido', orderRef, '#22d3ee')}
+                                    </td>
+                                </tr>
+                            </table>
                         </td>
                         <td valign="top" width="50%" style="text-align: right;">
-                            ${infoCard('Importe', formatCurrency(order.total_price), '#f1f5f9')}
+                            <table cellpadding="0" cellspacing="0" border="0" style="margin-left: auto;">
+                                <tr>
+                                    <td width="40" valign="top">
+                                        <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #8b5cf6, #7c3aed); border-radius: 8px;">
+                                            <table width="36" height="36"><tr><td align="center" valign="middle">${SVG_ICONS.creditCard(16)}</td></tr></table>
+                                        </div>
+                                    </td>
+                                    <td style="padding-left: 10px;" valign="middle">
+                                        ${infoCard('Importe', formatCurrency(order.total_price), '#f1f5f9')}
+                                    </td>
+                                </tr>
+                            </table>
                         </td>
                     </tr>
                 </table>
@@ -465,13 +487,6 @@ export async function sendReturnRequestNotification(order: {
                         </td>
                     </tr>
                 </table>
-            `)}
-
-            ${card(`
-                <p style="color: #a1a1aa; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin: 0 0 12px 0;">Motivo de devoluci&oacute;n</p>
-                <div style="background: #111118; border: 1px solid #2a2a3e; border-radius: 10px; padding: 16px;">
-                    <p style="color: #e2e8f0; font-size: 15px; margin: 0; line-height: 1.7;">${reason}</p>
-                </div>
             `)}
         `;
 
