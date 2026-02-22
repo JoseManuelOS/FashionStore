@@ -97,6 +97,18 @@ export default function AddToCartButton({ product, stockBySize: initialStockBySi
         setQuantity(1);
     }, [selectedSize, selectedColor]);
 
+    // Escuchar selección de talla desde SizeRecommender (otro island)
+    useEffect(() => {
+        const handler = (e: Event) => {
+            const size = (e as CustomEvent<string>).detail;
+            if (size && product.sizes?.includes(size)) {
+                setSelectedSize(size);
+            }
+        };
+        document.addEventListener('size-recommender-select', handler);
+        return () => document.removeEventListener('size-recommender-select', handler);
+    }, [product.sizes]);
+
     const handleAddToCart = () => {
         if (isOutOfStock || maxAddable <= 0) return;
 

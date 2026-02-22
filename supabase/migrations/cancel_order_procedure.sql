@@ -3,8 +3,11 @@
 -- Operación ATÓMICA: Si cualquier paso falla, se hace rollback completo
 -- =============================================
 
--- Primero, creamos o reemplazamos la función
-CREATE OR REPLACE FUNCTION cancel_order_with_stock_restore(order_id_param INTEGER)
+-- Eliminar versión anterior con tipo INTEGER si existe (firma incompatible con UUID)
+DROP FUNCTION IF EXISTS cancel_order_with_stock_restore(INTEGER);
+
+-- Crear/reemplazar con tipo UUID (schema real de producción)
+CREATE OR REPLACE FUNCTION cancel_order_with_stock_restore(order_id_param UUID)
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -42,7 +45,7 @@ BEGIN
     
     -- Paso 3: Iterar sobre los items del pedido y restaurar stock
     FOR order_item IN 
-        SELECT oi.product_id, oi.size, oi.quantity
+        SELECT oi.product_id, oi.size, oi.color, oi.quantity
         FROM order_items oi
         WHERE oi.order_id = order_id_param
     LOOP
@@ -50,10 +53,10 @@ BEGIN
         IF order_item.product_id IS NOT NULL AND order_item.size IS NOT NULL THEN
             UPDATE product_variants
             SET 
-                stock = stock + order_item.quantity,
-                updated_at = NOW()
+                stock = stock + order_item.quantity
             WHERE product_id = order_item.product_id
-              AND size = order_item.size;
+              AND size = order_item.size
+              AND color = COALESCE(order_item.color, '');
             
             -- También actualizar stock global en products (legacy support)
             UPDATE products
@@ -92,7 +95,7 @@ END;
 $$;
 
 -- Dar permisos para que el service_role pueda ejecutar la función
-GRANT EXECUTE ON FUNCTION cancel_order_with_stock_restore(INTEGER) TO service_role;
+GRANT EXECUTE ON FUNCTION cancel_order_with_stock_restore(UUID) TO service_role;
 
 -- Comentario descriptivo
 COMMENT ON FUNCTION cancel_order_with_stock_restore IS 

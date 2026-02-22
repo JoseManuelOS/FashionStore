@@ -1,3 +1,4 @@
+export const prerender = false;
 /**
  * API Endpoint: Check Pending Shipments
  * 

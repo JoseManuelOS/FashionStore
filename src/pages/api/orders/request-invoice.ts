@@ -1,3 +1,4 @@
+export const prerender = false;
 /**
  * API Endpoint: Request Invoice (Customer-facing)
  * 

@@ -1,3 +1,4 @@
+export const prerender = false;
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../lib/supabase';
 import { isAdminAuthenticated, unauthorizedResponse } from '../../../lib/admin-auth';

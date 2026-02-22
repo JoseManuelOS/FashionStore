@@ -1,5 +1,7 @@
 /**
- * Dashboard Queries - Functions to get KPIs and sales data for admin dashboard
+ * Dashboard Queries - KPIs y datos de ventas para el panel de administración
+ * Todas las agregaciones se ejecutan a nivel SQL mediante funciones RPC
+ * para rendimiento óptimo y evitar traer filas innecesarias al servidor.
  */
 
 import { supabaseAdmin } from './supabase';
@@ -18,29 +20,21 @@ export interface DailySales {
 }
 
 /**
- * Get monthly sales total (orders in paid, shipped, delivered status)
+ * Ventas del mes actual — SUM(total_price) calculado en SQL
  */
 export async function getMonthlySales(): Promise<number> {
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
-
-    const { data, error } = await supabaseAdmin
-        .from('orders')
-        .select('total_price')
-        .in('status', ['paid', 'shipped', 'delivered'])
-        .gte('created_at', startOfMonth.toISOString());
+    const { data, error } = await supabaseAdmin.rpc('get_monthly_sales');
 
     if (error) {
         console.error('Error fetching monthly sales:', error);
         return 0;
     }
 
-    return data?.reduce((sum, order) => sum + (order.total_price || 0), 0) || 0;
+    return Number(data) || 0;
 }
 
 /**
- * Get pending orders count
+ * Pedidos pendientes — COUNT via head request (ya óptimo)
  */
 export async function getPendingOrdersCount(): Promise<number> {
     const { count, error } = await supabaseAdmin
@@ -57,126 +51,59 @@ export async function getPendingOrdersCount(): Promise<number> {
 }
 
 /**
- * Get the best-selling product
+ * Producto más vendido — GROUP BY + SUM en SQL
  */
 export async function getTopProduct(): Promise<{ name: string; quantity: number } | null> {
-    const { data: orderItems, error } = await supabaseAdmin
-        .from('order_items')
-        .select(`
-            product_name,
-            quantity,
-            order:orders!inner(status)
-        `)
-        .in('orders.status', ['paid', 'shipped', 'delivered']);
+    const { data, error } = await supabaseAdmin.rpc('get_top_product');
 
     if (error) {
         console.error('Error fetching top product:', error);
         return null;
     }
 
-    if (!orderItems || orderItems.length === 0) return null;
+    if (!data || data.length === 0) return null;
 
-    // Aggregate by product name
-    const productSales: Record<string, number> = {};
-    for (const item of orderItems) {
-        const name = item.product_name;
-        productSales[name] = (productSales[name] || 0) + (item.quantity || 0);
-    }
-
-    // Find top product
-    let topName = '';
-    let topQty = 0;
-    for (const [name, qty] of Object.entries(productSales)) {
-        if (qty > topQty) {
-            topName = name;
-            topQty = qty;
-        }
-    }
-
-    return topName ? { name: topName, quantity: topQty } : null;
+    return { name: data[0].name, quantity: Number(data[0].quantity) };
 }
 
 /**
- * Get sales for the last 7 days
+ * Ventas últimos 7 días — generate_series + LEFT JOIN + SUM en SQL
  */
 export async function getLast7DaysSales(): Promise<DailySales[]> {
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    sevenDaysAgo.setHours(0, 0, 0, 0);
-
-    const { data, error } = await supabaseAdmin
-        .from('orders')
-        .select('created_at, total_price')
-        .in('status', ['paid', 'shipped', 'delivered'])
-        .gte('created_at', sevenDaysAgo.toISOString())
-        .order('created_at', { ascending: true });
+    const { data, error } = await supabaseAdmin.rpc('get_last_7_days_sales');
 
     if (error) {
         console.error('Error fetching last 7 days sales:', error);
         return [];
     }
 
-    // Aggregate by date
-    const salesByDate: Record<string, number> = {};
-
-    // Initialize all 7 days with 0
-    for (let i = 6; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        const dateStr = date.toISOString().split('T')[0];
-        salesByDate[dateStr] = 0;
-    }
-
-    // Sum up sales per day
-    for (const order of data || []) {
-        const dateStr = new Date(order.created_at).toISOString().split('T')[0];
-        salesByDate[dateStr] = (salesByDate[dateStr] || 0) + (order.total_price || 0);
-    }
-
-    // Convert to array
-    return Object.entries(salesByDate)
-        .map(([date, total]) => ({ date, total }))
-        .sort((a, b) => a.date.localeCompare(b.date));
+    return (data || []).map((row: { date: string; total: number }) => ({
+        date: row.date,
+        total: Number(row.total)
+    }));
 }
 
 /**
- * Get all dashboard stats in one call
+ * Estadísticas completas del dashboard en una sola llamada
+ * Todas las agregaciones pesadas se delegan a funciones SQL (RPC)
  */
 export async function getDashboardStats(): Promise<DashboardStats> {
-    const [monthlySales, pendingOrders, topProduct] = await Promise.all([
+    const [monthlySales, pendingOrders, topProduct, lowStockResult, productsCount] = await Promise.all([
         getMonthlySales(),
         getPendingOrdersCount(),
-        getTopProduct()
+        getTopProduct(),
+        supabaseAdmin.rpc('get_low_stock_count'),
+        supabaseAdmin
+            .from('products')
+            .select('*', { count: 'exact', head: true })
+            .eq('active', true)
     ]);
-
-    // Get product stats using product_variants for accurate per-size stock
-    const { data: products } = await supabaseAdmin
-        .from('products')
-        .select('id')
-        .eq('active', true);
-
-    const totalProducts = products?.length || 0;
-
-    // Count products that have at least one variant with stock between 1-5 or stock = 0
-    const { data: variants } = await supabaseAdmin
-        .from('product_variants')
-        .select('product_id, stock')
-        .in('product_id', (products || []).map(p => p.id));
-
-    // A product has "low stock" if any of its variants has stock <= 5 (including 0 = out of stock)
-    const productsWithLowStock = new Set<string>();
-    for (const v of variants || []) {
-        if (v.stock <= 5) {
-            productsWithLowStock.add(v.product_id);
-        }
-    }
-    const lowStockCount = productsWithLowStock.size;
 
     return {
         monthlySales,
         pendingOrders,
         topProduct,
-        totalProducts,
-        lowStockCount
+        totalProducts: productsCount.count || 0,
+        lowStockCount: Number(lowStockResult.data) || 0
     };
 }

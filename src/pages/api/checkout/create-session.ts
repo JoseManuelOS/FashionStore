@@ -1,3 +1,4 @@
+export const prerender = false;
 import type { APIRoute } from 'astro';
 import Stripe from 'stripe';
 import { getStockForSize } from '../../../lib/supabase';

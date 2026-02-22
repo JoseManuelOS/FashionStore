@@ -1,3 +1,4 @@
+export const prerender = false;
 import type { APIRoute } from 'astro';
 import Stripe from 'stripe';
 import { supabaseAdmin, createFacturacion, decrementStock } from '../../../lib/supabase';
