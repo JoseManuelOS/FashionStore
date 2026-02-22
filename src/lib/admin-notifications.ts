@@ -24,7 +24,27 @@ const formatDate = (date: Date | string) =>
 // Shared HTML helpers for premium theme
 // ────────────────────────────────────────
 
-function wrapEmail(headerGradient: string, iconEmoji: string, title: string, subtitle: string, body: string, ctaUrl: string, ctaLabel: string) {
+// Inline SVG icons (36px for header, 18px for body cards)
+const SVG_ICONS = {
+    // Shopping bag — new order
+    shoppingBag: (size = 36) => `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>`,
+    // Alert triangle — low stock / warning
+    alertTriangle: (size = 36) => `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+    // X circle — cancellation
+    xCircle: (size = 36) => `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`,
+    // Rotate CCW — return / refund
+    rotateCcw: (size = 36) => `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>`,
+    // Package — shipment / pending
+    package: (size = 36) => `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`,
+    // User — customer
+    user: (size = 36) => `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+    // Credit card — refund / payment
+    creditCard: (size = 36) => `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>`,
+    // Check circle — confirmed
+    checkCircle: (size = 36) => `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
+};
+
+function wrapEmail(headerGradient: string, iconSvg: string, title: string, subtitle: string, body: string, ctaUrl: string, ctaLabel: string) {
     const year = new Date().getFullYear();
     return `<!DOCTYPE html>
 <html lang="es">
@@ -38,7 +58,7 @@ function wrapEmail(headerGradient: string, iconEmoji: string, title: string, sub
     <!-- Header -->
     <div style="background: ${headerGradient}; padding: 48px 32px; text-align: center;">
         <div style="width: 80px; height: 80px; margin: 0 auto 20px; background: rgba(255,255,255,0.15); border-radius: 50%; border: 2px solid rgba(255,255,255,0.2);">
-            <table width="100%" height="80"><tr><td align="center" valign="middle" style="color: white; font-size: 36px;">${iconEmoji}</td></tr></table>
+            <table width="100%" height="80"><tr><td align="center" valign="middle">${iconSvg}</td></tr></table>
         </div>
         <h1 style="color: #ffffff; margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.5px;">${title}</h1>
         <p style="color: rgba(255,255,255,0.85); margin: 12px 0 0 0; font-size: 15px;">${subtitle}</p>
@@ -146,7 +166,7 @@ export async function sendNewOrderNotification(order: {
                     <tr>
                         <td width="48" valign="top">
                             <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #059669, #10b981); border-radius: 10px;">
-                                <table width="40" height="40"><tr><td align="center" valign="middle" style="color: white; font-size: 18px;">&#10003;</td></tr></table>
+                                <table width="40" height="40"><tr><td align="center" valign="middle">${SVG_ICONS.checkCircle(18)}</td></tr></table>
                             </div>
                         </td>
                         <td style="padding-left: 14px;" valign="middle">
@@ -173,7 +193,7 @@ export async function sendNewOrderNotification(order: {
 
         const html = wrapEmail(
             'linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%)',
-            '&#128722;',
+            SVG_ICONS.shoppingBag(36),
             'Nuevo Pedido Recibido',
             `Pedido ${orderRef} &bull; ${formatCurrency(order.total_price)}`,
             body,
@@ -188,7 +208,7 @@ export async function sendNewOrderNotification(order: {
             subject: `Nuevo pedido ${orderRef} - ${formatCurrency(order.total_price)}`,
             html
         });
-        console.log('📧 Admin notification sent: New Order');
+        console.log('[Admin] Notification sent: New Order');
     } catch (error) {
         console.error('Failed to send new order notification:', error);
     }
@@ -256,7 +276,7 @@ export async function sendLowStockAlert(products: Array<{
                     <tr>
                         <td width="48" valign="top">
                             <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #d97706, #f59e0b); border-radius: 10px;">
-                                <table width="40" height="40"><tr><td align="center" valign="middle" style="color: white; font-size: 18px;">&#9888;</td></tr></table>
+                                <table width="40" height="40"><tr><td align="center" valign="middle">${SVG_ICONS.alertTriangle(18)}</td></tr></table>
                             </div>
                         </td>
                         <td style="padding-left: 14px;" valign="middle">
@@ -277,7 +297,7 @@ export async function sendLowStockAlert(products: Array<{
 
         const html = wrapEmail(
             'linear-gradient(135deg, #d97706 0%, #f59e0b 50%, #fbbf24 100%)',
-            '&#9888;&#65039;',
+            SVG_ICONS.alertTriangle(36),
             'Alerta de Stock Bajo',
             `${products.length} producto(s) necesitan reposici&oacute;n`,
             body,
@@ -292,7 +312,7 @@ export async function sendLowStockAlert(products: Array<{
             subject: `Alerta de Stock: ${products.length} producto(s) con stock bajo`,
             html
         });
-        console.log('📧 Admin notification sent: Low Stock Alert');
+        console.log('[Admin] Notification sent: Low Stock Alert');
     } catch (error) {
         console.error('Failed to send low stock alert:', error);
     }
@@ -330,7 +350,7 @@ export async function sendCancellationNotification(order: {
                     <tr>
                         <td width="48" valign="top">
                             <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #3f3f46, #52525b); border-radius: 10px;">
-                                <table width="40" height="40"><tr><td align="center" valign="middle" style="color: white; font-size: 18px;">&#128100;</td></tr></table>
+                                <table width="40" height="40"><tr><td align="center" valign="middle">${SVG_ICONS.user(18)}</td></tr></table>
                             </div>
                         </td>
                         <td style="padding-left: 14px;" valign="middle">
@@ -346,7 +366,7 @@ export async function sendCancellationNotification(order: {
                     <tr>
                         <td width="48" valign="top">
                             <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #dc2626, #ef4444); border-radius: 10px;">
-                                <table width="40" height="40"><tr><td align="center" valign="middle" style="color: white; font-size: 18px;">&#128176;</td></tr></table>
+                                <table width="40" height="40"><tr><td align="center" valign="middle">${SVG_ICONS.creditCard(18)}</td></tr></table>
                             </div>
                         </td>
                         <td style="padding-left: 14px;" valign="middle">
@@ -367,7 +387,7 @@ export async function sendCancellationNotification(order: {
 
         const html = wrapEmail(
             'linear-gradient(135deg, #dc2626 0%, #ef4444 50%, #f87171 100%)',
-            '&#128683;',
+            SVG_ICONS.xCircle(36),
             'Pedido Cancelado',
             `Pedido ${orderRef} &bull; ${formatCurrency(order.total_price)}`,
             body,
@@ -382,7 +402,7 @@ export async function sendCancellationNotification(order: {
             subject: `Pedido ${orderRef} Cancelado - ${formatCurrency(order.total_price)}`,
             html
         });
-        console.log('📧 Admin notification sent: Cancellation');
+        console.log('[Admin] Notification sent: Cancellation');
     } catch (error) {
         console.error('Failed to send cancellation notification:', error);
     }
@@ -420,7 +440,7 @@ export async function sendReturnRequestNotification(order: {
                     <tr>
                         <td width="48" valign="top">
                             <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #3f3f46, #52525b); border-radius: 10px;">
-                                <table width="40" height="40"><tr><td align="center" valign="middle" style="color: white; font-size: 18px;">&#128100;</td></tr></table>
+                                <table width="40" height="40"><tr><td align="center" valign="middle">${SVG_ICONS.user(18)}</td></tr></table>
                             </div>
                         </td>
                         <td style="padding-left: 14px;" valign="middle">
@@ -436,7 +456,7 @@ export async function sendReturnRequestNotification(order: {
                     <tr>
                         <td width="48" valign="top">
                             <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #0891b2, #06b6d4); border-radius: 10px;">
-                                <table width="40" height="40"><tr><td align="center" valign="middle" style="color: white; font-size: 18px;">&#8617;</td></tr></table>
+                                <table width="40" height="40"><tr><td align="center" valign="middle">${SVG_ICONS.rotateCcw(18)}</td></tr></table>
                             </div>
                         </td>
                         <td style="padding-left: 14px;" valign="middle">
@@ -457,7 +477,7 @@ export async function sendReturnRequestNotification(order: {
 
         const html = wrapEmail(
             'linear-gradient(135deg, #0891b2 0%, #06b6d4 50%, #22d3ee 100%)',
-            '&#8617;&#65039;',
+            SVG_ICONS.rotateCcw(36),
             'Solicitud de Devoluci&oacute;n',
             `Pedido ${orderRef} &bull; Requiere revisi&oacute;n`,
             body,
@@ -472,7 +492,7 @@ export async function sendReturnRequestNotification(order: {
             subject: `Solicitud de Devolución - Pedido ${orderRef}`,
             html
         });
-        console.log('📧 Admin notification sent: Return Request');
+        console.log('[Admin] Notification sent: Return Request');
     } catch (error) {
         console.error('Failed to send return request notification:', error);
     }
@@ -528,7 +548,7 @@ export async function sendPendingShipmentsSummary(orders: Array<{
                     <tr>
                         <td width="48" valign="top">
                             <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #b45309, #f59e0b); border-radius: 10px;">
-                                <table width="40" height="40"><tr><td align="center" valign="middle" style="color: white; font-size: 18px;">&#9888;&#65039;</td></tr></table>
+                                <table width="40" height="40"><tr><td align="center" valign="middle">${SVG_ICONS.alertTriangle(18)}</td></tr></table>
                             </div>
                         </td>
                         <td style="padding-left: 14px;" valign="middle">
@@ -564,7 +584,7 @@ export async function sendPendingShipmentsSummary(orders: Array<{
 
         const html = wrapEmail(
             'linear-gradient(135deg, #b45309 0%, #f59e0b 50%, #fbbf24 100%)',
-            '&#128230;',
+            SVG_ICONS.package(36),
             'Pedidos Pendientes de Env&iacute;o',
             `${orders.length} pedido(s) esperando ser enviados`,
             body,
@@ -579,7 +599,7 @@ export async function sendPendingShipmentsSummary(orders: Array<{
             subject: `Recordatorio: ${orders.length} pedido(s) pendientes de envío`,
             html
         });
-        console.log('📧 Admin notification sent: Pending Shipments');
+        console.log('[Admin] Notification sent: Pending Shipments');
     } catch (error) {
         console.error('Failed to send pending shipments summary:', error);
     }
