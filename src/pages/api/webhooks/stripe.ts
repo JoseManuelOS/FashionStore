@@ -102,20 +102,24 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
                 const addr = JSON.parse(session.metadata.shipping_address);
                 const name = session.metadata.customer_name || customerName || '';
 
+                // The checkout form sends {line1, state} but handle {street, province} too
+                const street = addr.line1 || addr.street || '';
+                const province = addr.state || addr.province || '';
+
                 addressObject = {
-                    street: addr.line1,
+                    street: street,
                     city: addr.city,
                     postal_code: addr.postal_code,
-                    province: addr.state,
+                    province: province,
                     country: addr.country === 'ES' ? 'ES' : addr.country
                 };
 
                 shippingAddress = [
                     name,
-                    addr.line1,
+                    street,
                     addr.line2,
                     [addr.postal_code, addr.city].filter(Boolean).join(' '),
-                    addr.state,
+                    province,
                     addr.country === 'ES' ? 'España' : addr.country
                 ].filter(Boolean).join('\n');
 

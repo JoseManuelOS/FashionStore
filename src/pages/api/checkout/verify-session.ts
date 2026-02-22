@@ -78,15 +78,20 @@ export const POST: APIRoute = async ({ request }) => {
                 const metaAddr = JSON.parse(session.metadata.shipping_address);
                 console.log('📍 Address from metadata:', metaAddr);
 
+                // The checkout form sends {line1, city, postal_code, state, country}
+                // but some older data may use {street, province} — handle both
+                const street = metaAddr.line1 || metaAddr.street || '';
+                const province = metaAddr.state || metaAddr.province || '';
+
                 // Build address parts from metadata
                 const addressParts = [];
                 if (customerName) addressParts.push(customerName);
-                if (metaAddr.street) addressParts.push(metaAddr.street);
+                if (street) addressParts.push(street);
 
                 const cityLine = [metaAddr.postal_code, metaAddr.city].filter(Boolean).join(' ');
                 if (cityLine) addressParts.push(cityLine);
 
-                if (metaAddr.province) addressParts.push(metaAddr.province);
+                if (province) addressParts.push(province);
 
                 const countryName = metaAddr.country === 'ES' ? 'España' : (metaAddr.country || 'España');
                 if (countryName) addressParts.push(countryName);
@@ -94,10 +99,10 @@ export const POST: APIRoute = async ({ request }) => {
                 shippingAddress = addressParts.join('\n');
 
                 addressObject = {
-                    street: metaAddr.street || '',
+                    street: street,
                     city: metaAddr.city || '',
                     postal_code: metaAddr.postal_code || '',
-                    province: metaAddr.province || '',
+                    province: province,
                     country: metaAddr.country || 'ES'
                 };
             } catch (e) {
