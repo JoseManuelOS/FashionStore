@@ -338,6 +338,7 @@ export const POST: APIRoute = async ({ request }) => {
                     console.error('[EMAIL] Error sending order confirmation:', emailError);
                 } else {
                     console.log('[EMAIL] Order confirmation sent to:', customerEmail, 'ID:', emailResult?.id, attachments.length > 0 ? '(with invoice PDF)' : '(no PDF)');
+                }
             } catch (emailError) {
                 console.error('[EMAIL] Exception sending confirmation email:', emailError);
             }
