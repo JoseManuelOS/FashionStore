@@ -383,13 +383,13 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
     if (status === 'cancelled') {
         const { data: orderItems } = await supabaseAdmin
             .from('order_items')
-            .select('product_id, size, quantity')
+            .select('product_id, size, quantity, color')
             .eq('order_id', orderId);
 
         if (orderItems) {
             for (const item of orderItems) {
                 if (item.product_id && item.size) {
-                    await incrementStock(item.product_id, item.size, item.quantity);
+                    await incrementStock(item.product_id, item.size, item.quantity, item.color || '');
                 }
             }
         }

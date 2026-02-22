@@ -219,6 +219,7 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
                 product_image: product?.images?.[0] || null,
                 quantity: item.quantity || 1,
                 size: product?.metadata?.size || null,
+                color: product?.metadata?.color || null,
                 price_at_purchase: (item.amount_total || 0) / 100 / (item.quantity || 1)
             };
         });
@@ -237,11 +238,11 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
         console.log('Decrementing stock for order items...');
         for (const item of orderItems) {
             if (item.product_id && item.size) {
-                const success = await decrementStock(item.product_id, item.size, item.quantity);
+                const success = await decrementStock(item.product_id, item.size, item.quantity, item.color || '');
                 if (success) {
-                    console.log(`[STOCK] Decremented ${item.quantity} units of ${item.product_name} (${item.size})`);
+                    console.log(`[STOCK] Decremented ${item.quantity} units of ${item.product_name} (${item.size}${item.color ? '/' + item.color : ''})`);
                 } else {
-                    console.warn(`[STOCK] Failed to decrement stock for ${item.product_name} (${item.size})`);
+                    console.warn(`[STOCK] Failed to decrement stock for ${item.product_name} (${item.size}${item.color ? '/' + item.color : ''})`);
                 }
             }
         }
@@ -297,12 +298,13 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
 
             for (const item of orderItems) {
                 if (item.product_id && item.size) {
-                    const { data: variant } = await supabaseAdmin
+                    let query = supabaseAdmin
                         .from('product_variants')
-                        .select('stock, size')
+                        .select('stock, size, color')
                         .eq('product_id', item.product_id)
                         .eq('size', item.size)
-                        .single();
+                        .eq('color', item.color || '');
+                    const { data: variant } = await query.single();
 
                     if (variant && variant.stock < 5) {
                         lowStockProducts.push({

@@ -11,7 +11,7 @@ const { data: products, error: productsError } = await supabaseAdmin
     *,
     category:categories(name, slug),
     images:product_images(id, image_url, order),
-    variants:product_variants(size, stock, sku)
+    variants:product_variants(size, stock, sku, color)
   `,
     )
     .order("created_at", { ascending: false });
@@ -74,12 +74,21 @@ function getStockStatus(stock: number): string {
 // Preparar productos con datos pre-calculados
 const productsWithData =
     products?.map((product) => {
-        // Agrupar stock por tallas
+        // Agrupar stock por tallas (sumando todos los colores)
         const stockBySize: Record<string, number> = {};
+        // Detalle por color: { size: { color: stock } }
+        const stockByColor: Record<string, Record<string, number>> = {};
         let totalFromVariants = 0;
+        let hasColors = false;
         if (product.variants && product.variants.length > 0) {
             product.variants.forEach((v: any) => {
-                stockBySize[v.size] = v.stock;
+                const color = v.color || '';
+                if (color) hasColors = true;
+                // Sumar stock total por talla
+                stockBySize[v.size] = (stockBySize[v.size] || 0) + v.stock;
+                // Detalle por color
+                if (!stockByColor[v.size]) stockByColor[v.size] = {};
+                stockByColor[v.size][color || 'Sin color'] = v.stock;
                 totalFromVariants += v.stock;
             });
         }
@@ -93,6 +102,8 @@ const productsWithData =
             )[0]?.image_url,
             stockStatus: getStockStatus(effectiveStock),
             stockBySize,
+            stockByColor,
+            hasColors,
             totalStock: effectiveStock,
         };
     }) || [];
@@ -310,6 +321,78 @@ const productsWithData =
         }
 
         .size-badge.low-stock .size-stock {
+            color: #f59e0b;
+        }
+
+        /* Color stock breakdown */
+        .color-stock-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            max-width: 280px;
+        }
+
+        .size-color-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .size-color-row .size-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #71717a;
+            min-width: 26px;
+            text-align: right;
+        }
+
+        .color-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3px;
+        }
+
+        .color-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            padding: 2px 6px;
+            border-radius: 5px;
+            font-size: 10px;
+            font-weight: 500;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #a1a1aa;
+        }
+
+        .color-badge .color-name {
+            color: #a1a1aa;
+            max-width: 60px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .color-badge .color-stock {
+            color: #06b6d4;
+            font-weight: 700;
+        }
+
+        .color-badge.out-of-stock {
+            opacity: 0.4;
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .color-badge.out-of-stock .color-stock {
+            color: #ef4444;
+        }
+
+        .color-badge.low-stock {
+            border-color: rgba(245, 158, 11, 0.3);
+        }
+
+        .color-badge.low-stock .color-stock {
             color: #f59e0b;
         }
 
@@ -629,22 +712,48 @@ const productsWithData =
                                     <div>
                                         {Object.keys(product.stockBySize).length > 0 ? (
                                             <>
-                                                <div class="stock-sizes">
-                                                    {Object.entries(product.stockBySize)
-                                                        .sort((a: [string, unknown], b: [string, unknown]) => {
-                                                            const order = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
-                                                            const indexA = order.indexOf(a[0]);
-                                                            const indexB = order.indexOf(b[0]);
-                                                            if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-                                                            return a[0].localeCompare(b[0]);
-                                                        })
-                                                        .map(([size, stock]: [string, any]) => (
-                                                            <span class={`size-badge ${stock === 0 ? 'out-of-stock' : stock <= 3 ? 'low-stock' : ''}`}>
-                                                                <span class="size-name">{size}</span>
-                                                                <span class="size-stock">{stock}</span>
-                                                            </span>
-                                                        ))}
-                                                </div>
+                                                {product.hasColors ? (
+                                                    <div class="color-stock-list">
+                                                        {Object.entries(product.stockByColor)
+                                                            .sort((a: [string, unknown], b: [string, unknown]) => {
+                                                                const order = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+                                                                const iA = order.indexOf(a[0]);
+                                                                const iB = order.indexOf(b[0]);
+                                                                if (iA !== -1 && iB !== -1) return iA - iB;
+                                                                return a[0].localeCompare(b[0]);
+                                                            })
+                                                            .map(([size, colors]: [string, any]) => (
+                                                                <div class="size-color-row">
+                                                                    <span class="size-label">{size}</span>
+                                                                    <div class="color-badges">
+                                                                        {Object.entries(colors).map(([color, stock]: [string, any]) => (
+                                                                            <span class={`color-badge ${stock === 0 ? 'out-of-stock' : stock <= 3 ? 'low-stock' : ''}`}>
+                                                                                <span class="color-name">{color}</span>
+                                                                                <span class="color-stock">{stock}</span>
+                                                                            </span>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                    </div>
+                                                ) : (
+                                                    <div class="stock-sizes">
+                                                        {Object.entries(product.stockBySize)
+                                                            .sort((a: [string, unknown], b: [string, unknown]) => {
+                                                                const order = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+                                                                const indexA = order.indexOf(a[0]);
+                                                                const indexB = order.indexOf(b[0]);
+                                                                if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                                                                return a[0].localeCompare(b[0]);
+                                                            })
+                                                            .map(([size, stock]: [string, any]) => (
+                                                                <span class={`size-badge ${stock === 0 ? 'out-of-stock' : stock <= 3 ? 'low-stock' : ''}`}>
+                                                                    <span class="size-name">{size}</span>
+                                                                    <span class="size-stock">{stock}</span>
+                                                                </span>
+                                                            ))}
+                                                    </div>
+                                                )}
                                                 <div class="stock-badge">
                                                     <span class={`stock-dot ${product.stockStatus}`} />
                                                     {product.totalStock} total

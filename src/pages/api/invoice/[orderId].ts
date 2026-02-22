@@ -63,7 +63,7 @@ export const GET: APIRoute = async ({ params, url }) => {
 
         // Header colors based on type
         const headerBg = isCreditNote
-            ? 'linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%)'
+            ? '#7f1d1d'
             : 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)';
         const accentColor = isCreditNote ? '#f87171' : '#06b6d4';
         const accentBg = isCreditNote
@@ -74,7 +74,7 @@ export const GET: APIRoute = async ({ params, url }) => {
             : 'rgba(6, 182, 212, 0.3)';
         const typeLabel = isCreditNote ? 'Factura Rectificativa' : 'Factura';
         const totalBg = isCreditNote
-            ? 'linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%)'
+            ? '#7f1d1d'
             : 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)';
         const totalColor = isCreditNote ? '#f87171' : '#06b6d4';
 
@@ -140,14 +140,6 @@ export const GET: APIRoute = async ({ params, url }) => {
                 </div>
             </div>
         </div>
-
-        ${isCreditNote ? `
-        <!-- Credit Note Banner -->
-        <div style="background: #fef2f2; border-bottom: 2px solid #fecaca; padding: 12px 40px; display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 18px;">⚠️</span>
-            <span style="color: #991b1b; font-weight: 600; font-size: 14px;">FACTURA RECTIFICATIVA — Los importes se muestran en negativo (abono/devolución)</span>
-        </div>
-        ` : ''}
 
         <!-- Info Section -->
         <div style="padding: 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; background: #fafafa; border-bottom: 1px solid #e5e7eb;">
