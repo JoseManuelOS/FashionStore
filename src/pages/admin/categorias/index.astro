@@ -16,11 +16,12 @@ if (Astro.request.method === "POST") {
         const id = formData.get("id") as string;
 
         if (action === "delete" && id) {
-            // Check if category has products
+            // Check if category has active products
             const { count } = await supabaseAdmin
                 .from("products")
                 .select("*", { count: "exact", head: true })
-                .eq("category_id", id);
+                .eq("category_id", id)
+                .eq("active", true);
 
             if (count && count > 0) {
                 notification = `No se puede eliminar: tiene ${count} producto(s) asociado(s). Reasigna los productos primero.`;
@@ -67,12 +68,13 @@ try {
     if (error) throw error;
     categories = data || [];
 
-    // Get product count per category
+    // Get product count per category (only active products)
     for (const cat of categories) {
         const { count } = await supabaseAdmin
             .from("products")
             .select("*", { count: "exact", head: true })
-            .eq("category_id", cat.id);
+            .eq("category_id", cat.id)
+            .eq("active", true);
         cat.product_count = count || 0;
     }
 } catch (e) {

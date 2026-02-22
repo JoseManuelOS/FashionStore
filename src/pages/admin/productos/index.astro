@@ -26,6 +26,11 @@ if (productsError) {
     console.error("Products error details:", productsError);
 }
 
+// Filtro: por defecto ocultar inactivos
+const showInactive = Astro.url.searchParams.get("inactivos") === "true";
+const activeProducts = products?.filter((p) => p.active) || [];
+const inactiveCount = (products?.length || 0) - activeProducts.length;
+
 if (Astro.request.method === "POST") {
     const formData = await Astro.request.formData();
     const action = formData.get("action");
@@ -115,8 +120,9 @@ function stockCls(qty: number): string {
 }
 
 // Preparar productos con datos pre-calculados
+const filteredProducts = showInactive ? products : activeProducts;
 const productsWithData =
-    products?.map((product) => {
+    filteredProducts?.map((product) => {
         // Agrupar stock por tallas (sumando todos los colores)
         const stockBySize: Record<string, number> = {};
         // Detalle agrupado por color: { color: { sizes: { size: stock }, total: N } }
@@ -750,10 +756,26 @@ const productsWithData =
         <div>
             <h1 style="font-size: 24px; font-weight: 600; color: #f4f4f5; margin-bottom: 4px;">Productos</h1>
             <div class="page-subtitle">
-                {products?.length || 0} productos registrados
+                {activeProducts.length} producto(s) activo(s){inactiveCount > 0 ? ` · ${inactiveCount} inactivo(s)` : ''}
             </div>
         </div>
-        <a href="/admin/productos/nuevo" class="btn-primary">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            {inactiveCount > 0 && (
+                <a
+                    href={showInactive ? "/admin/productos" : "/admin/productos?inactivos=true"}
+                    style={`display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 500; text-decoration: none; transition: all 0.2s; border: 1px solid ${showInactive ? 'rgba(245, 158, 11, 0.4)' : 'rgba(255, 255, 255, 0.1)'}; color: ${showInactive ? '#f59e0b' : '#a1a1aa'}; background: ${showInactive ? 'rgba(245, 158, 11, 0.1)' : 'rgba(255, 255, 255, 0.03)'};`}
+                >
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        {showInactive ? (
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        ) : (
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                        )}
+                    </svg>
+                    {showInactive ? 'Ocultar inactivos' : `Ver inactivos (${inactiveCount})`}
+                </a>
+            )}
+            <a href="/admin/productos/nuevo" class="btn-primary">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                     stroke-linecap="round"
@@ -763,6 +785,7 @@ const productsWithData =
             </svg>
             Nuevo Producto
         </a>
+        </div>
     </div>
 
     {productsError && (
