@@ -37,6 +37,7 @@ function getMainImage(product: Product, color?: string): string {
 export default function AddToCartButton({ product, stockBySize: initialStockBySize, onColorChange }: AddToCartButtonProps) {
     const colors: ProductColor[] = product.colors || [];
     const hasColors = colors.length > 0;
+    const hasSingleSize = (product.sizes?.length || 0) === 1;
     
     const [selectedColor, setSelectedColor] = useState(hasColors ? colors[0].name : '');
     const [selectedSize, setSelectedSize] = useState(product.sizes?.[0] || 'M');
@@ -209,7 +210,8 @@ export default function AddToCartButton({ product, stockBySize: initialStockBySi
                                     onClick={() => !isDisabled && setSelectedSize(size)}
                                     disabled={isDisabled}
                                     className={`
-                                        relative w-12 h-12 flex items-center justify-center
+                                        relative flex items-center justify-center
+                                        ${hasSingleSize ? 'h-12 px-4 min-w-[7rem] whitespace-nowrap' : 'w-12 h-12'}
                                         border rounded-xl font-medium text-sm
                                         transition-all duration-300
                                         ${isDisabled 
