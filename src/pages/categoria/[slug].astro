@@ -7,14 +7,7 @@ import {
     getProductMainImage,
 } from "../../lib/supabase";
 
-export const prerender = true;
-
-export async function getStaticPaths() {
-    const categories = await getCategories();
-    return categories.map((category: any) => ({
-        params: { slug: category.slug },
-    }));
-}
+export const prerender = false;
 
 const { slug } = Astro.params;
 const categories_all = await getCategories();

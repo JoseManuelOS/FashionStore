@@ -9,14 +9,7 @@ import {
     getProductMainImage,
 } from "../../lib/supabase";
 
-export const prerender = true;
-
-export async function getStaticPaths() {
-    const products = await getProducts();
-    return products.map((product: any) => ({
-        params: { slug: product.slug },
-    }));
-}
+export const prerender = false;
 
 const { slug } = Astro.params;
 const product = slug ? await getProductBySlug(slug) : null;
