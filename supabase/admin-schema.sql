@@ -244,7 +244,7 @@ BEGIN
     
     RAISE NOTICE 'Super admin creado con éxito';
     RAISE NOTICE 'Email: admin@fashionmarket.es';
-    RAISE NOTICE 'Password: Admin123!';
+    RAISE NOTICE 'Password: admin';
     RAISE NOTICE 'IMPORTANTE: Cambia la contraseña después del primer login';
   ELSE
     RAISE NOTICE 'Super admin ya existe';

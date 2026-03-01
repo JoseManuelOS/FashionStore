@@ -87,7 +87,8 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
 
         // Obtener detalles del cliente
         const customerEmail = session.customer_details?.email || session.customer_email || null;
-        const customerName = session.customer_details?.name || session.metadata?.customer_name || null;
+        // Priorizar el nombre del formulario de checkout (metadata) sobre el titular de la tarjeta (customer_details)
+        const customerName = session.metadata?.customer_name || session.customer_details?.name || null;
         const customerPhone = session.metadata?.customer_phone || null;
 
         // Obtener dirección de envío
@@ -161,12 +162,19 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
             if (authUser?.user) {
                 customerId = authUser.user.id;
 
-                // Actualizar o crear registro en customers con la información de la compra
+                // Actualizar registro en customers con la información de la compra
+                // Solo actualizar full_name si el cliente no tiene uno ya establecido
                 if (addressObject) {
+                    const { data: existingCustomer } = await supabaseAdmin
+                        .from('customers')
+                        .select('full_name')
+                        .eq('id', customerId)
+                        .single();
+
                     const { error: updateError } = await supabaseAdmin
                         .from('customers')
                         .update({
-                            full_name: customerName,
+                            ...(!existingCustomer?.full_name && customerName ? { full_name: customerName } : {}),
                             phone: customerPhone,
                             default_address: addressObject,
                             updated_at: new Date().toISOString()
